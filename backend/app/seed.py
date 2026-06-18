@@ -2,8 +2,8 @@ import uuid
 from datetime import datetime, timedelta
 from decimal import Decimal
 import random
+import bcrypt
 from sqlalchemy.orm import Session
-from passlib.context import CryptContext
 from app.models.user import User, UserRole
 from app.models.address import Address
 from app.models.category import Category
@@ -11,7 +11,9 @@ from app.models.subcategory import SubCategory
 from app.models.product import Product
 from app.models.order import Order, OrderItem, OrderStatus
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
 
 def seed_database(db: Session):
@@ -28,7 +30,7 @@ def seed_database(db: Session):
     admin = User(
         id=str(uuid.uuid4()),
         email="admin@ecommerce.com",
-        password_hash=pwd_context.hash("admin123"),
+        password_hash=hash_password("admin123"),
         first_name="Admin",
         last_name="User",
         role=UserRole.admin,
@@ -49,7 +51,7 @@ def seed_database(db: Session):
         customer = User(
             id=str(uuid.uuid4()),
             email=email,
-            password_hash=pwd_context.hash("password123"),
+            password_hash=hash_password("password123"),
             first_name=first,
             last_name=last,
             role=UserRole.customer,
