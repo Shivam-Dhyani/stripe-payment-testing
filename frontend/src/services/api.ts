@@ -25,10 +25,16 @@ api.interceptors.response.use(
         window.location.href = '/login';
       }
     }
-    const message = error.response?.data?.detail || error.message || 'An error occurred';
-    if (typeof message === 'string') {
-      toast.error(message);
+    const detail = error.response?.data?.detail;
+    let message = 'An error occurred';
+    if (typeof detail === 'string') {
+      message = detail;
+    } else if (Array.isArray(detail)) {
+      message = detail.map((d: any) => d.msg || String(d)).join(', ');
+    } else if (error.message) {
+      message = error.message;
     }
+    toast.error(message);
     return Promise.reject(error);
   }
 );
