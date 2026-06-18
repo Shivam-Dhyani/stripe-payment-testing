@@ -25,7 +25,7 @@ type ProductFormData = z.infer<typeof productSchema>;
 
 const Products = () => {
   const dispatch = useAppDispatch();
-  const { products, loading, pagination } = useAppSelector((state) => state.products);
+  const { products = [], loading, pagination } = useAppSelector((state) => state.products);
   const { categories, subcategories } = useAppSelector((state) => state.categories);
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);

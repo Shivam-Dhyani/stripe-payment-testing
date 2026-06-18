@@ -11,13 +11,15 @@ from app.models.user import User
 router = APIRouter(prefix="/products", tags=["Products"])
 
 
-@router.get("/", response_model=List[ProductResponse])
+@router.get("/")
 def list_products(
     category_id: Optional[str] = Query(None, description="Filter by category ID"),
     sub_category_id: Optional[str] = Query(None, description="Filter by subcategory ID"),
     search: Optional[str] = Query(None, description="Search by product name"),
+    sort_by: Optional[str] = Query("created_at", description="Sort field"),
+    sort_order: Optional[str] = Query("desc", description="Sort order: asc or desc"),
     page: int = Query(1, ge=1, description="Page number"),
-    limit: int = Query(20, ge=1, le=100, description="Items per page"),
+    size: int = Query(20, ge=1, le=100, description="Items per page"),
     db: Session = Depends(get_db),
 ):
     """List products with pagination, filtering, and search."""
@@ -34,9 +36,22 @@ def list_products(
     if search:
         query = query.filter(Product.name.ilike(f"%{search}%"))
 
-    offset = (page - 1) * limit
-    products = query.offset(offset).limit(limit).all()
-    return products
+    if sort_by and hasattr(Product, sort_by):
+        col = getattr(Product, sort_by)
+        query = query.order_by(col.desc() if sort_order == "desc" else col.asc())
+
+    total = query.count()
+    offset = (page - 1) * size
+    products = query.offset(offset).limit(size).all()
+    pages = (total + size - 1) // size
+
+    return {
+        "items": [ProductResponse.model_validate(p) for p in products],
+        "total": total,
+        "page": page,
+        "size": size,
+        "pages": pages,
+    }
 
 
 @router.get("/{product_id}", response_model=ProductResponse)

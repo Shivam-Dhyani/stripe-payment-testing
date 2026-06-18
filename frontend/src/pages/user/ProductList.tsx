@@ -20,7 +20,7 @@ const gradients = [
 const ProductList = () => {
   const dispatch = useAppDispatch();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { products, loading, pagination } = useAppSelector((state) => state.products);
+  const { products = [], loading, pagination } = useAppSelector((state) => state.products);
   const { categories, subcategories } = useAppSelector((state) => state.categories);
   const { user } = useAppSelector((state) => state.auth);
   const [search, setSearch] = useState(searchParams.get('search') || '');

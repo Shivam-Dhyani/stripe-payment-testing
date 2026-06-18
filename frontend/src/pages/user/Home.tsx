@@ -17,8 +17,8 @@ const gradients = [
 
 const Home = () => {
   const dispatch = useAppDispatch();
-  const { categories } = useAppSelector((state) => state.categories);
-  const { products } = useAppSelector((state) => state.products);
+  const { categories = [] } = useAppSelector((state) => state.categories);
+  const { products = [] } = useAppSelector((state) => state.products);
 
   useEffect(() => {
     dispatch(fetchCategories());
