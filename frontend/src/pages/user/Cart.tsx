@@ -16,7 +16,7 @@ const Cart = () => {
   }, [dispatch]);
 
   const subtotal = items.reduce((sum, item) => {
-    return sum + (item.product?.price || 0) * item.quantity;
+    return sum + Number(item.product?.price || 0) * item.quantity;
   }, 0);
 
   const handleUpdateQuantity = (itemId: number, newQuantity: number) => {
@@ -60,7 +60,7 @@ const Cart = () => {
                 <Link to={`/products/${item.product_id}`} className="font-semibold text-slate-800 hover:text-indigo-600 truncate block">
                   {item.product?.name || 'Product'}
                 </Link>
-                <p className="text-indigo-600 font-medium">${(item.product?.price || 0).toFixed(2)}</p>
+                <p className="text-indigo-600 font-medium">${Number(item.product?.price || 0).toFixed(2)}</p>
               </div>
               <div className="flex items-center border border-gray-300 rounded-lg">
                 <button
@@ -79,7 +79,7 @@ const Cart = () => {
               </div>
               <div className="text-right min-w-[80px]">
                 <p className="font-semibold text-slate-800">
-                  ${((item.product?.price || 0) * item.quantity).toFixed(2)}
+                  ${(Number(item.product?.price || 0) * item.quantity).toFixed(2)}
                 </p>
               </div>
               <button

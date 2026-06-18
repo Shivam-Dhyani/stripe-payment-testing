@@ -67,7 +67,7 @@ const OrderHistory = () => {
                   </span>
                 </div>
                 <div className="flex items-center space-x-4">
-                  <span className="text-lg font-semibold text-slate-800">${order.total.toFixed(2)}</span>
+                  <span className="text-lg font-semibold text-slate-800">${Number(order.total).toFixed(2)}</span>
                   {expandedOrderId === order.id ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
                 </div>
               </button>
@@ -83,10 +83,10 @@ const OrderHistory = () => {
                           </div>
                           <div>
                             <p className="font-medium text-slate-800">{item.product_name}</p>
-                            <p className="text-sm text-slate-500">Qty: {item.quantity} x ${item.product_price.toFixed(2)}</p>
+                            <p className="text-sm text-slate-500">Qty: {item.quantity} x ${Number(item.product_price).toFixed(2)}</p>
                           </div>
                         </div>
-                        <p className="font-medium text-slate-800">${(item.quantity * item.product_price).toFixed(2)}</p>
+                        <p className="font-medium text-slate-800">${(item.quantity * Number(item.product_price)).toFixed(2)}</p>
                       </div>
                     ))}
                   </div>

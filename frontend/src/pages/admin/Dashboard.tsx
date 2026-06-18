@@ -178,7 +178,7 @@ const Dashboard = () => {
               {recentOrders.map((order) => (
                 <tr key={order.id} className="border-b border-gray-50 hover:bg-gray-50 transition">
                   <td className="py-3 text-sm text-slate-800 font-medium">#{order.id}</td>
-                  <td className="py-3 text-sm text-slate-800">${order.total.toFixed(2)}</td>
+                  <td className="py-3 text-sm text-slate-800">${Number(order.total).toFixed(2)}</td>
                   <td className="py-3">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${statusColors[order.status] || 'bg-gray-100 text-gray-700'}`}>
                       {order.status}

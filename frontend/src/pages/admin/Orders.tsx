@@ -145,7 +145,7 @@ const Orders = () => {
               </div>
               <div>
                 <p className="text-sm text-slate-500">Total</p>
-                <p className="font-semibold text-lg">${selectedOrder.total.toFixed(2)}</p>
+                <p className="font-semibold text-lg">${Number(selectedOrder.total).toFixed(2)}</p>
               </div>
               <div>
                 <p className="text-sm text-slate-500">Date</p>
@@ -180,10 +180,10 @@ const Orders = () => {
                         </div>
                         <div>
                           <p className="font-medium text-slate-800">{item.product_name}</p>
-                          <p className="text-sm text-slate-500">Qty: {item.quantity} x ${item.product_price.toFixed(2)}</p>
+                          <p className="text-sm text-slate-500">Qty: {item.quantity} x ${Number(item.product_price).toFixed(2)}</p>
                         </div>
                       </div>
-                      <p className="font-medium">${(item.quantity * item.product_price).toFixed(2)}</p>
+                      <p className="font-medium">${(item.quantity * Number(item.product_price)).toFixed(2)}</p>
                     </div>
                   ))}
                 </div>

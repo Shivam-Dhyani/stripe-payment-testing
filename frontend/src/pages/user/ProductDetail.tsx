@@ -81,7 +81,7 @@ const ProductDetail = () => {
             </span>
           </div>
           <h1 className="text-3xl font-bold text-slate-800 mb-4">{product.name}</h1>
-          <p className="text-2xl font-bold text-indigo-600 mb-6">${product.price.toFixed(2)}</p>
+          <p className="text-2xl font-bold text-indigo-600 mb-6">${Number(product.price).toFixed(2)}</p>
 
           <div className="mb-6">
             <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${

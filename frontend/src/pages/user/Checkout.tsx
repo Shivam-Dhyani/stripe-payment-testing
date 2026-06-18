@@ -112,7 +112,7 @@ const Checkout = () => {
     }
   };
 
-  const subtotal = items.reduce((sum, item) => sum + (item.product?.price || 0) * item.quantity, 0);
+  const subtotal = items.reduce((sum, item) => sum + Number(item.product?.price || 0) * item.quantity, 0);
 
   const handleCheckout = async () => {
     if (!selectedAddressId) {
@@ -225,7 +225,7 @@ const Checkout = () => {
                       <p className="text-sm text-slate-500">Qty: {item.quantity}</p>
                     </div>
                   </div>
-                  <p className="font-semibold">${((item.product?.price || 0) * item.quantity).toFixed(2)}</p>
+                  <p className="font-semibold">${(Number(item.product?.price || 0) * item.quantity).toFixed(2)}</p>
                 </div>
               ))}
             </div>
