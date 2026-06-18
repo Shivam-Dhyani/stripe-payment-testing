@@ -1,6 +1,5 @@
 from pydantic import BaseModel
 from typing import Optional
-from decimal import Decimal
 
 
 class DashboardStats(BaseModel):
@@ -16,16 +15,16 @@ class RevenueData(BaseModel):
 
 
 class TopProduct(BaseModel):
-    product_name: str
+    name: str
     total_sold: int
     revenue: float
 
 
 class CategoryDistribution(BaseModel):
-    category: str
-    order_count: int
+    name: str
+    value: int
 
 
 class OrderTrend(BaseModel):
     date: str
-    count: int
+    orders: int

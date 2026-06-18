@@ -7,7 +7,7 @@ from app.schemas.user import UserCreate, UserLogin, UserResponse, UserUpdate
 from app.schemas.auth import Token
 from app.middleware.auth import create_access_token, get_current_user
 
-router = APIRouter(prefix="/auth", tags=["Authentication"])
+router = APIRouter(prefix="/auth", tags=["Authentication"], redirect_slashes=False)
 
 
 def hash_password(password: str) -> str:

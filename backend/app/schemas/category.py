@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional, List
 from datetime import datetime
 from app.schemas.subcategory import SubCategoryResponse
@@ -24,6 +24,6 @@ class CategoryResponse(BaseModel):
     is_active: bool
     created_at: datetime
     updated_at: datetime
-    subcategories: List[SubCategoryResponse] = []
+    sub_categories: List[SubCategoryResponse] = Field(default=[], validation_alias="subcategories")
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)

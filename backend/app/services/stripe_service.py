@@ -30,5 +30,5 @@ def create_payment_intent(amount: int, currency: str = "usd", metadata: dict = N
             "currency": intent.currency,
             "status": intent.status,
         }
-    except stripe.error.StripeError as e:
+    except stripe.StripeError as e:
         raise Exception(f"Stripe error: {str(e)}")

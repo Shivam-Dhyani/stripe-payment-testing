@@ -16,13 +16,13 @@ const statusColors: Record<string, string> = {
 const OrderHistory = () => {
   const dispatch = useAppDispatch();
   const { orders, selectedOrder, loading } = useAppSelector((state) => state.orders);
-  const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null);
+  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
 
   useEffect(() => {
     dispatch(fetchOrders());
   }, [dispatch]);
 
-  const toggleOrder = (orderId: number) => {
+  const toggleOrder = (orderId: string) => {
     if (expandedOrderId === orderId) {
       setExpandedOrderId(null);
     } else {
@@ -55,7 +55,7 @@ const OrderHistory = () => {
                   <div>
                     <div className="flex items-center space-x-2 text-sm text-slate-500">
                       <Hash className="w-4 h-4" />
-                      <span>Order #{order.id}</span>
+                      <span>Order #{String(order.id).substring(0, 8)}</span>
                     </div>
                     <div className="flex items-center space-x-2 text-sm text-slate-500 mt-1">
                       <Calendar className="w-4 h-4" />

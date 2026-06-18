@@ -8,10 +8,10 @@ from app.schemas.product import ProductCreate, ProductUpdate, ProductResponse
 from app.middleware.auth import get_admin_user
 from app.models.user import User
 
-router = APIRouter(prefix="/products", tags=["Products"])
+router = APIRouter(prefix="/products", tags=["Products"], redirect_slashes=False)
 
 
-@router.get("/")
+@router.get("")
 def list_products(
     category_id: Optional[str] = Query(None, description="Filter by category ID"),
     sub_category_id: Optional[str] = Query(None, description="Filter by subcategory ID"),
@@ -23,26 +23,26 @@ def list_products(
     db: Session = Depends(get_db),
 ):
     """List products with pagination, filtering, and search."""
-    query = db.query(Product).options(joinedload(Product.subcategory)).filter(Product.is_active == True)
+    base_query = db.query(Product).filter(Product.is_active == True)
 
     if sub_category_id:
-        query = query.filter(Product.sub_category_id == sub_category_id)
+        base_query = base_query.filter(Product.sub_category_id == sub_category_id)
     elif category_id:
         subcat_ids = [
             s.id for s in db.query(SubCategory).filter(SubCategory.category_id == category_id).all()
         ]
-        query = query.filter(Product.sub_category_id.in_(subcat_ids))
+        base_query = base_query.filter(Product.sub_category_id.in_(subcat_ids))
 
     if search:
-        query = query.filter(Product.name.ilike(f"%{search}%"))
+        base_query = base_query.filter(Product.name.ilike(f"%{search}%"))
 
     if sort_by and hasattr(Product, sort_by):
         col = getattr(Product, sort_by)
-        query = query.order_by(col.desc() if sort_order == "desc" else col.asc())
+        base_query = base_query.order_by(col.desc() if sort_order == "desc" else col.asc())
 
-    total = query.count()
+    total = base_query.count()
     offset = (page - 1) * size
-    products = query.offset(offset).limit(size).all()
+    products = base_query.options(joinedload(Product.subcategory)).offset(offset).limit(size).all()
     pages = (total + size - 1) // size
 
     return {
@@ -68,7 +68,7 @@ def get_product(product_id: str, db: Session = Depends(get_db)):
     return product
 
 
-@router.post("/", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
 def create_product(
     data: ProductCreate,
     db: Session = Depends(get_db),

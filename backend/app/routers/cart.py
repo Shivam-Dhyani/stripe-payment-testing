@@ -8,10 +8,10 @@ from app.models.user import User
 from app.schemas.cart import CartItemCreate, CartItemUpdate, CartItemResponse
 from app.middleware.auth import get_current_user
 
-router = APIRouter(prefix="/cart", tags=["Cart"])
+router = APIRouter(prefix="/cart", tags=["Cart"], redirect_slashes=False)
 
 
-@router.get("/", response_model=List[CartItemResponse])
+@router.get("", response_model=List[CartItemResponse])
 def get_cart(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -25,7 +25,7 @@ def get_cart(
     )
 
 
-@router.post("/", response_model=CartItemResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=CartItemResponse, status_code=status.HTTP_201_CREATED)
 def add_to_cart(
     data: CartItemCreate,
     current_user: User = Depends(get_current_user),
@@ -104,7 +104,7 @@ def remove_cart_item(
     db.commit()
 
 
-@router.delete("/", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("", status_code=status.HTTP_204_NO_CONTENT)
 def clear_cart(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),

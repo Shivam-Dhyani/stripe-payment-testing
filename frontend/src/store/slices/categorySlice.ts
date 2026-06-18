@@ -27,7 +27,7 @@ export const fetchCategories = createAsyncThunk('categories/fetchAll', async (_,
 
 export const fetchSubCategories = createAsyncThunk(
   'categories/fetchSubCategories',
-  async (categoryId?: number) => {
+  async (categoryId?: string) => {
     return await categoryService.getSubCategories(categoryId);
   }
 );
@@ -47,7 +47,7 @@ export const createCategory = createAsyncThunk(
 
 export const updateCategory = createAsyncThunk(
   'categories/update',
-  async ({ id, data }: { id: number; data: Partial<Category> }, { rejectWithValue }) => {
+  async ({ id, data }: { id: string; data: Partial<Category> }, { rejectWithValue }) => {
     try {
       const category = await categoryService.update(id, data);
       toast.success('Category updated successfully');
@@ -60,7 +60,7 @@ export const updateCategory = createAsyncThunk(
 
 export const deleteCategory = createAsyncThunk(
   'categories/delete',
-  async (id: number, { rejectWithValue }) => {
+  async (id: string, { rejectWithValue }) => {
     try {
       await categoryService.delete(id);
       toast.success('Category deleted successfully');
@@ -86,7 +86,7 @@ export const createSubCategory = createAsyncThunk(
 
 export const updateSubCategory = createAsyncThunk(
   'categories/updateSubCategory',
-  async ({ id, data }: { id: number; data: Partial<SubCategory> }, { rejectWithValue }) => {
+  async ({ id, data }: { id: string; data: Partial<SubCategory> }, { rejectWithValue }) => {
     try {
       const subCategory = await categoryService.updateSubCategory(id, data);
       toast.success('Sub-category updated successfully');
@@ -99,7 +99,7 @@ export const updateSubCategory = createAsyncThunk(
 
 export const deleteSubCategory = createAsyncThunk(
   'categories/deleteSubCategory',
-  async (id: number, { rejectWithValue }) => {
+  async (id: string, { rejectWithValue }) => {
     try {
       await categoryService.deleteSubCategory(id);
       toast.success('Sub-category deleted successfully');

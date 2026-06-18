@@ -1,5 +1,5 @@
 export interface User {
-  id: number;
+  id: string;
   email: string;
   first_name: string;
   last_name: string;
@@ -9,8 +9,8 @@ export interface User {
 }
 
 export interface Address {
-  id: number;
-  user_id: number;
+  id: string;
+  user_id: string;
   label: string;
   street: string;
   city: string;
@@ -21,7 +21,7 @@ export interface Address {
 }
 
 export interface Category {
-  id: number;
+  id: string;
   name: string;
   description: string;
   image_url: string | null;
@@ -30,19 +30,19 @@ export interface Category {
 }
 
 export interface SubCategory {
-  id: number;
-  category_id: number;
+  id: string;
+  category_id: string;
   name: string;
   description: string;
   is_active: boolean;
 }
 
 export interface Product {
-  id: number;
-  sub_category_id: number;
+  id: string;
+  sub_category_id: string;
   name: string;
   description: string;
-  price: number;
+  price: number | string;
   stock: number;
   image_url: string | null;
   is_active: boolean;
@@ -50,18 +50,18 @@ export interface Product {
 }
 
 export interface CartItem {
-  id: number;
-  user_id: number;
-  product_id: number;
+  id: string;
+  user_id: string;
+  product_id: string;
   quantity: number;
   product?: Product;
 }
 
 export interface Order {
-  id: number;
-  user_id: number;
+  id: string;
+  user_id: string;
   address_snapshot: Record<string, string>;
-  total: number;
+  total: number | string;
   status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
   stripe_payment_intent_id: string | null;
   created_at: string;
@@ -69,16 +69,16 @@ export interface Order {
 }
 
 export interface OrderItem {
-  id: number;
-  order_id: number;
-  product_id: number;
+  id: string;
+  order_id: string;
+  product_id: string;
   product_name: string;
-  product_price: number;
+  product_price: number | string;
   quantity: number;
 }
 
 export interface DashboardStats {
-  total_revenue: number;
+  total_revenue: number | string;
   total_orders: number;
   total_products: number;
   total_customers: number;
@@ -112,8 +112,8 @@ export interface PaginatedResponse<T> {
 export interface ProductFilters {
   page?: number;
   size?: number;
-  category_id?: number;
-  sub_category_id?: number;
+  category_id?: string;
+  sub_category_id?: string;
   search?: string;
   sort_by?: string;
   sort_order?: 'asc' | 'desc';

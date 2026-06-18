@@ -11,7 +11,7 @@ import { authService } from '../../services/authService';
 import { Address } from '../../types';
 import toast from 'react-hot-toast';
 
-const stripePromise = loadStripe('pk_test_placeholder');
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PK || 'pk_test_placeholder');
 
 const steps = ['Address', 'Review', 'Payment'];
 
@@ -21,7 +21,7 @@ const CheckoutForm = ({
   onSuccess
 }: {
   clientSecret: string;
-  orderId: number;
+  orderId: string;
   onSuccess: () => void;
 }) => {
   const stripe = useStripe();
@@ -90,7 +90,7 @@ const Checkout = () => {
   const { checkoutData, loading } = useAppSelector((state) => state.orders);
   const [currentStep, setCurrentStep] = useState(0);
   const [addresses, setAddresses] = useState<Address[]>([]);
-  const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
 
   useEffect(() => {
     dispatch(fetchCart());
@@ -259,7 +259,7 @@ const Checkout = () => {
         <Elements stripe={stripePromise} options={{ clientSecret: checkoutData.client_secret }}>
           <CheckoutForm
             clientSecret={checkoutData.client_secret}
-            orderId={checkoutData.order.id}
+            orderId={checkoutData.order_id}
             onSuccess={handlePaymentSuccess}
           />
         </Elements>

@@ -16,7 +16,7 @@ const productSchema = z.object({
   description: z.string().min(1, 'Description is required'),
   price: z.number().min(0.01, 'Price must be greater than 0'),
   stock: z.number().min(0, 'Stock cannot be negative'),
-  sub_category_id: z.number().min(1, 'Sub-category is required'),
+  sub_category_id: z.string().min(1, 'Sub-category is required'),
   image_url: z.string().optional(),
   is_active: z.boolean(),
 });
@@ -25,18 +25,18 @@ type ProductFormData = z.infer<typeof productSchema>;
 
 const Products = () => {
   const dispatch = useAppDispatch();
-  const { products = [], loading, pagination } = useAppSelector((state) => state.products);
+  const { products = [], loading } = useAppSelector((state) => state.products);
   const { categories, subcategories } = useAppSelector((state) => state.categories);
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [filterCategoryId, setFilterCategoryId] = useState<number | undefined>(undefined);
-  const [filterSubCategoryId, setFilterSubCategoryId] = useState<number | undefined>(undefined);
+  const [filterCategoryId, setFilterCategoryId] = useState<string | undefined>(undefined);
+  const [filterSubCategoryId, setFilterSubCategoryId] = useState<string | undefined>(undefined);
   const [search, setSearch] = useState('');
-  const [selectedCategoryInForm, setSelectedCategoryInForm] = useState<number | undefined>(undefined);
+  const [selectedCategoryInForm, setSelectedCategoryInForm] = useState<string | undefined>(undefined);
 
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
-    defaultValues: { name: '', description: '', price: 0, stock: 0, sub_category_id: 0, image_url: '', is_active: true },
+    defaultValues: { name: '', description: '', price: 0, stock: 0, sub_category_id: '', image_url: '', is_active: true },
   });
 
   useEffect(() => {
@@ -72,7 +72,7 @@ const Products = () => {
     form.reset({
       name: product.name,
       description: product.description,
-      price: product.price,
+      price: Number(product.price),
       stock: product.stock,
       sub_category_id: product.sub_category_id,
       image_url: product.image_url || '',
@@ -85,19 +85,19 @@ const Products = () => {
     setShowModal(false);
     setEditingProduct(null);
     setSelectedCategoryInForm(undefined);
-    form.reset({ name: '', description: '', price: 0, stock: 0, sub_category_id: 0, image_url: '', is_active: true });
+    form.reset({ name: '', description: '', price: 0, stock: 0, sub_category_id: '', image_url: '', is_active: true });
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
       await dispatch(deleteProduct(id));
       dispatch(fetchProducts({ page: 1, size: 100, category_id: filterCategoryId, sub_category_id: filterSubCategoryId, search: search || undefined }));
     }
   };
 
-  const handleFormCategoryChange = (catId: number) => {
+  const handleFormCategoryChange = (catId: string) => {
     setSelectedCategoryInForm(catId);
-    form.setValue('sub_category_id', 0);
+    form.setValue('sub_category_id', '');
     if (catId) dispatch(fetchSubCategories(catId));
   };
 
@@ -123,7 +123,7 @@ const Products = () => {
   );
 
   const columnDefs: ColDef[] = [
-    { field: 'id', headerName: 'ID', width: 70 },
+    { field: 'id', headerName: 'ID', width: 70, valueFormatter: (params) => String(params.value).substring(0, 8) },
     { field: 'name', headerName: 'Name', flex: 1, filter: true },
     {
       headerName: 'Category',
@@ -151,7 +151,7 @@ const Products = () => {
           onClick={() => {
             setEditingProduct(null);
             setSelectedCategoryInForm(undefined);
-            form.reset({ name: '', description: '', price: 0, stock: 0, sub_category_id: 0, image_url: '', is_active: true });
+            form.reset({ name: '', description: '', price: 0, stock: 0, sub_category_id: '', image_url: '', is_active: true });
             setShowModal(true);
           }}
           className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium"
@@ -173,7 +173,7 @@ const Products = () => {
         <select
           value={filterCategoryId || ''}
           onChange={(e) => {
-            const val = e.target.value ? Number(e.target.value) : undefined;
+            const val = e.target.value || undefined;
             setFilterCategoryId(val);
             setFilterSubCategoryId(undefined);
             if (val) dispatch(fetchSubCategories(val));
@@ -188,7 +188,7 @@ const Products = () => {
         {filterCategoryId && (
           <select
             value={filterSubCategoryId || ''}
-            onChange={(e) => setFilterSubCategoryId(e.target.value ? Number(e.target.value) : undefined)}
+            onChange={(e) => setFilterSubCategoryId(e.target.value || undefined)}
             className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
           >
             <option value="">All SubCategories</option>
@@ -250,7 +250,7 @@ const Products = () => {
                 <label className="block text-sm font-medium text-slate-700 mb-1">Category</label>
                 <select
                   value={selectedCategoryInForm || ''}
-                  onChange={(e) => handleFormCategoryChange(Number(e.target.value))}
+                  onChange={(e) => handleFormCategoryChange(e.target.value)}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
                 >
                   <option value="">Select Category</option>
@@ -262,10 +262,10 @@ const Products = () => {
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Sub Category</label>
                 <select
-                  {...form.register('sub_category_id', { valueAsNumber: true })}
+                  {...form.register('sub_category_id')}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
                 >
-                  <option value={0}>Select Sub Category</option>
+                  <option value="">Select Sub Category</option>
                   {subcategories.map((sc) => (
                     <option key={sc.id} value={sc.id}>{sc.name}</option>
                   ))}

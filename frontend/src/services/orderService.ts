@@ -2,12 +2,12 @@ import api from './api';
 import { Order } from '../types';
 
 export const orderService = {
-  checkout: async (addressId: number): Promise<{ order: Order; client_secret: string }> => {
+  checkout: async (addressId: string): Promise<{ order_id: string; total: number; client_secret: string; payment_intent_id: string }> => {
     const response = await api.post('/orders/checkout', { address_id: addressId });
     return response.data;
   },
 
-  confirmPayment: async (orderId: number, paymentIntentId: string): Promise<Order> => {
+  confirmPayment: async (orderId: string, paymentIntentId: string): Promise<Order> => {
     const response = await api.post(`/orders/${orderId}/confirm`, {
       payment_intent_id: paymentIntentId,
     });
@@ -19,12 +19,12 @@ export const orderService = {
     return response.data;
   },
 
-  getOrderById: async (id: number): Promise<Order> => {
+  getOrderById: async (id: string): Promise<Order> => {
     const response = await api.get(`/orders/${id}`);
     return response.data;
   },
 
-  updateOrderStatus: async (id: number, status: string): Promise<Order> => {
+  updateOrderStatus: async (id: string, status: string): Promise<Order> => {
     const response = await api.put(`/orders/${id}/status`, { status });
     return response.data;
   },

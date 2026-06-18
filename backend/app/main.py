@@ -34,6 +34,7 @@ app = FastAPI(
     description="Full-featured e-commerce backend with Stripe integration",
     version="1.0.0",
     lifespan=lifespan,
+    redirect_slashes=False,
 )
 
 # CORS configuration - allow all origins for development

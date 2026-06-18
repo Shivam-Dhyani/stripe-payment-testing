@@ -23,7 +23,7 @@ const ProductDetail = () => {
 
   useEffect(() => {
     if (id) {
-      dispatch(fetchProductById(Number(id)));
+      dispatch(fetchProductById(id));
     }
     return () => {
       dispatch(clearSelectedProduct());
@@ -40,7 +40,7 @@ const ProductDetail = () => {
     return <LoadingSpinner />;
   }
 
-  const gradientIndex = product.id % gradients.length;
+  const gradientIndex = product.name.length % gradients.length;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

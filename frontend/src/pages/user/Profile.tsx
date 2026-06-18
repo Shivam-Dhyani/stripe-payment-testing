@@ -107,7 +107,7 @@ const Profile = () => {
     }
   };
 
-  const handleDeleteAddress = async (id: number) => {
+  const handleDeleteAddress = async (id: string) => {
     try {
       await authService.deleteAddress(id);
       toast.success('Address deleted');

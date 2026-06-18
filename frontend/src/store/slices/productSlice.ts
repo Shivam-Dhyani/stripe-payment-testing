@@ -33,7 +33,7 @@ export const fetchProducts = createAsyncThunk(
 
 export const fetchProductById = createAsyncThunk(
   'products/fetchById',
-  async (id: number) => {
+  async (id: string) => {
     return await productService.getById(id);
   }
 );
@@ -53,7 +53,7 @@ export const createProduct = createAsyncThunk(
 
 export const updateProduct = createAsyncThunk(
   'products/update',
-  async ({ id, data }: { id: number; data: Partial<Product> }, { rejectWithValue }) => {
+  async ({ id, data }: { id: string; data: Partial<Product> }, { rejectWithValue }) => {
     try {
       const product = await productService.update(id, data);
       toast.success('Product updated successfully');
@@ -66,7 +66,7 @@ export const updateProduct = createAsyncThunk(
 
 export const deleteProduct = createAsyncThunk(
   'products/delete',
-  async (id: number, { rejectWithValue }) => {
+  async (id: string, { rejectWithValue }) => {
     try {
       await productService.delete(id);
       toast.success('Product deleted successfully');

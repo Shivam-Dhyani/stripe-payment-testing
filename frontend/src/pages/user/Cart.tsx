@@ -19,7 +19,7 @@ const Cart = () => {
     return sum + Number(item.product?.price || 0) * item.quantity;
   }, 0);
 
-  const handleUpdateQuantity = (itemId: number, newQuantity: number) => {
+  const handleUpdateQuantity = (itemId: string, newQuantity: number) => {
     if (newQuantity < 1) return;
     dispatch(updateCartItem({ itemId, quantity: newQuantity }));
   };

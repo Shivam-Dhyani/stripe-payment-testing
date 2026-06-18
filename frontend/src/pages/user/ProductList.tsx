@@ -21,13 +21,13 @@ const ProductList = () => {
   const dispatch = useAppDispatch();
   const [searchParams, setSearchParams] = useSearchParams();
   const { products = [], loading, pagination } = useAppSelector((state) => state.products);
-  const { categories, subcategories } = useAppSelector((state) => state.categories);
+  const { categories = [], subcategories = [] } = useAppSelector((state) => state.categories);
   const { user } = useAppSelector((state) => state.auth);
   const [search, setSearch] = useState(searchParams.get('search') || '');
   const [showFilters, setShowFilters] = useState(false);
 
-  const categoryId = searchParams.get('category') ? Number(searchParams.get('category')) : undefined;
-  const subCategoryId = searchParams.get('subcategory') ? Number(searchParams.get('subcategory')) : undefined;
+  const categoryId = searchParams.get('category') || undefined;
+  const subCategoryId = searchParams.get('subcategory') || undefined;
   const sortBy = searchParams.get('sort') || 'created_at';
   const sortOrder = (searchParams.get('order') || 'desc') as 'asc' | 'desc';
   const page = Number(searchParams.get('page') || '1');
@@ -74,7 +74,7 @@ const ProductList = () => {
     updateParams({ search: search || undefined });
   };
 
-  const handleAddToCart = (e: React.MouseEvent, productId: number) => {
+  const handleAddToCart = (e: React.MouseEvent, productId: string) => {
     e.preventDefault();
     e.stopPropagation();
     if (user) {
@@ -143,7 +143,7 @@ const ProductList = () => {
                 {categories.filter(c => c.is_active).map((cat) => (
                   <button
                     key={cat.id}
-                    onClick={() => updateParams({ category: String(cat.id), subcategory: undefined })}
+                    onClick={() => updateParams({ category: cat.id, subcategory: undefined })}
                     className={`block w-full text-left px-3 py-2 rounded-lg text-sm transition ${categoryId === cat.id ? 'bg-indigo-50 text-indigo-600 font-medium' : 'text-slate-600 hover:bg-gray-50'}`}
                   >
                     {cat.name}
@@ -165,7 +165,7 @@ const ProductList = () => {
                   {subcategories.filter(sc => sc.is_active).map((sc) => (
                     <button
                       key={sc.id}
-                      onClick={() => updateParams({ subcategory: String(sc.id) })}
+                      onClick={() => updateParams({ subcategory: sc.id })}
                       className={`block w-full text-left px-3 py-2 rounded-lg text-sm transition ${subCategoryId === sc.id ? 'bg-indigo-50 text-indigo-600 font-medium' : 'text-slate-600 hover:bg-gray-50'}`}
                     >
                       {sc.name}

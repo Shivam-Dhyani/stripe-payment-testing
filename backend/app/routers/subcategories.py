@@ -7,10 +7,10 @@ from app.schemas.subcategory import SubCategoryCreate, SubCategoryUpdate, SubCat
 from app.middleware.auth import get_admin_user
 from app.models.user import User
 
-router = APIRouter(prefix="/subcategories", tags=["SubCategories"])
+router = APIRouter(prefix="/subcategories", tags=["SubCategories"], redirect_slashes=False)
 
 
-@router.get("/", response_model=List[SubCategoryResponse])
+@router.get("", response_model=List[SubCategoryResponse])
 def list_subcategories(
     category_id: Optional[str] = Query(None, description="Filter by category ID"),
     db: Session = Depends(get_db),
@@ -22,7 +22,7 @@ def list_subcategories(
     return query.all()
 
 
-@router.post("/", response_model=SubCategoryResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=SubCategoryResponse, status_code=status.HTTP_201_CREATED)
 def create_subcategory(
     data: SubCategoryCreate,
     db: Session = Depends(get_db),

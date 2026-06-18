@@ -26,21 +26,21 @@ export const authService = {
   },
 
   getAddresses: async (): Promise<Address[]> => {
-    const response = await api.get('/auth/addresses');
+    const response = await api.get('/addresses');
     return response.data;
   },
 
   addAddress: async (data: Omit<Address, 'id' | 'user_id'>): Promise<Address> => {
-    const response = await api.post('/auth/addresses', data);
+    const response = await api.post('/addresses', data);
     return response.data;
   },
 
-  updateAddress: async (id: number, data: Partial<Address>): Promise<Address> => {
-    const response = await api.put(`/auth/addresses/${id}`, data);
+  updateAddress: async (id: string, data: Partial<Address>): Promise<Address> => {
+    const response = await api.put(`/addresses/${id}`, data);
     return response.data;
   },
 
-  deleteAddress: async (id: number): Promise<void> => {
-    await api.delete(`/auth/addresses/${id}`);
+  deleteAddress: async (id: string): Promise<void> => {
+    await api.delete(`/addresses/${id}`);
   },
 };

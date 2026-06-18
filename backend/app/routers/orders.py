@@ -12,7 +12,7 @@ from app.schemas.order import OrderResponse, OrderStatusUpdate, CheckoutRequest,
 from app.middleware.auth import get_current_user, get_admin_user
 from app.services.stripe_service import create_payment_intent
 
-router = APIRouter(prefix="/orders", tags=["Orders"])
+router = APIRouter(prefix="/orders", tags=["Orders"], redirect_slashes=False)
 
 
 @router.post("/checkout", response_model=dict)
@@ -142,7 +142,46 @@ def confirm_payment(
     return order
 
 
-@router.get("/", response_model=List[OrderResponse])
+@router.post("/{order_id}/confirm", response_model=OrderResponse)
+def confirm_payment_by_order(
+    order_id: str,
+    data: ConfirmPaymentRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Confirm payment by order ID and update order status to processing."""
+    order = (
+        db.query(Order)
+        .options(joinedload(Order.items))
+        .filter(
+            Order.id == order_id,
+            Order.user_id == current_user.id,
+        )
+        .first()
+    )
+    if not order:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
+    order.status = OrderStatus.processing
+    db.commit()
+    db.refresh(order)
+    return order
+
+
+@router.get("/all", response_model=List[OrderResponse])
+def list_all_orders(
+    admin: User = Depends(get_admin_user),
+    db: Session = Depends(get_db),
+):
+    """List all orders (admin only)."""
+    return (
+        db.query(Order)
+        .options(joinedload(Order.items))
+        .order_by(Order.created_at.desc())
+        .all()
+    )
+
+
+@router.get("", response_model=List[OrderResponse])
 def list_orders(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -171,6 +210,7 @@ def get_order(
 
 
 @router.patch("/{order_id}/status", response_model=OrderResponse)
+@router.put("/{order_id}/status", response_model=OrderResponse)
 def update_order_status(
     order_id: str,
     data: OrderStatusUpdate,

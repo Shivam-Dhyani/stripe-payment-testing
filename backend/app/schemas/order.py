@@ -1,7 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 from typing import Optional, List, Any
 from datetime import datetime
-from decimal import Decimal
 
 
 class OrderItemResponse(BaseModel):
@@ -9,7 +8,7 @@ class OrderItemResponse(BaseModel):
     order_id: str
     product_id: Optional[str] = None
     product_name: str
-    product_price: Decimal
+    product_price: float
     quantity: int
 
     model_config = ConfigDict(from_attributes=True)
@@ -19,7 +18,7 @@ class OrderResponse(BaseModel):
     id: str
     user_id: str
     address_snapshot: Optional[Any] = None
-    total: Decimal
+    total: float
     status: str
     stripe_payment_intent_id: Optional[str] = None
     created_at: datetime

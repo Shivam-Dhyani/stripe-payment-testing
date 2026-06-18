@@ -7,7 +7,7 @@ export const categoryService = {
     return response.data;
   },
 
-  getById: async (id: number): Promise<Category> => {
+  getById: async (id: string): Promise<Category> => {
     const response = await api.get(`/categories/${id}`);
     return response.data;
   },
@@ -17,22 +17,22 @@ export const categoryService = {
     return response.data;
   },
 
-  update: async (id: number, data: Partial<Category>): Promise<Category> => {
+  update: async (id: string, data: Partial<Category>): Promise<Category> => {
     const response = await api.put(`/categories/${id}`, data);
     return response.data;
   },
 
-  delete: async (id: number): Promise<void> => {
+  delete: async (id: string): Promise<void> => {
     await api.delete(`/categories/${id}`);
   },
 
-  getSubCategories: async (categoryId?: number): Promise<SubCategory[]> => {
+  getSubCategories: async (categoryId?: string): Promise<SubCategory[]> => {
     const params = categoryId ? { category_id: categoryId } : {};
     const response = await api.get('/subcategories', { params });
     return response.data;
   },
 
-  getSubCategoryById: async (id: number): Promise<SubCategory> => {
+  getSubCategoryById: async (id: string): Promise<SubCategory> => {
     const response = await api.get(`/subcategories/${id}`);
     return response.data;
   },
@@ -42,12 +42,12 @@ export const categoryService = {
     return response.data;
   },
 
-  updateSubCategory: async (id: number, data: Partial<SubCategory>): Promise<SubCategory> => {
+  updateSubCategory: async (id: string, data: Partial<SubCategory>): Promise<SubCategory> => {
     const response = await api.put(`/subcategories/${id}`, data);
     return response.data;
   },
 
-  deleteSubCategory: async (id: number): Promise<void> => {
+  deleteSubCategory: async (id: string): Promise<void> => {
     await api.delete(`/subcategories/${id}`);
   },
 };

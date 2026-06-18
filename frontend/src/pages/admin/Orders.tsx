@@ -25,12 +25,12 @@ const Orders = () => {
     dispatch(fetchAllOrders());
   }, [dispatch]);
 
-  const viewOrder = async (orderId: number) => {
+  const viewOrder = async (orderId: string) => {
     await dispatch(fetchOrderById(orderId));
     setShowDetail(true);
   };
 
-  const handleStatusChange = async (orderId: number, newStatus: string) => {
+  const handleStatusChange = async (orderId: string, newStatus: string) => {
     await dispatch(updateOrderStatus({ id: orderId, status: newStatus }));
     dispatch(fetchAllOrders());
   };

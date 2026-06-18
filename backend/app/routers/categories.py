@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from typing import List
 from app.database import get_db
 from app.models.category import Category
@@ -7,26 +7,36 @@ from app.schemas.category import CategoryCreate, CategoryUpdate, CategoryRespons
 from app.middleware.auth import get_admin_user
 from app.models.user import User
 
-router = APIRouter(prefix="/categories", tags=["Categories"])
+router = APIRouter(prefix="/categories", tags=["Categories"], redirect_slashes=False)
 
 
-@router.get("/", response_model=List[CategoryResponse])
+@router.get("", response_model=List[CategoryResponse])
 def list_categories(db: Session = Depends(get_db)):
     """List all active categories with their subcategories."""
-    categories = db.query(Category).filter(Category.is_active == True).all()
+    categories = (
+        db.query(Category)
+        .options(joinedload(Category.subcategories))
+        .filter(Category.is_active == True)
+        .all()
+    )
     return categories
 
 
 @router.get("/{category_id}", response_model=CategoryResponse)
 def get_category(category_id: str, db: Session = Depends(get_db)):
     """Get a single category by ID."""
-    category = db.query(Category).filter(Category.id == category_id).first()
+    category = (
+        db.query(Category)
+        .options(joinedload(Category.subcategories))
+        .filter(Category.id == category_id)
+        .first()
+    )
     if not category:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found")
     return category
 
 
-@router.post("/", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED)
 def create_category(
     data: CategoryCreate,
     db: Session = Depends(get_db),

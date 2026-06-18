@@ -21,7 +21,7 @@ export const fetchCart = createAsyncThunk('cart/fetch', async () => {
 
 export const addToCart = createAsyncThunk(
   'cart/add',
-  async ({ productId, quantity }: { productId: number; quantity: number }, { rejectWithValue }) => {
+  async ({ productId, quantity }: { productId: string; quantity: number }, { rejectWithValue }) => {
     try {
       const item = await cartService.addItem(productId, quantity);
       toast.success('Added to cart');
@@ -34,14 +34,14 @@ export const addToCart = createAsyncThunk(
 
 export const updateCartItem = createAsyncThunk(
   'cart/update',
-  async ({ itemId, quantity }: { itemId: number; quantity: number }) => {
+  async ({ itemId, quantity }: { itemId: string; quantity: number }) => {
     return await cartService.updateItem(itemId, quantity);
   }
 );
 
 export const removeFromCart = createAsyncThunk(
   'cart/remove',
-  async (itemId: number) => {
+  async (itemId: string) => {
     await cartService.removeItem(itemId);
     toast.success('Removed from cart');
     return itemId;

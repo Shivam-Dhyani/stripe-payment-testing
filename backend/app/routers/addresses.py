@@ -7,10 +7,10 @@ from app.models.user import User
 from app.schemas.address import AddressCreate, AddressUpdate, AddressResponse
 from app.middleware.auth import get_current_user
 
-router = APIRouter(prefix="/addresses", tags=["Addresses"])
+router = APIRouter(prefix="/addresses", tags=["Addresses"], redirect_slashes=False)
 
 
-@router.get("/", response_model=List[AddressResponse])
+@router.get("", response_model=List[AddressResponse])
 def list_addresses(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -19,7 +19,7 @@ def list_addresses(
     return db.query(Address).filter(Address.user_id == current_user.id).all()
 
 
-@router.post("/", response_model=AddressResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=AddressResponse, status_code=status.HTTP_201_CREATED)
 def create_address(
     data: AddressCreate,
     current_user: User = Depends(get_current_user),

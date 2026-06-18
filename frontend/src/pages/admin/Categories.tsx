@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { AgGridReact } from 'ag-grid-react';
 import { ColDef, ICellRendererParams, themeAlpine } from 'ag-grid-community';
 import { useForm } from 'react-hook-form';
@@ -66,7 +66,7 @@ const Categories = () => {
     form.reset({ name: '', description: '', image_url: '', is_active: true });
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this category?')) {
       await dispatch(deleteCategory(id));
       dispatch(fetchCategories());

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, desc
 from datetime import datetime, timedelta
 from app.database import get_db
@@ -13,7 +13,7 @@ from app.schemas.order import OrderResponse
 from app.middleware.auth import get_admin_user
 from typing import List
 
-router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
+router = APIRouter(prefix="/dashboard", tags=["Dashboard"], redirect_slashes=False)
 
 
 @router.get("/stats", response_model=DashboardStats)
@@ -38,6 +38,7 @@ def get_stats(
 
 
 @router.get("/revenue-chart", response_model=List[RevenueData])
+@router.get("/revenue", response_model=List[RevenueData])
 def get_revenue_chart(
     admin: User = Depends(get_admin_user),
     db: Session = Depends(get_db),
@@ -76,7 +77,7 @@ def get_top_products(
     )
     return [
         TopProduct(
-            product_name=r.product_name,
+            name=r.product_name,
             total_sold=int(r.total_sold),
             revenue=float(r.revenue),
         )
@@ -92,6 +93,7 @@ def get_recent_orders(
     """Get the 10 most recent orders (admin only)."""
     orders = (
         db.query(Order)
+        .options(joinedload(Order.items))
         .order_by(Order.created_at.desc())
         .limit(10)
         .all()
@@ -107,7 +109,7 @@ def get_category_distribution(
     """Get order count by category (admin only)."""
     results = (
         db.query(
-            Category.name.label("category"),
+            Category.name.label("category_name"),
             func.count(OrderItem.id).label("order_count"),
         )
         .join(SubCategory, SubCategory.category_id == Category.id)
@@ -117,7 +119,7 @@ def get_category_distribution(
         .order_by(desc("order_count"))
         .all()
     )
-    return [CategoryDistribution(category=r.category, order_count=r.order_count) for r in results]
+    return [CategoryDistribution(name=r.category_name, value=r.order_count) for r in results]
 
 
 @router.get("/order-trends", response_model=List[OrderTrend])
@@ -137,4 +139,4 @@ def get_order_trends(
         .order_by(func.date(Order.created_at))
         .all()
     )
-    return [OrderTrend(date=str(r.date), count=r.count) for r in results]
+    return [OrderTrend(date=str(r.date), orders=r.count) for r in results]

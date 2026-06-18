@@ -17,7 +17,7 @@ import {
 import { SubCategory } from '../../types';
 
 const subCategorySchema = z.object({
-  category_id: z.number().min(1, 'Category is required'),
+  category_id: z.string().min(1, 'Category is required'),
   name: z.string().min(1, 'Name is required'),
   description: z.string().min(1, 'Description is required'),
   is_active: z.boolean(),
@@ -30,11 +30,11 @@ const SubCategories = () => {
   const { categories, subcategories, loading } = useAppSelector((state) => state.categories);
   const [showModal, setShowModal] = useState(false);
   const [editingSub, setEditingSub] = useState<SubCategory | null>(null);
-  const [filterCategoryId, setFilterCategoryId] = useState<number | undefined>(undefined);
+  const [filterCategoryId, setFilterCategoryId] = useState<string | undefined>(undefined);
 
   const form = useForm<SubCategoryFormData>({
     resolver: zodResolver(subCategorySchema),
-    defaultValues: { category_id: 0, name: '', description: '', is_active: true },
+    defaultValues: { category_id: '', name: '', description: '', is_active: true },
   });
 
   useEffect(() => {
@@ -70,17 +70,17 @@ const SubCategories = () => {
   const closeModal = () => {
     setShowModal(false);
     setEditingSub(null);
-    form.reset({ category_id: 0, name: '', description: '', is_active: true });
+    form.reset({ category_id: '', name: '', description: '', is_active: true });
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this sub-category?')) {
       await dispatch(deleteSubCategory(id));
       dispatch(fetchSubCategories(filterCategoryId));
     }
   };
 
-  const getCategoryName = (categoryId: number) => {
+  const getCategoryName = (categoryId: string) => {
     return categories.find(c => c.id === categoryId)?.name || 'Unknown';
   };
 
@@ -102,7 +102,7 @@ const SubCategories = () => {
   );
 
   const columnDefs: ColDef[] = [
-    { field: 'id', headerName: 'ID', width: 80 },
+    { field: 'id', headerName: 'ID', width: 80, valueFormatter: (params) => String(params.value).substring(0, 8) },
     { field: 'name', headerName: 'Name', flex: 1, filter: true },
     {
       field: 'category_id',
@@ -124,7 +124,7 @@ const SubCategories = () => {
         <button
           onClick={() => {
             setEditingSub(null);
-            form.reset({ category_id: 0, name: '', description: '', is_active: true });
+            form.reset({ category_id: '', name: '', description: '', is_active: true });
             setShowModal(true);
           }}
           className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium"
@@ -138,7 +138,7 @@ const SubCategories = () => {
       <div className="mb-4">
         <select
           value={filterCategoryId || ''}
-          onChange={(e) => setFilterCategoryId(e.target.value ? Number(e.target.value) : undefined)}
+          onChange={(e) => setFilterCategoryId(e.target.value || undefined)}
           className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
         >
           <option value="">All Categories</option>
@@ -176,10 +176,10 @@ const SubCategories = () => {
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Parent Category</label>
                 <select
-                  {...form.register('category_id', { valueAsNumber: true })}
+                  {...form.register('category_id')}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
                 >
-                  <option value={0}>Select Category</option>
+                  <option value="">Select Category</option>
                   {categories.map((cat) => (
                     <option key={cat.id} value={cat.id}>{cat.name}</option>
                   ))}

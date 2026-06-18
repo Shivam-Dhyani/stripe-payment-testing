@@ -8,7 +8,7 @@ interface OrderState {
   selectedOrder: Order | null;
   loading: boolean;
   error: string | null;
-  checkoutData: { order: Order; client_secret: string } | null;
+  checkoutData: { order_id: string; total: number; client_secret: string; payment_intent_id: string } | null;
 }
 
 const initialState: OrderState = {
@@ -21,7 +21,7 @@ const initialState: OrderState = {
 
 export const checkout = createAsyncThunk(
   'orders/checkout',
-  async (addressId: number, { rejectWithValue }) => {
+  async (addressId: string, { rejectWithValue }) => {
     try {
       return await orderService.checkout(addressId);
     } catch (error: any) {
@@ -32,7 +32,7 @@ export const checkout = createAsyncThunk(
 
 export const confirmPayment = createAsyncThunk(
   'orders/confirmPayment',
-  async ({ orderId, paymentIntentId }: { orderId: number; paymentIntentId: string }, { rejectWithValue }) => {
+  async ({ orderId, paymentIntentId }: { orderId: string; paymentIntentId: string }, { rejectWithValue }) => {
     try {
       const order = await orderService.confirmPayment(orderId, paymentIntentId);
       toast.success('Payment confirmed! Order placed successfully.');
@@ -51,13 +51,13 @@ export const fetchAllOrders = createAsyncThunk('orders/fetchAllAdmin', async () 
   return await orderService.getAllOrders();
 });
 
-export const fetchOrderById = createAsyncThunk('orders/fetchById', async (id: number) => {
+export const fetchOrderById = createAsyncThunk('orders/fetchById', async (id: string) => {
   return await orderService.getOrderById(id);
 });
 
 export const updateOrderStatus = createAsyncThunk(
   'orders/updateStatus',
-  async ({ id, status }: { id: number; status: string }, { rejectWithValue }) => {
+  async ({ id, status }: { id: string; status: string }, { rejectWithValue }) => {
     try {
       const order = await orderService.updateOrderStatus(id, status);
       toast.success('Order status updated');

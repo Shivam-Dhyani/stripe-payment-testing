@@ -1,7 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from datetime import datetime
-from decimal import Decimal
 
 
 class CartItemCreate(BaseModel):
@@ -16,7 +15,7 @@ class CartItemUpdate(BaseModel):
 class CartProductInfo(BaseModel):
     id: str
     name: str
-    price: Decimal
+    price: float
     image_url: Optional[str] = None
     stock: int
 
