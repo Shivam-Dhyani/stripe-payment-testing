@@ -59,14 +59,14 @@ const Register = () => {
     <div className="relative flex flex-col-reverse w-full min-h-screen lg:flex-row bg-white">
       {/* Branding Panel — Left */}
       <div className="hidden lg:grid w-full lg:w-1/2 h-screen items-center sticky top-0 overflow-hidden"
-        style={{ background: 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 30%, #ddd6fe 60%, #e8e0fe 100%)' }}
+        style={{ background: 'linear-gradient(135deg, #ede9fe 0%, #ddd6fe 30%, #c4b5fd 60%, #d4c8fc 100%)' }}
       >
         <div className="absolute inset-0 opacity-[0.4]"
           style={{
-            backgroundImage: 'radial-gradient(circle at 20% 80%, rgba(139,92,246,0.15) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(124,58,237,0.12) 0%, transparent 50%), radial-gradient(circle at 50% 50%, rgba(167,139,250,0.08) 0%, transparent 70%)',
+            backgroundImage: 'radial-gradient(circle at 20% 80%, rgba(139,92,246,0.25) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(124,58,237,0.20) 0%, transparent 50%), radial-gradient(circle at 50% 50%, rgba(167,139,250,0.15) 0%, transparent 70%)',
           }}
         />
-        <div className="absolute inset-0 opacity-[0.035]"
+        <div className="absolute inset-0 opacity-[0.05]"
           style={{
             backgroundImage: 'radial-gradient(circle, rgba(109,40,217,0.8) 1px, transparent 1px)',
             backgroundSize: '28px 28px',
