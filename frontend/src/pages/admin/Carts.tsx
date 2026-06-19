@@ -138,19 +138,11 @@ const Carts = () => {
                     {cart.cart_items.map((item) => (
                       <div key={item.id} className="flex items-center justify-between py-3 border-b border-gray-50 last:border-0">
                         <div className="flex items-center space-x-3">
-                          {item.product_image ? (
-                            <img
-                              src={item.product_image}
-                              alt={item.product_name}
-                              className="w-12 h-12 rounded-lg object-cover"
-                            />
-                          ) : (
-                            <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
-                              <span className="text-white text-xs font-bold">
-                                {item.product_name.substring(0, 2).toUpperCase()}
-                              </span>
-                            </div>
-                          )}
+                          <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
+                            <span className="text-white text-xs font-bold">
+                              {item.product_name.substring(0, 2).toUpperCase()}
+                            </span>
+                          </div>
                           <div>
                             <p className="font-medium text-slate-800">{item.product_name}</p>
                             <p className="text-sm text-slate-500">
