@@ -15,6 +15,7 @@ import {
   deleteSubCategory,
 } from '../../store/slices/categorySlice';
 import { SubCategory } from '../../types';
+import ButtonSpinner from '../../components/common/ButtonSpinner';
 
 const subCategorySchema = z.object({
   category_id: z.string().min(1, 'Category is required'),
@@ -27,7 +28,7 @@ type SubCategoryFormData = z.infer<typeof subCategorySchema>;
 
 const SubCategories = () => {
   const dispatch = useAppDispatch();
-  const { categories, subcategories, loading } = useAppSelector((state) => state.categories);
+  const { categories, subcategories, loading, submitting } = useAppSelector((state) => state.categories);
   const [showModal, setShowModal] = useState(false);
   const [editingSub, setEditingSub] = useState<SubCategory | null>(null);
   const [filterCategoryId, setFilterCategoryId] = useState<string | undefined>(undefined);
@@ -38,12 +39,12 @@ const SubCategories = () => {
   });
 
   useEffect(() => {
-    dispatch(fetchCategories());
-    dispatch(fetchSubCategories());
+    dispatch(fetchCategories(true));
+    dispatch(fetchSubCategories({ includeInactive: true }));
   }, [dispatch]);
 
   useEffect(() => {
-    dispatch(fetchSubCategories(filterCategoryId));
+    dispatch(fetchSubCategories({ categoryId: filterCategoryId, includeInactive: true }));
   }, [dispatch, filterCategoryId]);
 
   const handleSubmit = async (data: SubCategoryFormData) => {
@@ -53,7 +54,7 @@ const SubCategories = () => {
       await dispatch(createSubCategory(data));
     }
     closeModal();
-    dispatch(fetchSubCategories(filterCategoryId));
+    dispatch(fetchSubCategories({ categoryId: filterCategoryId, includeInactive: true }));
   };
 
   const openEditModal = (sub: SubCategory) => {
@@ -76,7 +77,7 @@ const SubCategories = () => {
   const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this sub-category?')) {
       await dispatch(deleteSubCategory(id));
-      dispatch(fetchSubCategories(filterCategoryId));
+      dispatch(fetchSubCategories({ categoryId: filterCategoryId, includeInactive: true }));
     }
   };
 
@@ -86,10 +87,10 @@ const SubCategories = () => {
 
   const ActionCellRenderer = (params: ICellRendererParams) => (
     <div className="flex items-center space-x-2 h-full">
-      <button onClick={() => openEditModal(params.data)} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded transition">
+      <button onClick={() => openEditModal(params.data)} disabled={submitting} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded transition disabled:opacity-50">
         <Pencil className="w-4 h-4" />
       </button>
-      <button onClick={() => handleDelete(params.data.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded transition">
+      <button onClick={() => handleDelete(params.data.id)} disabled={submitting} className="p-1.5 text-red-600 hover:bg-red-50 rounded transition disabled:opacity-50">
         <Trash2 className="w-4 h-4" />
       </button>
     </div>
@@ -134,7 +135,6 @@ const SubCategories = () => {
         </button>
       </div>
 
-      {/* Filter */}
       <div className="mb-4">
         <select
           value={filterCategoryId || ''}
@@ -160,7 +160,6 @@ const SubCategories = () => {
         />
       </div>
 
-      {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 p-6">
@@ -215,8 +214,13 @@ const SubCategories = () => {
               </label>
               <div className="flex justify-end space-x-3 pt-4">
                 <button type="button" onClick={closeModal} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium">Cancel</button>
-                <button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium">
-                  {editingSub ? 'Update' : 'Create'}
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium disabled:opacity-50 flex items-center space-x-2"
+                >
+                  {submitting && <ButtonSpinner />}
+                  <span>{editingSub ? 'Update' : 'Create'}</span>
                 </button>
               </div>
             </form>

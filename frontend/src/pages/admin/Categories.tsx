@@ -14,6 +14,7 @@ import {
   deleteCategory,
 } from '../../store/slices/categorySlice';
 import { Category } from '../../types';
+import ButtonSpinner from '../../components/common/ButtonSpinner';
 
 const categorySchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -26,7 +27,7 @@ type CategoryFormData = z.infer<typeof categorySchema>;
 
 const Categories = () => {
   const dispatch = useAppDispatch();
-  const { categories, loading } = useAppSelector((state) => state.categories);
+  const { categories, loading, submitting } = useAppSelector((state) => state.categories);
   const [showModal, setShowModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
 
@@ -36,7 +37,7 @@ const Categories = () => {
   });
 
   useEffect(() => {
-    dispatch(fetchCategories());
+    dispatch(fetchCategories(true));
   }, [dispatch]);
 
   const handleSubmit = async (data: CategoryFormData) => {
@@ -46,7 +47,7 @@ const Categories = () => {
       await dispatch(createCategory(data));
     }
     closeModal();
-    dispatch(fetchCategories());
+    dispatch(fetchCategories(true));
   };
 
   const openEditModal = (category: Category) => {
@@ -69,7 +70,7 @@ const Categories = () => {
   const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this category?')) {
       await dispatch(deleteCategory(id));
-      dispatch(fetchCategories());
+      dispatch(fetchCategories(true));
     }
   };
 
@@ -77,13 +78,15 @@ const Categories = () => {
     <div className="flex items-center space-x-2 h-full">
       <button
         onClick={() => openEditModal(params.data)}
-        className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded transition"
+        disabled={submitting}
+        className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded transition disabled:opacity-50"
       >
         <Pencil className="w-4 h-4" />
       </button>
       <button
         onClick={() => handleDelete(params.data.id)}
-        className="p-1.5 text-red-600 hover:bg-red-50 rounded transition"
+        disabled={submitting}
+        className="p-1.5 text-red-600 hover:bg-red-50 rounded transition disabled:opacity-50"
       >
         <Trash2 className="w-4 h-4" />
       </button>
@@ -151,7 +154,6 @@ const Categories = () => {
         />
       </div>
 
-      {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 p-6">
@@ -206,9 +208,11 @@ const Categories = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium"
+                  disabled={submitting}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium disabled:opacity-50 flex items-center space-x-2"
                 >
-                  {editingCategory ? 'Update' : 'Create'}
+                  {submitting && <ButtonSpinner />}
+                  <span>{editingCategory ? 'Update' : 'Create'}</span>
                 </button>
               </div>
             </form>

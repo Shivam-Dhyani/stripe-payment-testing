@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session, joinedload
 from typing import List
 from app.database import get_db
@@ -11,15 +11,15 @@ router = APIRouter(prefix="/categories", tags=["Categories"], redirect_slashes=F
 
 
 @router.get("", response_model=List[CategoryResponse])
-def list_categories(db: Session = Depends(get_db)):
-    """List all active categories with their subcategories."""
-    categories = (
-        db.query(Category)
-        .options(joinedload(Category.subcategories))
-        .filter(Category.is_active == True)
-        .all()
-    )
-    return categories
+def list_categories(
+    include_inactive: bool = Query(False, description="Include inactive categories (admin use)"),
+    db: Session = Depends(get_db),
+):
+    """List categories with their subcategories."""
+    query = db.query(Category).options(joinedload(Category.subcategories))
+    if not include_inactive:
+        query = query.filter(Category.is_active == True)
+    return query.all()
 
 
 @router.get("/{category_id}", response_model=CategoryResponse)

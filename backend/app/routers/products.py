@@ -20,10 +20,13 @@ def list_products(
     sort_order: Optional[str] = Query("desc", description="Sort order: asc or desc"),
     page: int = Query(1, ge=1, description="Page number"),
     size: int = Query(20, ge=1, le=100, description="Items per page"),
+    include_inactive: bool = Query(False, description="Include inactive products (admin use)"),
     db: Session = Depends(get_db),
 ):
     """List products with pagination, filtering, and search."""
-    base_query = db.query(Product).filter(Product.is_active == True)
+    base_query = db.query(Product)
+    if not include_inactive:
+        base_query = base_query.filter(Product.is_active == True)
 
     if sub_category_id:
         base_query = base_query.filter(Product.sub_category_id == sub_category_id)

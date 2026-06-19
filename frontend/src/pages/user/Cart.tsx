@@ -5,11 +5,12 @@ import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { fetchCart, updateCartItem, removeFromCart } from '../../store/slices/cartSlice';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import ButtonSpinner from '../../components/common/ButtonSpinner';
 
 const Cart = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const { items, loading } = useAppSelector((state) => state.cart);
+  const { items, loading, submitting } = useAppSelector((state) => state.cart);
 
   useEffect(() => {
     dispatch(fetchCart());
@@ -65,14 +66,16 @@ const Cart = () => {
               <div className="flex items-center border border-gray-300 rounded-lg">
                 <button
                   onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
-                  className="p-1.5 hover:bg-gray-50 transition"
+                  disabled={submitting}
+                  className="p-1.5 hover:bg-gray-50 transition disabled:opacity-50"
                 >
                   <Minus className="w-4 h-4" />
                 </button>
                 <span className="px-3 py-1 font-medium text-sm">{item.quantity}</span>
                 <button
                   onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
-                  className="p-1.5 hover:bg-gray-50 transition"
+                  disabled={submitting}
+                  className="p-1.5 hover:bg-gray-50 transition disabled:opacity-50"
                 >
                   <Plus className="w-4 h-4" />
                 </button>
@@ -84,9 +87,10 @@ const Cart = () => {
               </div>
               <button
                 onClick={() => dispatch(removeFromCart(item.id))}
-                className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition"
+                disabled={submitting}
+                className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition disabled:opacity-50"
               >
-                <Trash2 className="w-5 h-5" />
+                {submitting ? <ButtonSpinner /> : <Trash2 className="w-5 h-5" />}
               </button>
             </div>
           ))}
@@ -112,9 +116,11 @@ const Cart = () => {
           </div>
           <button
             onClick={() => navigate('/checkout')}
-            className="w-full py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium"
+            disabled={submitting}
+            className="w-full py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium disabled:opacity-50 flex items-center justify-center space-x-2"
           >
-            Proceed to Checkout
+            {submitting && <ButtonSpinner />}
+            <span>Proceed to Checkout</span>
           </button>
           <Link to="/products" className="block text-center mt-4 text-indigo-600 hover:text-indigo-700 text-sm font-medium">
             Continue Shopping

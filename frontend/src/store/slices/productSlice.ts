@@ -7,6 +7,7 @@ interface ProductState {
   products: Product[];
   selectedProduct: Product | null;
   loading: boolean;
+  submitting: boolean;
   error: string | null;
   pagination: {
     total: number;
@@ -20,6 +21,7 @@ const initialState: ProductState = {
   products: [],
   selectedProduct: null,
   loading: false,
+  submitting: false,
   error: null,
   pagination: { total: 0, page: 1, size: 12, pages: 0 },
 };
@@ -111,19 +113,28 @@ const productSlice = createSlice({
         state.loading = false;
         state.error = action.error.message || 'Failed to fetch product';
       })
+      .addCase(createProduct.pending, (state) => { state.submitting = true; })
       .addCase(createProduct.fulfilled, (state, action) => {
+        state.submitting = false;
         state.products.push(action.payload);
       })
+      .addCase(createProduct.rejected, (state) => { state.submitting = false; })
+      .addCase(updateProduct.pending, (state) => { state.submitting = true; })
       .addCase(updateProduct.fulfilled, (state, action) => {
+        state.submitting = false;
         const index = state.products.findIndex(p => p.id === action.payload.id);
         if (index !== -1) state.products[index] = action.payload;
         if (state.selectedProduct?.id === action.payload.id) {
           state.selectedProduct = action.payload;
         }
       })
+      .addCase(updateProduct.rejected, (state) => { state.submitting = false; })
+      .addCase(deleteProduct.pending, (state) => { state.submitting = true; })
       .addCase(deleteProduct.fulfilled, (state, action) => {
+        state.submitting = false;
         state.products = state.products.filter(p => p.id !== action.payload);
-      });
+      })
+      .addCase(deleteProduct.rejected, (state) => { state.submitting = false; });
   },
 });
 

@@ -6,12 +6,14 @@ import toast from 'react-hot-toast';
 interface CartState {
   items: CartItem[];
   loading: boolean;
+  submitting: boolean;
   error: string | null;
 }
 
 const initialState: CartState = {
   items: [],
   loading: false,
+  submitting: false,
   error: null,
 };
 
@@ -68,7 +70,9 @@ const cartSlice = createSlice({
         state.loading = false;
         state.error = action.error.message || 'Failed to fetch cart';
       })
+      .addCase(addToCart.pending, (state) => { state.submitting = true; })
       .addCase(addToCart.fulfilled, (state, action) => {
+        state.submitting = false;
         const existingIndex = state.items.findIndex(item => item.product_id === action.payload.product_id);
         if (existingIndex !== -1) {
           state.items[existingIndex] = action.payload;
@@ -76,13 +80,20 @@ const cartSlice = createSlice({
           state.items.push(action.payload);
         }
       })
+      .addCase(addToCart.rejected, (state) => { state.submitting = false; })
+      .addCase(updateCartItem.pending, (state) => { state.submitting = true; })
       .addCase(updateCartItem.fulfilled, (state, action) => {
+        state.submitting = false;
         const index = state.items.findIndex(item => item.id === action.payload.id);
         if (index !== -1) state.items[index] = action.payload;
       })
+      .addCase(updateCartItem.rejected, (state) => { state.submitting = false; })
+      .addCase(removeFromCart.pending, (state) => { state.submitting = true; })
       .addCase(removeFromCart.fulfilled, (state, action) => {
+        state.submitting = false;
         state.items = state.items.filter(item => item.id !== action.payload);
       })
+      .addCase(removeFromCart.rejected, (state) => { state.submitting = false; })
       .addCase(clearCart.fulfilled, (state) => {
         state.items = [];
       });

@@ -1,18 +1,29 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, FolderTree, Layers, ShoppingBag, ClipboardList, Menu, X, Package } from 'lucide-react';
-
-const menuItems = [
-  { path: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/admin/categories', label: 'Categories', icon: FolderTree },
-  { path: '/admin/subcategories', label: 'Sub Categories', icon: Layers },
-  { path: '/admin/products', label: 'Products', icon: ShoppingBag },
-  { path: '/admin/orders', label: 'Orders', icon: ClipboardList },
-];
+import { useAppSelector } from '../../hooks/useAppSelector';
+import { useAppDispatch } from '../../hooks/useAppDispatch';
+import { fetchAllOrders } from '../../store/slices/orderSlice';
 
 const Sidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const dispatch = useAppDispatch();
+  const { orders } = useAppSelector((state) => state.orders);
+
+  useEffect(() => {
+    dispatch(fetchAllOrders());
+  }, [dispatch]);
+
+  const pendingCount = orders.filter(o => o.status === 'pending' || o.status === 'processing').length;
+
+  const menuItems = [
+    { path: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard, badge: 0 },
+    { path: '/admin/categories', label: 'Categories', icon: FolderTree, badge: 0 },
+    { path: '/admin/subcategories', label: 'Sub Categories', icon: Layers, badge: 0 },
+    { path: '/admin/products', label: 'Products', icon: ShoppingBag, badge: 0 },
+    { path: '/admin/orders', label: 'Orders', icon: ClipboardList, badge: pendingCount },
+  ];
 
   return (
     <>
@@ -46,14 +57,21 @@ const Sidebar = () => {
                 key={item.path}
                 to={item.path}
                 onClick={() => setCollapsed(false)}
-                className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition font-medium
+                className={`flex items-center justify-between px-4 py-3 rounded-lg transition font-medium
                   ${isActive
                     ? 'bg-indigo-600 text-white'
                     : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                   }`}
               >
-                <Icon className="w-5 h-5" />
-                <span>{item.label}</span>
+                <div className="flex items-center space-x-3">
+                  <Icon className="w-5 h-5" />
+                  <span>{item.label}</span>
+                </div>
+                {item.badge > 0 && (
+                  <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center">
+                    {item.badge}
+                  </span>
+                )}
               </Link>
             );
           })}

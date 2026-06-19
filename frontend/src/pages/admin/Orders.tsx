@@ -5,7 +5,7 @@ import { Eye, X } from 'lucide-react';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { fetchAllOrders, fetchOrderById, updateOrderStatus } from '../../store/slices/orderSlice';
-import { Order } from '../../types';
+import ButtonSpinner from '../../components/common/ButtonSpinner';
 
 const statusColors: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-700',
@@ -20,6 +20,7 @@ const Orders = () => {
   const { orders, selectedOrder, loading } = useAppSelector((state) => state.orders);
   const [showDetail, setShowDetail] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('');
+  const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
 
   useEffect(() => {
     dispatch(fetchAllOrders());
@@ -31,13 +32,17 @@ const Orders = () => {
   };
 
   const handleStatusChange = async (orderId: string, newStatus: string) => {
+    setUpdatingOrderId(orderId);
     await dispatch(updateOrderStatus({ id: orderId, status: newStatus }));
     dispatch(fetchAllOrders());
+    setUpdatingOrderId(null);
   };
 
   const filteredOrders = statusFilter
     ? orders.filter((o) => o.status === statusFilter)
     : orders;
+
+  const pendingCount = orders.filter(o => o.status === 'pending' || o.status === 'processing').length;
 
   const StatusCellRenderer = (params: ICellRendererParams) => (
     <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${statusColors[params.value] || 'bg-gray-100 text-gray-700'}`}>
@@ -56,7 +61,8 @@ const Orders = () => {
       <select
         value={params.data.status}
         onChange={(e) => handleStatusChange(params.data.id, e.target.value)}
-        className="text-xs border border-gray-300 rounded px-1 py-1 bg-white"
+        disabled={updatingOrderId === params.data.id}
+        className="text-xs border border-gray-300 rounded px-1 py-1 bg-white disabled:opacity-50"
       >
         <option value="pending">Pending</option>
         <option value="processing">Processing</option>
@@ -64,6 +70,7 @@ const Orders = () => {
         <option value="delivered">Delivered</option>
         <option value="cancelled">Cancelled</option>
       </select>
+      {updatingOrderId === params.data.id && <ButtonSpinner />}
     </div>
   );
 
@@ -86,7 +93,7 @@ const Orders = () => {
     { field: 'total', headerName: 'Total', width: 110, cellRenderer: PriceCellRenderer },
     { field: 'status', headerName: 'Status', width: 130, cellRenderer: StatusCellRenderer },
     { field: 'created_at', headerName: 'Date', width: 120, cellRenderer: DateCellRenderer },
-    { headerName: 'Actions', width: 180, cellRenderer: ActionCellRenderer, sortable: false, filter: false },
+    { headerName: 'Actions', width: 200, cellRenderer: ActionCellRenderer, sortable: false, filter: false },
   ];
 
   const defaultColDef: ColDef = { sortable: true, resizable: true };
@@ -94,10 +101,16 @@ const Orders = () => {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold text-slate-800">Orders</h1>
+        <div className="flex items-center space-x-3">
+          <h1 className="text-3xl font-bold text-slate-800">Orders</h1>
+          {pendingCount > 0 && (
+            <span className="bg-red-500 text-white text-xs font-bold px-2.5 py-1 rounded-full animate-pulse">
+              {pendingCount} pending
+            </span>
+          )}
+        </div>
       </div>
 
-      {/* Filters */}
       <div className="mb-4">
         <select
           value={statusFilter}
@@ -125,7 +138,6 @@ const Orders = () => {
         />
       </div>
 
-      {/* Order Detail Modal */}
       {showDetail && selectedOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl mx-4 p-6 max-h-[90vh] overflow-y-auto">

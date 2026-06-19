@@ -6,7 +6,8 @@ import { useAppSelector } from '../../hooks/useAppSelector';
 import { fetchProducts } from '../../store/slices/productSlice';
 import { fetchCategories, fetchSubCategories } from '../../store/slices/categorySlice';
 import { addToCart } from '../../store/slices/cartSlice';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
+import { CardSkeleton } from '../../components/common/Skeleton';
+import ButtonSpinner from '../../components/common/ButtonSpinner';
 
 const gradients = [
   'from-indigo-500 to-purple-600',
@@ -23,8 +24,10 @@ const ProductList = () => {
   const { products = [], loading, pagination } = useAppSelector((state) => state.products);
   const { categories = [], subcategories = [] } = useAppSelector((state) => state.categories);
   const { user } = useAppSelector((state) => state.auth);
+  const { submitting } = useAppSelector((state) => state.cart);
   const [search, setSearch] = useState(searchParams.get('search') || '');
   const [showFilters, setShowFilters] = useState(false);
+  const [addingProductId, setAddingProductId] = useState<string | null>(null);
 
   const categoryId = searchParams.get('category') || undefined;
   const subCategoryId = searchParams.get('subcategory') || undefined;
@@ -38,7 +41,7 @@ const ProductList = () => {
 
   useEffect(() => {
     if (categoryId) {
-      dispatch(fetchSubCategories(categoryId));
+      dispatch(fetchSubCategories({ categoryId }));
     }
   }, [dispatch, categoryId]);
 
@@ -74,11 +77,13 @@ const ProductList = () => {
     updateParams({ search: search || undefined });
   };
 
-  const handleAddToCart = (e: React.MouseEvent, productId: string) => {
+  const handleAddToCart = async (e: React.MouseEvent, productId: string) => {
     e.preventDefault();
     e.stopPropagation();
-    if (user) {
-      dispatch(addToCart({ productId, quantity: 1 }));
+    if (user && user.role === 'customer') {
+      setAddingProductId(productId);
+      await dispatch(addToCart({ productId, quantity: 1 }));
+      setAddingProductId(null);
     }
   };
 
@@ -180,7 +185,9 @@ const ProductList = () => {
         {/* Products Grid */}
         <div className="flex-1">
           {loading ? (
-            <LoadingSpinner />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)}
+            </div>
           ) : products.length === 0 ? (
             <div className="text-center py-16">
               <ShoppingBag className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -200,12 +207,13 @@ const ProductList = () => {
                       <span className="text-5xl font-bold text-white/20">
                         {product.name.substring(0, 2).toUpperCase()}
                       </span>
-                      {user && product.stock > 0 && (
+                      {user?.role === 'customer' && product.stock > 0 && (
                         <button
                           onClick={(e) => handleAddToCart(e, product.id)}
-                          className="absolute bottom-3 right-3 p-2 bg-white rounded-lg shadow-md opacity-0 group-hover:opacity-100 transition-all hover:bg-indigo-50"
+                          disabled={addingProductId === product.id}
+                          className="absolute bottom-3 right-3 p-2 bg-white rounded-lg shadow-md opacity-0 group-hover:opacity-100 transition-all hover:bg-indigo-50 disabled:opacity-75"
                         >
-                          <ShoppingCart className="w-5 h-5 text-indigo-600" />
+                          {addingProductId === product.id ? <ButtonSpinner /> : <ShoppingCart className="w-5 h-5 text-indigo-600" />}
                         </button>
                       )}
                     </div>

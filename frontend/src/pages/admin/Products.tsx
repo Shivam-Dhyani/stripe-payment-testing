@@ -10,6 +10,7 @@ import { useAppSelector } from '../../hooks/useAppSelector';
 import { fetchProducts, createProduct, updateProduct, deleteProduct } from '../../store/slices/productSlice';
 import { fetchCategories, fetchSubCategories } from '../../store/slices/categorySlice';
 import { Product } from '../../types';
+import ButtonSpinner from '../../components/common/ButtonSpinner';
 
 const productSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -25,7 +26,7 @@ type ProductFormData = z.infer<typeof productSchema>;
 
 const Products = () => {
   const dispatch = useAppDispatch();
-  const { products = [], loading } = useAppSelector((state) => state.products);
+  const { products = [], loading, submitting } = useAppSelector((state) => state.products);
   const { categories, subcategories } = useAppSelector((state) => state.categories);
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -40,8 +41,8 @@ const Products = () => {
   });
 
   useEffect(() => {
-    dispatch(fetchCategories());
-    dispatch(fetchSubCategories());
+    dispatch(fetchCategories(true));
+    dispatch(fetchSubCategories({ includeInactive: true }));
   }, [dispatch]);
 
   useEffect(() => {
@@ -51,6 +52,7 @@ const Products = () => {
       category_id: filterCategoryId,
       sub_category_id: filterSubCategoryId,
       search: search || undefined,
+      include_inactive: true,
     }));
   }, [dispatch, filterCategoryId, filterSubCategoryId, search]);
 
@@ -61,14 +63,14 @@ const Products = () => {
       await dispatch(createProduct(data));
     }
     closeModal();
-    dispatch(fetchProducts({ page: 1, size: 100, category_id: filterCategoryId, sub_category_id: filterSubCategoryId, search: search || undefined }));
+    dispatch(fetchProducts({ page: 1, size: 100, category_id: filterCategoryId, sub_category_id: filterSubCategoryId, search: search || undefined, include_inactive: true }));
   };
 
   const openEditModal = (product: Product) => {
     setEditingProduct(product);
     const catId = product.sub_category?.category?.id;
     setSelectedCategoryInForm(catId);
-    if (catId) dispatch(fetchSubCategories(catId));
+    if (catId) dispatch(fetchSubCategories({ categoryId: catId, includeInactive: true }));
     form.reset({
       name: product.name,
       description: product.description,
@@ -91,22 +93,22 @@ const Products = () => {
   const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
       await dispatch(deleteProduct(id));
-      dispatch(fetchProducts({ page: 1, size: 100, category_id: filterCategoryId, sub_category_id: filterSubCategoryId, search: search || undefined }));
+      dispatch(fetchProducts({ page: 1, size: 100, category_id: filterCategoryId, sub_category_id: filterSubCategoryId, search: search || undefined, include_inactive: true }));
     }
   };
 
   const handleFormCategoryChange = (catId: string) => {
     setSelectedCategoryInForm(catId);
     form.setValue('sub_category_id', '');
-    if (catId) dispatch(fetchSubCategories(catId));
+    if (catId) dispatch(fetchSubCategories({ categoryId: catId, includeInactive: true }));
   };
 
   const ActionCellRenderer = (params: ICellRendererParams) => (
     <div className="flex items-center space-x-2 h-full">
-      <button onClick={() => openEditModal(params.data)} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded transition">
+      <button onClick={() => openEditModal(params.data)} disabled={submitting} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded transition disabled:opacity-50">
         <Pencil className="w-4 h-4" />
       </button>
-      <button onClick={() => handleDelete(params.data.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded transition">
+      <button onClick={() => handleDelete(params.data.id)} disabled={submitting} className="p-1.5 text-red-600 hover:bg-red-50 rounded transition disabled:opacity-50">
         <Trash2 className="w-4 h-4" />
       </button>
     </div>
@@ -125,16 +127,8 @@ const Products = () => {
   const columnDefs: ColDef[] = [
     { field: 'id', headerName: 'ID', width: 70, valueFormatter: (params) => String(params.value).substring(0, 8) },
     { field: 'name', headerName: 'Name', flex: 1, filter: true },
-    {
-      headerName: 'Category',
-      flex: 1,
-      valueGetter: (params) => params.data?.sub_category?.category?.name || '-',
-    },
-    {
-      headerName: 'SubCategory',
-      flex: 1,
-      valueGetter: (params) => params.data?.sub_category?.name || '-',
-    },
+    { headerName: 'Category', flex: 1, valueGetter: (params) => params.data?.sub_category?.category?.name || '-' },
+    { headerName: 'SubCategory', flex: 1, valueGetter: (params) => params.data?.sub_category?.name || '-' },
     { field: 'price', headerName: 'Price', width: 110, cellRenderer: PriceCellRenderer },
     { field: 'stock', headerName: 'Stock', width: 90 },
     { field: 'is_active', headerName: 'Status', width: 110, cellRenderer: StatusCellRenderer },
@@ -161,7 +155,6 @@ const Products = () => {
         </button>
       </div>
 
-      {/* Filters */}
       <div className="flex flex-wrap gap-4 mb-4">
         <input
           type="text"
@@ -176,7 +169,7 @@ const Products = () => {
             const val = e.target.value || undefined;
             setFilterCategoryId(val);
             setFilterSubCategoryId(undefined);
-            if (val) dispatch(fetchSubCategories(val));
+            if (val) dispatch(fetchSubCategories({ categoryId: val, includeInactive: true }));
           }}
           className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
         >
@@ -211,7 +204,6 @@ const Products = () => {
         />
       </div>
 
-      {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 p-6 max-h-[90vh] overflow-y-auto">
@@ -282,8 +274,13 @@ const Products = () => {
               </label>
               <div className="flex justify-end space-x-3 pt-4">
                 <button type="button" onClick={closeModal} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium">Cancel</button>
-                <button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium">
-                  {editingProduct ? 'Update' : 'Create'}
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium disabled:opacity-50 flex items-center space-x-2"
+                >
+                  {submitting && <ButtonSpinner />}
+                  <span>{editingProduct ? 'Update' : 'Create'}</span>
                 </button>
               </div>
             </form>

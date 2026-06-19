@@ -45,14 +45,16 @@ const Navbar = () => {
           <div className="hidden md:flex items-center space-x-4">
             {user ? (
               <>
-                <Link to="/cart" className="relative p-2 text-slate-600 hover:text-indigo-600 transition">
-                  <ShoppingCart className="w-6 h-6" />
-                  {cartItemCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-indigo-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                      {cartItemCount}
-                    </span>
-                  )}
-                </Link>
+                {user.role === 'customer' && (
+                  <Link to="/cart" className="relative p-2 text-slate-600 hover:text-indigo-600 transition">
+                    <ShoppingCart className="w-6 h-6" />
+                    {cartItemCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-indigo-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                        {cartItemCount}
+                      </span>
+                    )}
+                  </Link>
+                )}
                 <div className="relative">
                   <button
                     onClick={() => setUserDropdownOpen(!userDropdownOpen)}
@@ -133,9 +135,11 @@ const Navbar = () => {
           <Link to="/products" onClick={() => setMobileMenuOpen(false)} className="block text-slate-600 hover:text-indigo-600 font-medium">Products</Link>
           {user ? (
             <>
-              <Link to="/cart" onClick={() => setMobileMenuOpen(false)} className="block text-slate-600 hover:text-indigo-600 font-medium">
-                Cart {cartItemCount > 0 && `(${cartItemCount})`}
-              </Link>
+              {user.role === 'customer' && (
+                <Link to="/cart" onClick={() => setMobileMenuOpen(false)} className="block text-slate-600 hover:text-indigo-600 font-medium">
+                  Cart {cartItemCount > 0 && `(${cartItemCount})`}
+                </Link>
+              )}
               <Link to="/profile" onClick={() => setMobileMenuOpen(false)} className="block text-slate-600 hover:text-indigo-600 font-medium">Profile</Link>
               <Link to="/orders" onClick={() => setMobileMenuOpen(false)} className="block text-slate-600 hover:text-indigo-600 font-medium">Orders</Link>
               <button onClick={handleLogout} className="block text-red-600 font-medium">Logout</button>

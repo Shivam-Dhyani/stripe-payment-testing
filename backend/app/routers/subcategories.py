@@ -13,10 +13,13 @@ router = APIRouter(prefix="/subcategories", tags=["SubCategories"], redirect_sla
 @router.get("", response_model=List[SubCategoryResponse])
 def list_subcategories(
     category_id: Optional[str] = Query(None, description="Filter by category ID"),
+    include_inactive: bool = Query(False, description="Include inactive subcategories (admin use)"),
     db: Session = Depends(get_db),
 ):
-    """List all active subcategories, optionally filtered by category."""
-    query = db.query(SubCategory).filter(SubCategory.is_active == True)
+    """List subcategories, optionally filtered by category."""
+    query = db.query(SubCategory)
+    if not include_inactive:
+        query = query.filter(SubCategory.is_active == True)
     if category_id:
         query = query.filter(SubCategory.category_id == category_id)
     return query.all()

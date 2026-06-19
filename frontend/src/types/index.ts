@@ -119,6 +119,7 @@ export interface ProductFilters {
   sort_order?: 'asc' | 'desc';
   min_price?: number;
   max_price?: number;
+  include_inactive?: boolean;
 }
 
 export interface RevenueData {

@@ -5,6 +5,7 @@ import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { fetchCategories } from '../../store/slices/categorySlice';
 import { fetchProducts } from '../../store/slices/productSlice';
+import Skeleton, { CardSkeleton } from '../../components/common/Skeleton';
 
 const gradients = [
   'from-indigo-500 to-purple-600',
@@ -17,8 +18,8 @@ const gradients = [
 
 const Home = () => {
   const dispatch = useAppDispatch();
-  const { categories = [] } = useAppSelector((state) => state.categories);
-  const { products = [] } = useAppSelector((state) => state.products);
+  const { categories = [], loading: categoriesLoading } = useAppSelector((state) => state.categories);
+  const { products = [], loading: productsLoading } = useAppSelector((state) => state.products);
 
   useEffect(() => {
     dispatch(fetchCategories());
@@ -92,22 +93,30 @@ const Home = () => {
             </Link>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {categories.filter(c => c.is_active).slice(0, 8).map((category, index) => (
-              <Link
-                key={category.id}
-                to={`/products?category=${category.id}`}
-                className="group relative overflow-hidden rounded-xl shadow-sm hover:shadow-lg transition-all duration-300"
-              >
-                <div className={`h-48 bg-gradient-to-br ${gradients[index % gradients.length]} flex items-center justify-center`}>
-                  <span className="text-4xl font-bold text-white/30">{category.name.charAt(0)}</span>
+            {categoriesLoading ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="rounded-xl overflow-hidden">
+                  <Skeleton className="h-48" />
                 </div>
-                <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition" />
-                <div className="absolute bottom-0 left-0 right-0 p-4">
-                  <h3 className="text-white font-semibold text-lg">{category.name}</h3>
-                  <p className="text-white/80 text-sm">{category.sub_categories?.length || 0} subcategories</p>
-                </div>
-              </Link>
-            ))}
+              ))
+            ) : (
+              categories.filter(c => c.is_active).slice(0, 8).map((category, index) => (
+                <Link
+                  key={category.id}
+                  to={`/products?category=${category.id}`}
+                  className="group relative overflow-hidden rounded-xl shadow-sm hover:shadow-lg transition-all duration-300"
+                >
+                  <div className={`h-48 bg-gradient-to-br ${gradients[index % gradients.length]} flex items-center justify-center`}>
+                    <span className="text-4xl font-bold text-white/30">{category.name.charAt(0)}</span>
+                  </div>
+                  <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition" />
+                  <div className="absolute bottom-0 left-0 right-0 p-4">
+                    <h3 className="text-white font-semibold text-lg">{category.name}</h3>
+                    <p className="text-white/80 text-sm">{category.sub_categories?.length || 0} subcategories</p>
+                  </div>
+                </Link>
+              ))
+            )}
           </div>
         </div>
       </section>
@@ -122,29 +131,33 @@ const Home = () => {
             </Link>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {products.filter(p => p.is_active).slice(0, 8).map((product, index) => (
-              <Link
-                key={product.id}
-                to={`/products/${product.id}`}
-                className="group bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100"
-              >
-                <div className={`h-48 bg-gradient-to-br ${gradients[index % gradients.length]} flex items-center justify-center`}>
-                  <ShoppingBag className="w-12 h-12 text-white/40" />
-                </div>
-                <div className="p-4">
-                  <h3 className="font-semibold text-slate-800 group-hover:text-indigo-600 transition truncate">
-                    {product.name}
-                  </h3>
-                  <p className="text-sm text-slate-500 mt-1 line-clamp-2">{product.description}</p>
-                  <div className="flex items-center justify-between mt-3">
-                    <span className="text-lg font-bold text-indigo-600">${Number(product.price).toFixed(2)}</span>
-                    <span className={`text-xs px-2 py-1 rounded-full ${product.stock > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                      {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
-                    </span>
+            {productsLoading ? (
+              Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} />)
+            ) : (
+              products.filter(p => p.is_active).slice(0, 8).map((product, index) => (
+                <Link
+                  key={product.id}
+                  to={`/products/${product.id}`}
+                  className="group bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100"
+                >
+                  <div className={`h-48 bg-gradient-to-br ${gradients[index % gradients.length]} flex items-center justify-center`}>
+                    <ShoppingBag className="w-12 h-12 text-white/40" />
                   </div>
-                </div>
-              </Link>
-            ))}
+                  <div className="p-4">
+                    <h3 className="font-semibold text-slate-800 group-hover:text-indigo-600 transition truncate">
+                      {product.name}
+                    </h3>
+                    <p className="text-sm text-slate-500 mt-1 line-clamp-2">{product.description}</p>
+                    <div className="flex items-center justify-between mt-3">
+                      <span className="text-lg font-bold text-indigo-600">${Number(product.price).toFixed(2)}</span>
+                      <span className={`text-xs px-2 py-1 rounded-full ${product.stock > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                        {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              ))
+            )}
           </div>
         </div>
       </section>

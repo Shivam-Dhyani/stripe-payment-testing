@@ -2,8 +2,10 @@ import api from './api';
 import { Category, SubCategory } from '../types';
 
 export const categoryService = {
-  getAll: async (): Promise<Category[]> => {
-    const response = await api.get('/categories');
+  getAll: async (includeInactive?: boolean): Promise<Category[]> => {
+    const response = await api.get('/categories', {
+      params: includeInactive ? { include_inactive: true } : undefined,
+    });
     return response.data;
   },
 
@@ -26,8 +28,10 @@ export const categoryService = {
     await api.delete(`/categories/${id}`);
   },
 
-  getSubCategories: async (categoryId?: string): Promise<SubCategory[]> => {
-    const params = categoryId ? { category_id: categoryId } : {};
+  getSubCategories: async (categoryId?: string, includeInactive?: boolean): Promise<SubCategory[]> => {
+    const params: Record<string, string | boolean> = {};
+    if (categoryId) params.category_id = categoryId;
+    if (includeInactive) params.include_inactive = true;
     const response = await api.get('/subcategories', { params });
     return response.data;
   },
