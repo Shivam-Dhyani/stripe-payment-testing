@@ -58,22 +58,29 @@ const Register = () => {
   return (
     <div className="relative flex flex-col-reverse w-full min-h-screen lg:flex-row bg-white">
       {/* Branding Panel — Left */}
-      <div className="hidden lg:grid w-full lg:w-1/2 h-screen bg-brand-950 items-center sticky top-0">
+      <div className="hidden lg:grid w-full lg:w-1/2 h-screen items-center sticky top-0 overflow-hidden"
+        style={{ background: 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 30%, #ddd6fe 60%, #e8e0fe 100%)' }}
+      >
+        <div className="absolute inset-0 opacity-[0.4]"
+          style={{
+            backgroundImage: 'radial-gradient(circle at 20% 80%, rgba(139,92,246,0.15) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(124,58,237,0.12) 0%, transparent 50%), radial-gradient(circle at 50% 50%, rgba(167,139,250,0.08) 0%, transparent 70%)',
+          }}
+        />
+        <div className="absolute inset-0 opacity-[0.035]"
+          style={{
+            backgroundImage: 'radial-gradient(circle, rgba(109,40,217,0.8) 1px, transparent 1px)',
+            backgroundSize: '28px 28px',
+          }}
+        />
         <div className="relative flex items-center justify-center z-1">
-          <div className="absolute inset-0 opacity-[0.04]"
-            style={{
-              backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
-              backgroundSize: '24px 24px',
-            }}
-          />
-          <div className="flex flex-col items-center max-w-sm relative">
+          <div className="flex flex-col items-center max-w-sm">
             <div className="flex items-center space-x-3 mb-6">
-              <div className="w-14 h-14 bg-brand-500 rounded-2xl flex items-center justify-center shadow-lg">
+              <div className="w-14 h-14 bg-brand-500 rounded-2xl flex items-center justify-center shadow-lg shadow-brand-500/25">
                 <Package className="w-8 h-8 text-white" />
               </div>
-              <span className="text-4xl font-bold text-white tracking-tight">ShopHub</span>
+              <span className="text-4xl font-bold text-brand-900 tracking-tight">ShopHub</span>
             </div>
-            <p className="text-center text-brand-200/60 text-lg leading-relaxed">
+            <p className="text-center text-brand-700/70 text-lg leading-relaxed">
               Your modern e-commerce platform for seamless shopping experiences
             </p>
           </div>
