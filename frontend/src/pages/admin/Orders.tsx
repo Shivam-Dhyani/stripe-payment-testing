@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { AgGridReact } from 'ag-grid-react';
 import { ColDef, ICellRendererParams, themeAlpine } from 'ag-grid-community';
-import { Eye, X } from 'lucide-react';
+import { Eye, X, CheckCircle, XCircle, Clock, CreditCard, Truck, RefreshCw } from 'lucide-react';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { fetchAllOrders, updateOrderStatus } from '../../store/slices/orderSlice';
-import { Order } from '../../types';
+import { Order, PaymentEvent } from '../../types';
 import ButtonSpinner from '../../components/common/ButtonSpinner';
 
 const statusColors: Record<string, string> = {
@@ -175,6 +175,56 @@ const Orders = () => {
                 <p className="font-medium text-xs break-all">{detailOrder.stripe_payment_intent_id || '-'}</p>
               </div>
             </div>
+
+            {detailOrder.payment_events && detailOrder.payment_events.length > 0 && (
+              <div className="mb-6">
+                <h3 className="font-semibold text-slate-800 mb-3">Payment Timeline</h3>
+                <div className="relative pl-6 border-l-2 border-gray-200 space-y-4">
+                  {detailOrder.payment_events.map((event: PaymentEvent, index: number) => {
+                    const isLast = index === detailOrder.payment_events!.length - 1;
+                    const eventConfig: Record<string, { icon: React.ReactNode; color: string; bg: string }> = {
+                      created: { icon: <CreditCard className="w-4 h-4" />, color: 'text-blue-600', bg: 'bg-blue-100' },
+                      processing: { icon: <Truck className="w-4 h-4" />, color: 'text-purple-600', bg: 'bg-purple-100' },
+                      succeeded: { icon: <CheckCircle className="w-4 h-4" />, color: 'text-green-600', bg: 'bg-green-100' },
+                      failed: { icon: <XCircle className="w-4 h-4" />, color: 'text-red-600', bg: 'bg-red-100' },
+                      refunded: { icon: <RefreshCw className="w-4 h-4" />, color: 'text-amber-600', bg: 'bg-amber-100' },
+                      cancelled: { icon: <XCircle className="w-4 h-4" />, color: 'text-red-600', bg: 'bg-red-100' },
+                    };
+                    const config = eventConfig[event.event_type] || eventConfig.created;
+                    return (
+                      <div key={event.id} className="relative">
+                        <div className={`absolute -left-[calc(0.75rem+1px)] top-0 w-6 h-6 rounded-full flex items-center justify-center ${config.bg} ${config.color} ${isLast ? 'ring-2 ring-offset-2 ring-current' : ''}`}>
+                          {config.icon}
+                        </div>
+                        <div className="ml-4">
+                          <div className="flex items-center space-x-2">
+                            <span className={`text-sm font-semibold capitalize ${config.color}`}>
+                              {event.event_type}
+                            </span>
+                            <span className="text-xs text-slate-400">
+                              {new Date(event.created_at).toLocaleString()}
+                            </span>
+                          </div>
+                          {event.message && (
+                            <p className="text-sm text-slate-600 mt-0.5">{event.message}</p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {(!detailOrder.payment_events || detailOrder.payment_events.length === 0) && (
+              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                <h3 className="font-semibold text-slate-800 mb-2">Payment Timeline</h3>
+                <div className="flex items-center space-x-2 text-slate-500">
+                  <Clock className="w-4 h-4" />
+                  <p className="text-sm">No payment events recorded for this order</p>
+                </div>
+              </div>
+            )}
 
             {detailOrder.address_snapshot && (
               <div className="mb-6 p-4 bg-gray-50 rounded-lg">

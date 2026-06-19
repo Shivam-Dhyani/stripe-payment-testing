@@ -28,6 +28,7 @@ class Order(Base):
 
     user = relationship("User", back_populates="orders")
     items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
+    payment_events = relationship("PaymentEvent", back_populates="order", cascade="all, delete-orphan", order_by="PaymentEvent.created_at")
 
 
 class OrderItem(Base):

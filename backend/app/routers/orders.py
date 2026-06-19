@@ -8,6 +8,7 @@ from app.models.cart import CartItem
 from app.models.product import Product
 from app.models.order import Order, OrderItem, OrderStatus
 from app.models.address import Address
+from app.models.payment_event import PaymentEvent, PaymentEventType
 from app.schemas.order import OrderResponse, OrderStatusUpdate, CheckoutRequest, ConfirmPaymentRequest
 from app.middleware.auth import get_current_user, get_admin_user
 from app.services.stripe_service import create_payment_intent
@@ -105,6 +106,15 @@ def checkout(
         product = db.query(Product).filter(Product.id == item_data["product_id"]).first()
         product.stock -= item_data["quantity"]
 
+    # Record payment created event
+    payment_event = PaymentEvent(
+        order_id=order.id,
+        event_type=PaymentEventType.created,
+        message="Payment intent created",
+        event_data={"payment_intent_id": payment_intent["id"], "amount_cents": amount_cents, "currency": "usd"},
+    )
+    db.add(payment_event)
+
     # Clear cart
     db.query(CartItem).filter(CartItem.user_id == current_user.id).delete()
     db.commit()
@@ -127,7 +137,7 @@ def confirm_payment(
     """Confirm payment and update order status to processing."""
     order = (
         db.query(Order)
-        .options(joinedload(Order.items))
+        .options(joinedload(Order.items), joinedload(Order.payment_events))
         .filter(
             Order.stripe_payment_intent_id == data.payment_intent_id,
             Order.user_id == current_user.id,
@@ -137,6 +147,13 @@ def confirm_payment(
     if not order:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
     order.status = OrderStatus.processing
+    payment_event = PaymentEvent(
+        order_id=order.id,
+        event_type=PaymentEventType.succeeded,
+        message="Payment confirmed successfully",
+        event_data={"payment_intent_id": data.payment_intent_id},
+    )
+    db.add(payment_event)
     db.commit()
     db.refresh(order)
     return order
@@ -152,7 +169,7 @@ def confirm_payment_by_order(
     """Confirm payment by order ID and update order status to processing."""
     order = (
         db.query(Order)
-        .options(joinedload(Order.items))
+        .options(joinedload(Order.items), joinedload(Order.payment_events))
         .filter(
             Order.id == order_id,
             Order.user_id == current_user.id,
@@ -162,6 +179,13 @@ def confirm_payment_by_order(
     if not order:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
     order.status = OrderStatus.processing
+    payment_event = PaymentEvent(
+        order_id=order.id,
+        event_type=PaymentEventType.succeeded,
+        message="Payment confirmed successfully",
+        event_data={"payment_intent_id": data.payment_intent_id},
+    )
+    db.add(payment_event)
     db.commit()
     db.refresh(order)
     return order
@@ -175,7 +199,7 @@ def list_all_orders(
     """List all orders (admin only)."""
     return (
         db.query(Order)
-        .options(joinedload(Order.items))
+        .options(joinedload(Order.items), joinedload(Order.payment_events))
         .order_by(Order.created_at.desc())
         .all()
     )
@@ -187,7 +211,7 @@ def list_orders(
     db: Session = Depends(get_db),
 ):
     """List orders. Admins see all orders, customers see their own."""
-    query = db.query(Order).options(joinedload(Order.items))
+    query = db.query(Order).options(joinedload(Order.items), joinedload(Order.payment_events))
     if current_user.role != UserRole.admin:
         query = query.filter(Order.user_id == current_user.id)
     return query.order_by(Order.created_at.desc()).all()
@@ -200,7 +224,7 @@ def get_order(
     db: Session = Depends(get_db),
 ):
     """Get a single order by ID."""
-    query = db.query(Order).options(joinedload(Order.items)).filter(Order.id == order_id)
+    query = db.query(Order).options(joinedload(Order.items), joinedload(Order.payment_events)).filter(Order.id == order_id)
     if current_user.role != UserRole.admin:
         query = query.filter(Order.user_id == current_user.id)
     order = query.first()
@@ -218,16 +242,29 @@ def update_order_status(
     db: Session = Depends(get_db),
 ):
     """Update order status (admin only)."""
-    order = db.query(Order).options(joinedload(Order.items)).filter(Order.id == order_id).first()
+    order = db.query(Order).options(joinedload(Order.items), joinedload(Order.payment_events)).filter(Order.id == order_id).first()
     if not order:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
     try:
-        order.status = OrderStatus(data.status)
+        new_status = OrderStatus(data.status)
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Invalid status. Must be one of: {[s.value for s in OrderStatus]}",
         )
+    event_type_map = {
+        OrderStatus.cancelled: PaymentEventType.cancelled,
+        OrderStatus.shipped: PaymentEventType.processing,
+        OrderStatus.delivered: PaymentEventType.succeeded,
+    }
+    if new_status in event_type_map:
+        event = PaymentEvent(
+            order_id=order.id,
+            event_type=event_type_map[new_status],
+            message=f"Order status changed to {new_status.value}",
+        )
+        db.add(event)
+    order.status = new_status
     db.commit()
     db.refresh(order)
     return order

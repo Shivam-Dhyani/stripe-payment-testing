@@ -57,6 +57,15 @@ export interface CartItem {
   product?: Product;
 }
 
+export interface PaymentEvent {
+  id: string;
+  order_id: string;
+  event_type: 'created' | 'processing' | 'succeeded' | 'failed' | 'refunded' | 'cancelled';
+  message: string | null;
+  event_data: Record<string, any> | null;
+  created_at: string;
+}
+
 export interface Order {
   id: string;
   user_id: string;
@@ -66,6 +75,7 @@ export interface Order {
   stripe_payment_intent_id: string | null;
   created_at: string;
   items?: OrderItem[];
+  payment_events?: PaymentEvent[];
 }
 
 export interface OrderItem {
@@ -140,4 +150,25 @@ export interface CategoryDistribution {
 export interface OrderTrend {
   date: string;
   orders: number;
+}
+
+export interface AdminCartItem {
+  id: string;
+  product_id: string;
+  product_name: string;
+  product_price: number;
+  product_image: string | null;
+  quantity: number;
+  stock: number;
+  created_at: string;
+}
+
+export interface AdminCartUser {
+  user_id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  cart_items: AdminCartItem[];
+  total_items: number;
+  cart_total: number;
 }

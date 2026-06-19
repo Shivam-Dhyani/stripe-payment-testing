@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, FolderTree, Layers, ShoppingBag, ClipboardList, Menu, X, Package } from 'lucide-react';
+import { LayoutDashboard, FolderTree, Layers, ShoppingBag, ClipboardList, Menu, X, Package, ShoppingCart } from 'lucide-react';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { fetchAllOrders } from '../../store/slices/orderSlice';
@@ -23,6 +23,7 @@ const Sidebar = () => {
     { path: '/admin/subcategories', label: 'Sub Categories', icon: Layers, badge: 0 },
     { path: '/admin/products', label: 'Products', icon: ShoppingBag, badge: 0 },
     { path: '/admin/orders', label: 'Orders', icon: ClipboardList, badge: pendingCount },
+    { path: '/admin/carts', label: 'User Carts', icon: ShoppingCart, badge: 0 },
   ];
 
   return (

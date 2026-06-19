@@ -31,3 +31,24 @@ class CartItemResponse(BaseModel):
     product: Optional[CartProductInfo] = None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class AdminCartItemResponse(BaseModel):
+    id: str
+    product_id: str
+    product_name: str
+    product_price: float
+    product_image: Optional[str] = None
+    quantity: int
+    stock: int
+    created_at: datetime
+
+
+class AdminCartUserResponse(BaseModel):
+    user_id: str
+    email: str
+    first_name: str
+    last_name: str
+    cart_items: list[AdminCartItemResponse]
+    total_items: int
+    cart_total: float

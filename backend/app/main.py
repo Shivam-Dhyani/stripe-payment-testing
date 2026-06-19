@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, Base, SessionLocal
 from app.models import (
-    User, Address, Category, SubCategory, Product, CartItem, Order, OrderItem
+    User, Address, Category, SubCategory, Product, CartItem, Order, OrderItem, PaymentEvent
 )
 from app.seed import seed_database
 from app.routers import auth, categories, subcategories, products, addresses, cart, orders, dashboard

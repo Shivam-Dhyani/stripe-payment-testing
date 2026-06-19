@@ -1,14 +1,60 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import func
 from typing import List
 from app.database import get_db
 from app.models.cart import CartItem
 from app.models.product import Product
 from app.models.user import User
-from app.schemas.cart import CartItemCreate, CartItemUpdate, CartItemResponse
-from app.middleware.auth import get_current_user
+from app.schemas.cart import CartItemCreate, CartItemUpdate, CartItemResponse, AdminCartUserResponse, AdminCartItemResponse
+from app.middleware.auth import get_current_user, get_admin_user
 
 router = APIRouter(prefix="/cart", tags=["Cart"], redirect_slashes=False)
+
+
+@router.get("/admin/all", response_model=List[AdminCartUserResponse])
+def get_all_carts(
+    admin: User = Depends(get_admin_user),
+    db: Session = Depends(get_db),
+):
+    """Get all users' cart items grouped by user (admin only)."""
+    users_with_carts = (
+        db.query(User)
+        .join(CartItem, CartItem.user_id == User.id)
+        .options(joinedload(User.cart_items).joinedload(CartItem.product))
+        .distinct()
+        .all()
+    )
+    result = []
+    for user in users_with_carts:
+        if not user.cart_items:
+            continue
+        cart_total = sum(
+            (float(item.product.price) * item.quantity) if item.product else 0
+            for item in user.cart_items
+        )
+        result.append(AdminCartUserResponse(
+            user_id=user.id,
+            email=user.email,
+            first_name=user.first_name or "",
+            last_name=user.last_name or "",
+            cart_items=[
+                AdminCartItemResponse(
+                    id=item.id,
+                    product_id=item.product_id,
+                    product_name=item.product.name if item.product else "Deleted Product",
+                    product_price=float(item.product.price) if item.product else 0,
+                    product_image=item.product.image_url if item.product else None,
+                    quantity=item.quantity,
+                    stock=item.product.stock if item.product else 0,
+                    created_at=item.created_at,
+                )
+                for item in user.cart_items
+            ],
+            total_items=len(user.cart_items),
+            cart_total=cart_total,
+        ))
+    return result
 
 
 @router.get("", response_model=List[CartItemResponse])

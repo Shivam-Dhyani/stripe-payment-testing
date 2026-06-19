@@ -1,6 +1,7 @@
 from pydantic import BaseModel, ConfigDict
 from typing import Optional, List, Any
 from datetime import datetime
+from app.schemas.payment_event import PaymentEventResponse
 
 
 class OrderItemResponse(BaseModel):
@@ -24,6 +25,7 @@ class OrderResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     items: List[OrderItemResponse] = []
+    payment_events: List[PaymentEventResponse] = []
 
     model_config = ConfigDict(from_attributes=True)
 
