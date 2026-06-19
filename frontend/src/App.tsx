@@ -50,13 +50,15 @@ const AppContent = () => {
 
   return (
     <Routes>
+      {/* Auth Pages - standalone, no layout wrapper */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+
       {/* User Layout Routes */}
       <Route element={<UserLayout />}>
         <Route path="/" element={<Home />} />
         <Route path="/products" element={<ProductList />} />
         <Route path="/products/:id" element={<ProductDetail />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
 
         {/* Protected Customer Routes */}
         <Route

@@ -158,7 +158,7 @@ const Login = () => {
       </div>
 
       {/* Branding Panel */}
-      <div className="hidden w-full lg:w-1/2 bg-brand-950 lg:grid items-center">
+      <div className="hidden lg:grid w-full lg:w-1/2 h-screen bg-brand-950 items-center">
         <div className="relative flex items-center justify-center z-1">
           <div className="absolute inset-0 opacity-[0.03]"
             style={{
