@@ -9,7 +9,7 @@ from app.models.product import Product
 from app.models.order import Order, OrderItem, OrderStatus
 from app.models.address import Address
 from app.models.payment_event import PaymentEvent, PaymentEventType
-from app.schemas.order import OrderResponse, OrderStatusUpdate, CheckoutRequest, ConfirmPaymentRequest
+from app.schemas.order import OrderResponse, OrderStatusUpdate, CheckoutRequest, ConfirmPaymentRequest, PaymentFailureReport
 from app.middleware.auth import get_current_user, get_admin_user
 from app.services.stripe_service import create_payment_intent
 
@@ -189,6 +189,33 @@ def confirm_payment_by_order(
     db.commit()
     db.refresh(order)
     return order
+
+
+@router.post("/payment-failed", response_model=dict)
+def report_payment_failure(
+    data: PaymentFailureReport,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Report a payment failure from the frontend (card decline, etc.)."""
+    order = db.query(Order).filter(
+        Order.id == data.order_id,
+        Order.user_id == current_user.id,
+    ).first()
+    if not order:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
+    payment_event = PaymentEvent(
+        order_id=order.id,
+        event_type=PaymentEventType.failed,
+        message=data.error_message,
+        event_data={
+            "error_code": data.error_code,
+            "decline_code": data.decline_code,
+        },
+    )
+    db.add(payment_event)
+    db.commit()
+    return {"status": "recorded"}
 
 
 @router.get("/all", response_model=List[OrderResponse])

@@ -40,3 +40,10 @@ class CheckoutRequest(BaseModel):
 
 class ConfirmPaymentRequest(BaseModel):
     payment_intent_id: str
+
+
+class PaymentFailureReport(BaseModel):
+    order_id: str
+    error_code: Optional[str] = None
+    error_message: str
+    decline_code: Optional[str] = None

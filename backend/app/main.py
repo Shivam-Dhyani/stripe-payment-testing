@@ -6,7 +6,7 @@ from app.models import (
     User, Address, Category, SubCategory, Product, CartItem, Order, OrderItem, PaymentEvent
 )
 from app.seed import seed_database
-from app.routers import auth, categories, subcategories, products, addresses, cart, orders, dashboard
+from app.routers import auth, categories, subcategories, products, addresses, cart, orders, dashboard, webhooks
 
 
 @asynccontextmanager
@@ -55,6 +55,7 @@ app.include_router(addresses.router, prefix="/api")
 app.include_router(cart.router, prefix="/api")
 app.include_router(orders.router, prefix="/api")
 app.include_router(dashboard.router, prefix="/api")
+app.include_router(webhooks.router, prefix="/api")
 
 
 @app.get("/")

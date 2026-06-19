@@ -8,6 +8,7 @@ import { useAppSelector } from '../../hooks/useAppSelector';
 import { checkout, confirmPayment, clearCheckoutData } from '../../store/slices/orderSlice';
 import { fetchCart, clearCart } from '../../store/slices/cartSlice';
 import { authService } from '../../services/authService';
+import { orderService } from '../../services/orderService';
 import { Address } from '../../types';
 import toast from 'react-hot-toast';
 
@@ -43,6 +44,16 @@ const CheckoutForm = ({
 
     if (error) {
       toast.error(error.message || 'Payment failed');
+      try {
+        await orderService.reportPaymentFailure({
+          order_id: orderId,
+          error_code: error.code || undefined,
+          error_message: error.message || 'Payment failed',
+          decline_code: (error as any).decline_code || undefined,
+        });
+      } catch {
+        // non-critical, don't block the user
+      }
       setProcessing(false);
     } else if (paymentIntent) {
       await dispatch(confirmPayment({ orderId, paymentIntentId: paymentIntent.id }));

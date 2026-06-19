@@ -33,4 +33,13 @@ export const orderService = {
     const response = await api.get('/orders/all');
     return response.data;
   },
+
+  reportPaymentFailure: async (data: {
+    order_id: string;
+    error_code?: string;
+    error_message: string;
+    decline_code?: string;
+  }): Promise<void> => {
+    await api.post('/orders/payment-failed', data);
+  },
 };
