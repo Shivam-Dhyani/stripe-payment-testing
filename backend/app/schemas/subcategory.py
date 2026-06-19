@@ -13,6 +13,7 @@ class SubCategoryUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     category_id: Optional[str] = None
+    is_active: Optional[bool] = None
 
 
 class SubCategoryResponse(BaseModel):

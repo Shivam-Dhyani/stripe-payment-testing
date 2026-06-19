@@ -45,7 +45,7 @@ def list_products(
 
     total = base_query.count()
     offset = (page - 1) * size
-    products = base_query.options(joinedload(Product.subcategory)).offset(offset).limit(size).all()
+    products = base_query.options(joinedload(Product.subcategory).joinedload(SubCategory.category)).offset(offset).limit(size).all()
     pages = (total + size - 1) // size
 
     return {
@@ -62,7 +62,7 @@ def get_product(product_id: str, db: Session = Depends(get_db)):
     """Get a single product by ID."""
     product = (
         db.query(Product)
-        .options(joinedload(Product.subcategory))
+        .options(joinedload(Product.subcategory).joinedload(SubCategory.category))
         .filter(Product.id == product_id)
         .first()
     )

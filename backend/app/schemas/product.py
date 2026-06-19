@@ -20,12 +20,21 @@ class ProductUpdate(BaseModel):
     price: Optional[float] = None
     stock: Optional[int] = None
     image_url: Optional[str] = None
+    is_active: Optional[bool] = None
+
+
+class CategoryInfo(BaseModel):
+    id: str
+    name: str
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class SubCategoryInfo(BaseModel):
     id: str
     name: str
     category_id: str
+    category: Optional[CategoryInfo] = None
 
     model_config = ConfigDict(from_attributes=True)
 

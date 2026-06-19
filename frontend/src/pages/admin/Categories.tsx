@@ -4,7 +4,7 @@ import { ColDef, ICellRendererParams, themeAlpine } from 'ag-grid-community';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Pencil, Trash2, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, ToggleLeft, ToggleRight } from 'lucide-react';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import {
@@ -30,6 +30,8 @@ const Categories = () => {
   const { categories, loading, submitting } = useAppSelector((state) => state.categories);
   const [showModal, setShowModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const form = useForm<CategoryFormData>({
     resolver: zodResolver(categorySchema),
@@ -40,6 +42,12 @@ const Categories = () => {
     dispatch(fetchCategories(true));
   }, [dispatch]);
 
+  const filteredCategories = categories.filter((cat) => {
+    if (statusFilter === 'active') return cat.is_active;
+    if (statusFilter === 'inactive') return !cat.is_active;
+    return true;
+  });
+
   const handleSubmit = async (data: CategoryFormData) => {
     if (editingCategory) {
       await dispatch(updateCategory({ id: editingCategory.id, data }));
@@ -48,6 +56,13 @@ const Categories = () => {
     }
     closeModal();
     dispatch(fetchCategories(true));
+  };
+
+  const handleToggleStatus = async (category: Category) => {
+    setTogglingId(category.id);
+    await dispatch(updateCategory({ id: category.id, data: { is_active: !category.is_active } }));
+    dispatch(fetchCategories(true));
+    setTogglingId(null);
   };
 
   const openEditModal = (category: Category) => {
@@ -77,6 +92,14 @@ const Categories = () => {
   const ActionCellRenderer = (params: ICellRendererParams) => (
     <div className="flex items-center space-x-2 h-full">
       <button
+        onClick={() => handleToggleStatus(params.data)}
+        disabled={togglingId === params.data.id}
+        className={`p-1.5 rounded transition disabled:opacity-50 ${params.data.is_active ? 'text-green-600 hover:bg-green-50' : 'text-gray-400 hover:bg-gray-50'}`}
+        title={params.data.is_active ? 'Deactivate' : 'Activate'}
+      >
+        {togglingId === params.data.id ? <ButtonSpinner /> : params.data.is_active ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
+      </button>
+      <button
         onClick={() => openEditModal(params.data)}
         disabled={submitting}
         className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded transition disabled:opacity-50"
@@ -105,25 +128,11 @@ const Categories = () => {
     { field: 'id', headerName: 'ID', width: 80 },
     { field: 'name', headerName: 'Name', flex: 1, filter: true },
     { field: 'description', headerName: 'Description', flex: 2 },
-    {
-      field: 'is_active',
-      headerName: 'Status',
-      width: 120,
-      cellRenderer: StatusCellRenderer,
-    },
-    {
-      headerName: 'Actions',
-      width: 120,
-      cellRenderer: ActionCellRenderer,
-      sortable: false,
-      filter: false,
-    },
+    { field: 'is_active', headerName: 'Status', width: 120, cellRenderer: StatusCellRenderer },
+    { headerName: 'Actions', width: 160, cellRenderer: ActionCellRenderer, sortable: false, filter: false },
   ];
 
-  const defaultColDef: ColDef = {
-    sortable: true,
-    resizable: true,
-  };
+  const defaultColDef: ColDef = { sortable: true, resizable: true };
 
   return (
     <div>
@@ -142,10 +151,22 @@ const Categories = () => {
         </button>
       </div>
 
+      <div className="mb-4">
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
+        >
+          <option value="all">All Statuses</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
+      </div>
+
       <div className="bg-white rounded-xl shadow-sm border border-gray-100" style={{ height: 500 }}>
         <AgGridReact
           theme={themeAlpine}
-          rowData={categories}
+          rowData={filteredCategories}
           columnDefs={columnDefs}
           defaultColDef={defaultColDef}
           pagination={true}

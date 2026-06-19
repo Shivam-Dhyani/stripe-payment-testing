@@ -4,7 +4,7 @@ import { ColDef, ICellRendererParams, themeAlpine } from 'ag-grid-community';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Pencil, Trash2, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, ToggleLeft, ToggleRight } from 'lucide-react';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { fetchProducts, createProduct, updateProduct, deleteProduct } from '../../store/slices/productSlice';
@@ -34,6 +34,8 @@ const Products = () => {
   const [filterSubCategoryId, setFilterSubCategoryId] = useState<string | undefined>(undefined);
   const [search, setSearch] = useState('');
   const [selectedCategoryInForm, setSelectedCategoryInForm] = useState<string | undefined>(undefined);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
@@ -56,6 +58,21 @@ const Products = () => {
     }));
   }, [dispatch, filterCategoryId, filterSubCategoryId, search]);
 
+  const refetchProducts = () => dispatch(fetchProducts({ page: 1, size: 100, category_id: filterCategoryId, sub_category_id: filterSubCategoryId, search: search || undefined, include_inactive: true }));
+
+  const filteredProducts = products.filter((p) => {
+    if (statusFilter === 'active') return p.is_active;
+    if (statusFilter === 'inactive') return !p.is_active;
+    return true;
+  });
+
+  const handleToggleStatus = async (product: Product) => {
+    setTogglingId(product.id);
+    await dispatch(updateProduct({ id: product.id, data: { is_active: !product.is_active } }));
+    refetchProducts();
+    setTogglingId(null);
+  };
+
   const handleSubmit = async (data: ProductFormData) => {
     if (editingProduct) {
       await dispatch(updateProduct({ id: editingProduct.id, data }));
@@ -63,7 +80,7 @@ const Products = () => {
       await dispatch(createProduct(data));
     }
     closeModal();
-    dispatch(fetchProducts({ page: 1, size: 100, category_id: filterCategoryId, sub_category_id: filterSubCategoryId, search: search || undefined, include_inactive: true }));
+    refetchProducts();
   };
 
   const openEditModal = (product: Product) => {
@@ -93,7 +110,7 @@ const Products = () => {
   const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
       await dispatch(deleteProduct(id));
-      dispatch(fetchProducts({ page: 1, size: 100, category_id: filterCategoryId, sub_category_id: filterSubCategoryId, search: search || undefined, include_inactive: true }));
+      refetchProducts();
     }
   };
 
@@ -105,6 +122,14 @@ const Products = () => {
 
   const ActionCellRenderer = (params: ICellRendererParams) => (
     <div className="flex items-center space-x-2 h-full">
+      <button
+        onClick={() => handleToggleStatus(params.data)}
+        disabled={togglingId === params.data.id}
+        className={`p-1.5 rounded transition disabled:opacity-50 ${params.data.is_active ? 'text-green-600 hover:bg-green-50' : 'text-gray-400 hover:bg-gray-50'}`}
+        title={params.data.is_active ? 'Deactivate' : 'Activate'}
+      >
+        {togglingId === params.data.id ? <ButtonSpinner /> : params.data.is_active ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
+      </button>
       <button onClick={() => openEditModal(params.data)} disabled={submitting} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded transition disabled:opacity-50">
         <Pencil className="w-4 h-4" />
       </button>
@@ -132,7 +157,7 @@ const Products = () => {
     { field: 'price', headerName: 'Price', width: 110, cellRenderer: PriceCellRenderer },
     { field: 'stock', headerName: 'Stock', width: 90 },
     { field: 'is_active', headerName: 'Status', width: 110, cellRenderer: StatusCellRenderer },
-    { headerName: 'Actions', width: 110, cellRenderer: ActionCellRenderer, sortable: false, filter: false },
+    { headerName: 'Actions', width: 160, cellRenderer: ActionCellRenderer, sortable: false, filter: false },
   ];
 
   const defaultColDef: ColDef = { sortable: true, resizable: true };
@@ -190,12 +215,21 @@ const Products = () => {
             ))}
           </select>
         )}
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
+        >
+          <option value="all">All Statuses</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100" style={{ height: 500 }}>
         <AgGridReact
           theme={themeAlpine}
-          rowData={products}
+          rowData={filteredProducts}
           columnDefs={columnDefs}
           defaultColDef={defaultColDef}
           pagination={true}
