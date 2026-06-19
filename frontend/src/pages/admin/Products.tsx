@@ -165,7 +165,7 @@ const Products = () => {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">Products</h1>
+        <h1 className="text-title-sm font-bold text-gray-800">Products</h1>
         <button
           onClick={() => {
             setEditingProduct(null);
@@ -226,7 +226,7 @@ const Products = () => {
         </select>
       </div>
 
-      <div className="bg-white rounded-xl shadow-theme-xs border border-gray-200" style={{ height: 500 }}>
+      <div className="bg-white rounded-2xl border border-gray-200" style={{ height: 500 }}>
         <AgGridReact
           theme={themeAlpine}
           rowData={filteredProducts}
@@ -240,7 +240,7 @@ const Products = () => {
 
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-xl shadow-theme-lg w-full max-w-lg mx-4 p-6 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-theme-lg w-full max-w-lg mx-4 p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-gray-800">
                 {editingProduct ? 'Edit Product' : 'Add Product'}

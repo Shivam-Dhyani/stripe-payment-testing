@@ -51,7 +51,7 @@ const Cart = () => {
         {/* Cart Items */}
         <div className="lg:col-span-2 space-y-4">
           {items.map((item) => (
-            <div key={item.id} className="bg-white rounded-xl shadow-theme-xs border border-gray-200 p-4 flex items-center gap-4">
+            <div key={item.id} className="bg-white rounded-2xl border border-gray-200 p-4 flex items-center gap-4">
               <div className="w-20 h-20 bg-gradient-to-br from-brand-400 to-brand-600 rounded-lg flex items-center justify-center flex-shrink-0">
                 <span className="text-white font-bold text-lg">
                   {item.product?.name?.substring(0, 2).toUpperCase() || 'P'}
@@ -97,7 +97,7 @@ const Cart = () => {
         </div>
 
         {/* Order Summary */}
-        <div className="bg-white rounded-xl shadow-theme-xs border border-gray-200 p-6 h-fit sticky top-24">
+        <div className="bg-white rounded-2xl border border-gray-200 p-6 h-fit sticky top-24">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Order Summary</h2>
           <div className="space-y-3 mb-6">
             <div className="flex justify-between text-gray-600">

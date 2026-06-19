@@ -8,7 +8,7 @@ import { dashboardService } from '../../services/dashboardService';
 import { DashboardStats, RevenueData, TopProduct, CategoryDistribution, OrderTrend, Order } from '../../types';
 import { KpiSkeleton, ChartSkeleton, TableRowSkeleton } from '../../components/common/Skeleton';
 
-const COLORS = ['#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e'];
+const COLORS = ['#8b5cf6', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e'];
 
 const Dashboard = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -63,25 +63,24 @@ const Dashboard = () => {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-gray-800 mb-8">Dashboard</h1>
+      <h1 className="text-title-sm font-bold text-gray-800 mb-1">Dashboard</h1>
+      <p className="text-sm text-gray-500 mb-6">Overview of your store performance</p>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6">
         {loading ? (
           Array.from({ length: 4 }).map((_, i) => <KpiSkeleton key={i} />)
         ) : (
           kpiCards.map((card) => {
             const Icon = card.icon;
             return (
-              <div key={card.title} className="bg-white rounded-xl shadow-theme-xs border border-gray-200 p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-500 font-medium">{card.title}</p>
-                    <p className="text-2xl font-bold text-gray-800 mt-1">{card.value}</p>
-                  </div>
-                  <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${card.color}`}>
-                    <Icon className="w-6 h-6" />
-                  </div>
+              <div key={card.title} className="rounded-2xl border border-gray-200 bg-white p-5 md:p-6">
+                <div className={`flex items-center justify-center w-12 h-12 rounded-xl ${card.color}`}>
+                  <Icon className="size-6" />
+                </div>
+                <div className="mt-5">
+                  <span className="text-sm text-gray-500">{card.title}</span>
+                  <h4 className="mt-1 font-bold text-gray-800 text-title-sm">{card.value}</h4>
                 </div>
               </div>
             );
@@ -98,7 +97,7 @@ const Dashboard = () => {
           </>
         ) : (
           <>
-            <div className="bg-white rounded-xl shadow-theme-xs border border-gray-200 p-6">
+            <div className="bg-white rounded-2xl border border-gray-200 p-6">
               <h2 className="text-lg font-semibold text-gray-800 mb-4">Revenue (Last 30 Days)</h2>
               <ResponsiveContainer width="100%" height={300}>
                 <AreaChart data={revenue}>
@@ -106,11 +105,11 @@ const Dashboard = () => {
                   <XAxis dataKey="date" tick={{ fontSize: 12 }} stroke="#94a3b8" />
                   <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" />
                   <Tooltip />
-                  <Area type="monotone" dataKey="revenue" stroke="#6366f1" fill="#6366f1" fillOpacity={0.1} />
+                  <Area type="monotone" dataKey="revenue" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.1} />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
-            <div className="bg-white rounded-xl shadow-theme-xs border border-gray-200 p-6">
+            <div className="bg-white rounded-2xl border border-gray-200 p-6">
               <h2 className="text-lg font-semibold text-gray-800 mb-4">Order Trends (Last 30 Days)</h2>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={orderTrends}>
@@ -135,7 +134,7 @@ const Dashboard = () => {
           </>
         ) : (
           <>
-            <div className="bg-white rounded-xl shadow-theme-xs border border-gray-200 p-6">
+            <div className="bg-white rounded-2xl border border-gray-200 p-6">
               <h2 className="text-lg font-semibold text-gray-800 mb-4">Top Selling Products</h2>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={topProducts} layout="vertical">
@@ -143,11 +142,11 @@ const Dashboard = () => {
                   <XAxis type="number" tick={{ fontSize: 12 }} stroke="#94a3b8" />
                   <YAxis dataKey="name" type="category" tick={{ fontSize: 12 }} stroke="#94a3b8" width={120} />
                   <Tooltip />
-                  <Bar dataKey="total_sold" fill="#6366f1" radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="total_sold" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
-            <div className="bg-white rounded-xl shadow-theme-xs border border-gray-200 p-6">
+            <div className="bg-white rounded-2xl border border-gray-200 p-6">
               <h2 className="text-lg font-semibold text-gray-800 mb-4">Category Distribution</h2>
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
@@ -176,7 +175,7 @@ const Dashboard = () => {
       </div>
 
       {/* Recent Orders */}
-      <div className="bg-white rounded-xl shadow-theme-xs border border-gray-200 p-6">
+      <div className="bg-white rounded-2xl border border-gray-200 p-6">
         <h2 className="text-lg font-semibold text-gray-800 mb-4">Recent Orders</h2>
         <div className="overflow-x-auto">
           <table className="w-full text-left">

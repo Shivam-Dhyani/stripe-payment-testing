@@ -201,7 +201,7 @@ const ProductList = () => {
                   <Link
                     key={product.id}
                     to={`/products/${product.id}`}
-                    className="group bg-white rounded-xl shadow-theme-xs hover:shadow-theme-md transition-all duration-300 overflow-hidden border border-gray-200"
+                    className="group bg-white rounded-2xl hover:shadow-theme-lg transition-all duration-300 overflow-hidden border border-gray-200"
                   >
                     <div className={`h-48 bg-gradient-to-br ${gradients[index % gradients.length]} flex items-center justify-center relative`}>
                       <span className="text-5xl font-bold text-white/20">

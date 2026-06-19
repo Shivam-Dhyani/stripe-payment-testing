@@ -64,7 +64,7 @@ const CheckoutForm = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="bg-white rounded-xl shadow-theme-xs border border-gray-200 p-6">
+      <div className="bg-white rounded-2xl border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
           <CreditCard className="w-5 h-5 text-brand-500" />
           <span>Card Details</span>
@@ -167,7 +167,7 @@ const Checkout = () => {
       {/* Step 1: Address */}
       {currentStep === 0 && (
         <div>
-          <div className="bg-white rounded-xl shadow-theme-xs border border-gray-200 p-6 mb-6">
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
               <MapPin className="w-5 h-5 text-brand-500" />
               <span>Select Delivery Address</span>
@@ -219,7 +219,7 @@ const Checkout = () => {
       {/* Step 2: Review */}
       {currentStep === 1 && (
         <div>
-          <div className="bg-white rounded-xl shadow-theme-xs border border-gray-200 p-6 mb-6">
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
               <Package className="w-5 h-5 text-brand-500" />
               <span>Order Review</span>

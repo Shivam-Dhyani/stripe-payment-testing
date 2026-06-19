@@ -95,7 +95,7 @@ const Home = () => {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {categoriesLoading ? (
               Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="rounded-xl overflow-hidden">
+                <div key={i} className="rounded-2xl overflow-hidden">
                   <Skeleton className="h-48" />
                 </div>
               ))
@@ -104,7 +104,7 @@ const Home = () => {
                 <Link
                   key={category.id}
                   to={`/products?category=${category.id}`}
-                  className="group relative overflow-hidden rounded-xl shadow-theme-xs hover:shadow-theme-md transition-all duration-300"
+                  className="group relative overflow-hidden rounded-2xl border border-gray-200 hover:shadow-theme-lg transition-all duration-300"
                 >
                   <div className={`h-48 bg-gradient-to-br ${gradients[index % gradients.length]} flex items-center justify-center`}>
                     <span className="text-4xl font-bold text-white/30">{category.name.charAt(0)}</span>
@@ -138,7 +138,7 @@ const Home = () => {
                 <Link
                   key={product.id}
                   to={`/products/${product.id}`}
-                  className="group bg-white rounded-xl shadow-theme-xs hover:shadow-theme-md transition-all duration-300 overflow-hidden border border-gray-200"
+                  className="group bg-white rounded-2xl hover:shadow-theme-lg transition-all duration-300 overflow-hidden border border-gray-200"
                 >
                   <div className={`h-48 bg-gradient-to-br ${gradients[index % gradients.length]} flex items-center justify-center`}>
                     <ShoppingBag className="w-12 h-12 text-white/40" />

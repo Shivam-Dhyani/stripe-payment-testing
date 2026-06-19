@@ -24,10 +24,10 @@ const Carts = () => {
   if (loading) {
     return (
       <div>
-        <h1 className="text-3xl font-bold text-gray-800 mb-6">User Carts</h1>
+        <h1 className="text-title-sm font-bold text-gray-800 mb-6">User Carts</h1>
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-white rounded-xl shadow-theme-xs border border-gray-200 p-6 animate-pulse">
+            <div key={i} className="bg-white rounded-2xl border border-gray-200 p-6 animate-pulse">
               <div className="flex items-center space-x-4">
                 <div className="w-10 h-10 bg-gray-200 rounded-full" />
                 <div className="flex-1">
@@ -46,7 +46,7 @@ const Carts = () => {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-3">
-          <h1 className="text-3xl font-bold text-gray-800">User Carts</h1>
+          <h1 className="text-title-sm font-bold text-gray-800">User Carts</h1>
           {carts.length > 0 && (
             <span className="bg-brand-100 text-brand-700 text-xs font-bold px-2.5 py-1 rounded-full">
               {carts.length} active
@@ -56,7 +56,7 @@ const Carts = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="bg-white rounded-xl shadow-theme-xs border border-gray-200 p-4">
+        <div className="bg-white rounded-2xl border border-gray-200 p-4">
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-brand-100 rounded-lg">
               <User className="w-5 h-5 text-brand-500" />
@@ -67,7 +67,7 @@ const Carts = () => {
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl shadow-theme-xs border border-gray-200 p-4">
+        <div className="bg-white rounded-2xl border border-gray-200 p-4">
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-green-100 rounded-lg">
               <Package className="w-5 h-5 text-green-600" />
@@ -78,7 +78,7 @@ const Carts = () => {
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl shadow-theme-xs border border-gray-200 p-4">
+        <div className="bg-white rounded-2xl border border-gray-200 p-4">
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-amber-100 rounded-lg">
               <ShoppingCart className="w-5 h-5 text-amber-600" />
@@ -92,14 +92,14 @@ const Carts = () => {
       </div>
 
       {carts.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-theme-xs border border-gray-200 p-12 text-center">
+        <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
           <ShoppingCart className="w-12 h-12 text-gray-300 mx-auto mb-3" />
           <p className="text-gray-500 text-lg">No users have items in their cart</p>
         </div>
       ) : (
         <div className="space-y-3">
           {carts.map((cart: AdminCartUser) => (
-            <div key={cart.user_id} className="bg-white rounded-xl shadow-theme-xs border border-gray-200 overflow-hidden">
+            <div key={cart.user_id} className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
               <button
                 onClick={() => toggleExpand(cart.user_id)}
                 className="w-full flex items-center justify-between p-5 hover:bg-gray-50 transition"

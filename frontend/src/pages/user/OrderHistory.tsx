@@ -46,7 +46,7 @@ const OrderHistory = () => {
       ) : (
         <div className="space-y-4">
           {orders.map((order) => (
-            <div key={order.id} className="bg-white rounded-xl shadow-theme-xs border border-gray-200 overflow-hidden">
+            <div key={order.id} className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
               <button
                 onClick={() => toggleOrder(order.id)}
                 className="w-full p-6 flex items-center justify-between hover:bg-gray-50 transition"

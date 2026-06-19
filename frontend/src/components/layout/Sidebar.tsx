@@ -1,12 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, FolderTree, Layers, ShoppingBag, ClipboardList, Menu, X, Package, ShoppingCart } from 'lucide-react';
+import { LayoutDashboard, FolderTree, Layers, ShoppingBag, ClipboardList, Package, ShoppingCart, Store } from 'lucide-react';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { fetchAllOrders } from '../../store/slices/orderSlice';
 
-const Sidebar = () => {
-  const [collapsed, setCollapsed] = useState(false);
+interface SidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const location = useLocation();
   const dispatch = useAppDispatch();
   const { orders } = useAppSelector((state) => state.orders);
@@ -28,61 +32,69 @@ const Sidebar = () => {
 
   return (
     <>
-      <button
-        onClick={() => setCollapsed(!collapsed)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-gray-800 text-white rounded-lg"
-      >
-        {collapsed ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-      </button>
+      {/* Mobile backdrop */}
+      {isOpen && (
+        <div
+          onClick={onClose}
+          className="fixed inset-0 z-40 bg-gray-900/50 lg:hidden"
+        />
+      )}
 
       <aside
-        className={`fixed left-0 top-0 h-full bg-gray-900 text-white transition-transform duration-300 z-40
-          ${collapsed ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 w-64`}
+        className={`fixed top-0 left-0 z-50 flex flex-col h-screen px-5 bg-white border-r border-gray-200 transition-transform duration-300 ease-in-out w-[290px]
+          ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}
       >
-        <div className="p-6">
-          <Link to="/admin/dashboard" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-brand-500 rounded-lg flex items-center justify-center">
-              <Package className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-bold">ShopHub</span>
-          </Link>
-          <p className="text-gray-400 text-sm mt-1">Admin Panel</p>
+        {/* Logo */}
+        <div className="flex items-center gap-3 py-8">
+          <div className="flex items-center justify-center w-10 h-10 bg-brand-500 rounded-xl">
+            <Package className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <span className="block text-lg font-bold text-gray-800 leading-tight">ShopHub</span>
+            <span className="block text-xs text-gray-400">Admin Panel</span>
+          </div>
         </div>
 
-        <nav className="mt-4 px-4 space-y-1">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = location.pathname === item.path;
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                onClick={() => setCollapsed(false)}
-                className={`flex items-center justify-between px-4 py-3 rounded-lg transition font-medium
-                  ${isActive
-                    ? 'bg-brand-500 text-white'
-                    : 'text-gray-300 hover:bg-gray-800 hover:text-white'
-                  }`}
-              >
-                <div className="flex items-center space-x-3">
-                  <Icon className="w-5 h-5" />
-                  <span>{item.label}</span>
-                </div>
-                {item.badge > 0 && (
-                  <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center">
-                    {item.badge}
-                  </span>
-                )}
-              </Link>
-            );
-          })}
-        </nav>
+        {/* Navigation */}
+        <div className="flex flex-col overflow-y-auto no-scrollbar">
+          <nav>
+            <h2 className="mb-4 text-xs font-medium leading-[20px] uppercase text-gray-400">
+              Menu
+            </h2>
+            <ul className="flex flex-col gap-1">
+              {menuItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = location.pathname === item.path;
+                return (
+                  <li key={item.path}>
+                    <Link
+                      to={item.path}
+                      onClick={onClose}
+                      className={`menu-item group ${isActive ? 'menu-item-active' : 'menu-item-inactive'}`}
+                    >
+                      <Icon className={`w-5 h-5 ${isActive ? 'menu-item-icon-active' : 'menu-item-icon-inactive'}`} />
+                      <span className="flex-1">{item.label}</span>
+                      {item.badge > 0 && (
+                        <span className="flex items-center justify-center min-w-[20px] h-5 px-2 text-xs font-medium text-white bg-error-500 rounded-full">
+                          {item.badge}
+                        </span>
+                      )}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
+        </div>
 
-        <div className="absolute bottom-4 left-4 right-4">
+        {/* Back to store */}
+        <div className="mt-auto pb-6">
           <Link
             to="/"
-            className="flex items-center space-x-2 px-4 py-3 text-gray-400 hover:text-white transition text-sm"
+            onClick={onClose}
+            className="flex items-center gap-3 px-3 py-2 text-theme-sm font-medium text-gray-500 rounded-lg hover:bg-gray-100 hover:text-gray-700 transition-colors"
           >
+            <Store className="w-5 h-5" />
             <span>Back to Store</span>
           </Link>
         </div>
