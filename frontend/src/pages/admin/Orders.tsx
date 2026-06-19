@@ -4,7 +4,8 @@ import { ColDef, ICellRendererParams, themeAlpine } from 'ag-grid-community';
 import { Eye, X } from 'lucide-react';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
-import { fetchAllOrders, fetchOrderById, updateOrderStatus } from '../../store/slices/orderSlice';
+import { fetchAllOrders, updateOrderStatus } from '../../store/slices/orderSlice';
+import { Order } from '../../types';
 import ButtonSpinner from '../../components/common/ButtonSpinner';
 
 const statusColors: Record<string, string> = {
@@ -17,8 +18,8 @@ const statusColors: Record<string, string> = {
 
 const Orders = () => {
   const dispatch = useAppDispatch();
-  const { orders, selectedOrder, loading } = useAppSelector((state) => state.orders);
-  const [showDetail, setShowDetail] = useState(false);
+  const { orders, loading } = useAppSelector((state) => state.orders);
+  const [detailOrder, setDetailOrder] = useState<Order | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
 
@@ -26,9 +27,15 @@ const Orders = () => {
     dispatch(fetchAllOrders());
   }, [dispatch]);
 
-  const viewOrder = async (orderId: string) => {
-    await dispatch(fetchOrderById(orderId));
-    setShowDetail(true);
+  const viewOrder = (orderId: string) => {
+    const order = orders.find(o => o.id === orderId);
+    if (order) {
+      setDetailOrder(order);
+    }
+  };
+
+  const closeDetail = () => {
+    setDetailOrder(null);
   };
 
   const handleStatusChange = async (orderId: string, newStatus: string) => {
@@ -138,12 +145,12 @@ const Orders = () => {
         />
       </div>
 
-      {showDetail && selectedOrder && (
+      {detailOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl mx-4 p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-slate-800">Order #{selectedOrder.id}</h2>
-              <button onClick={() => setShowDetail(false)} className="text-slate-400 hover:text-slate-600">
+              <h2 className="text-xl font-semibold text-slate-800">Order #{detailOrder.id}</h2>
+              <button onClick={closeDetail} className="text-slate-400 hover:text-slate-600">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -151,40 +158,40 @@ const Orders = () => {
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div>
                 <p className="text-sm text-slate-500">Status</p>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${statusColors[selectedOrder.status] || ''}`}>
-                  {selectedOrder.status}
+                <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${statusColors[detailOrder.status] || ''}`}>
+                  {detailOrder.status}
                 </span>
               </div>
               <div>
                 <p className="text-sm text-slate-500">Total</p>
-                <p className="font-semibold text-lg">${Number(selectedOrder.total).toFixed(2)}</p>
+                <p className="font-semibold text-lg">${Number(detailOrder.total).toFixed(2)}</p>
               </div>
               <div>
                 <p className="text-sm text-slate-500">Date</p>
-                <p className="font-medium">{new Date(selectedOrder.created_at).toLocaleString()}</p>
+                <p className="font-medium">{new Date(detailOrder.created_at).toLocaleString()}</p>
               </div>
               <div>
                 <p className="text-sm text-slate-500">Payment ID</p>
-                <p className="font-medium text-xs break-all">{selectedOrder.stripe_payment_intent_id || '-'}</p>
+                <p className="font-medium text-xs break-all">{detailOrder.stripe_payment_intent_id || '-'}</p>
               </div>
             </div>
 
-            {selectedOrder.address_snapshot && (
+            {detailOrder.address_snapshot && (
               <div className="mb-6 p-4 bg-gray-50 rounded-lg">
                 <h3 className="font-semibold text-slate-800 mb-2">Delivery Address</h3>
-                <p className="text-sm text-slate-600">{selectedOrder.address_snapshot.street}</p>
+                <p className="text-sm text-slate-600">{detailOrder.address_snapshot.street}</p>
                 <p className="text-sm text-slate-600">
-                  {selectedOrder.address_snapshot.city}, {selectedOrder.address_snapshot.state} {selectedOrder.address_snapshot.zip_code}
+                  {detailOrder.address_snapshot.city}, {detailOrder.address_snapshot.state} {detailOrder.address_snapshot.zip_code}
                 </p>
-                <p className="text-sm text-slate-600">{selectedOrder.address_snapshot.country}</p>
+                <p className="text-sm text-slate-600">{detailOrder.address_snapshot.country}</p>
               </div>
             )}
 
-            {selectedOrder.items && (
+            {detailOrder.items && (
               <div>
                 <h3 className="font-semibold text-slate-800 mb-3">Items</h3>
                 <div className="space-y-3">
-                  {selectedOrder.items.map((item) => (
+                  {detailOrder.items.map((item) => (
                     <div key={item.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
                       <div className="flex items-center space-x-3">
                         <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
@@ -204,7 +211,7 @@ const Orders = () => {
 
             <div className="flex justify-end mt-6">
               <button
-                onClick={() => setShowDetail(false)}
+                onClick={closeDetail}
                 className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium"
               >
                 Close
