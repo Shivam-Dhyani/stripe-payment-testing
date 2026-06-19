@@ -130,7 +130,7 @@ const Products = () => {
       >
         {togglingId === params.data.id ? <ButtonSpinner /> : params.data.is_active ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
       </button>
-      <button onClick={() => openEditModal(params.data)} disabled={submitting} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded transition disabled:opacity-50">
+      <button onClick={() => openEditModal(params.data)} disabled={submitting} className="p-1.5 text-brand-500 hover:bg-brand-50 rounded transition disabled:opacity-50">
         <Pencil className="w-4 h-4" />
       </button>
       <button onClick={() => handleDelete(params.data.id)} disabled={submitting} className="p-1.5 text-red-600 hover:bg-red-50 rounded transition disabled:opacity-50">
@@ -165,7 +165,7 @@ const Products = () => {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold text-slate-800">Products</h1>
+        <h1 className="text-3xl font-bold text-gray-800">Products</h1>
         <button
           onClick={() => {
             setEditingProduct(null);
@@ -173,7 +173,7 @@ const Products = () => {
             form.reset({ name: '', description: '', price: 0, stock: 0, sub_category_id: '', image_url: '', is_active: true });
             setShowModal(true);
           }}
-          className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium"
+          className="flex items-center space-x-2 px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition font-medium"
         >
           <Plus className="w-4 h-4" />
           <span>Add Product</span>
@@ -186,7 +186,7 @@ const Products = () => {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search products..."
-          className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none w-64"
+          className="px-4 py-2.5 h-11 border border-gray-300 rounded-lg focus:ring-3 focus:ring-brand-500/20 focus:outline-hidden shadow-theme-xs w-64"
         />
         <select
           value={filterCategoryId || ''}
@@ -196,7 +196,7 @@ const Products = () => {
             setFilterSubCategoryId(undefined);
             if (val) dispatch(fetchSubCategories({ categoryId: val, includeInactive: true }));
           }}
-          className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
+          className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-3 focus:ring-brand-500/20 focus:outline-hidden bg-white"
         >
           <option value="">All Categories</option>
           {categories.map((cat) => (
@@ -207,7 +207,7 @@ const Products = () => {
           <select
             value={filterSubCategoryId || ''}
             onChange={(e) => setFilterSubCategoryId(e.target.value || undefined)}
-            className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
+            className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-3 focus:ring-brand-500/20 focus:outline-hidden bg-white"
           >
             <option value="">All SubCategories</option>
             {subcategories.map((sc) => (
@@ -218,7 +218,7 @@ const Products = () => {
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
+          className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-3 focus:ring-brand-500/20 focus:outline-hidden bg-white"
         >
           <option value="all">All Statuses</option>
           <option value="active">Active</option>
@@ -226,7 +226,7 @@ const Products = () => {
         </select>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100" style={{ height: 500 }}>
+      <div className="bg-white rounded-xl shadow-theme-xs border border-gray-200" style={{ height: 500 }}>
         <AgGridReact
           theme={themeAlpine}
           rowData={filteredProducts}
@@ -240,44 +240,44 @@ const Products = () => {
 
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 p-6 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-theme-lg w-full max-w-lg mx-4 p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-slate-800">
+              <h2 className="text-xl font-semibold text-gray-800">
                 {editingProduct ? 'Edit Product' : 'Add Product'}
               </h2>
-              <button onClick={closeModal} className="text-slate-400 hover:text-slate-600">
+              <button onClick={closeModal} className="text-gray-400 hover:text-gray-600">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Name</label>
-                <input {...form.register('name')} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition" />
+                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                <input {...form.register('name')} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-3 focus:ring-brand-500/20 focus:border-brand-300 focus:outline-hidden transition" />
                 {form.formState.errors.name && <p className="mt-1 text-sm text-red-600">{form.formState.errors.name.message}</p>}
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
-                <textarea {...form.register('description')} rows={3} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition" />
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea {...form.register('description')} rows={3} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-3 focus:ring-brand-500/20 focus:border-brand-300 focus:outline-hidden transition" />
                 {form.formState.errors.description && <p className="mt-1 text-sm text-red-600">{form.formState.errors.description.message}</p>}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Price</label>
-                  <input type="number" step="0.01" {...form.register('price', { valueAsNumber: true })} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition" />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
+                  <input type="number" step="0.01" {...form.register('price', { valueAsNumber: true })} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-3 focus:ring-brand-500/20 focus:border-brand-300 focus:outline-hidden transition" />
                   {form.formState.errors.price && <p className="mt-1 text-sm text-red-600">{form.formState.errors.price.message}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Stock</label>
-                  <input type="number" {...form.register('stock', { valueAsNumber: true })} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition" />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Stock</label>
+                  <input type="number" {...form.register('stock', { valueAsNumber: true })} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-3 focus:ring-brand-500/20 focus:border-brand-300 focus:outline-hidden transition" />
                   {form.formState.errors.stock && <p className="mt-1 text-sm text-red-600">{form.formState.errors.stock.message}</p>}
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Category</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
                 <select
                   value={selectedCategoryInForm || ''}
                   onChange={(e) => handleFormCategoryChange(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-3 focus:ring-brand-500/20 focus:outline-hidden bg-white"
                 >
                   <option value="">Select Category</option>
                   {categories.map((cat) => (
@@ -286,10 +286,10 @@ const Products = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Sub Category</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Sub Category</label>
                 <select
                   {...form.register('sub_category_id')}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-3 focus:ring-brand-500/20 focus:outline-hidden bg-white"
                 >
                   <option value="">Select Sub Category</option>
                   {subcategories.map((sc) => (
@@ -299,19 +299,19 @@ const Products = () => {
                 {form.formState.errors.sub_category_id && <p className="mt-1 text-sm text-red-600">{form.formState.errors.sub_category_id.message}</p>}
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Image URL (optional)</label>
-                <input {...form.register('image_url')} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition" />
+                <label className="block text-sm font-medium text-gray-700 mb-1">Image URL (optional)</label>
+                <input {...form.register('image_url')} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-3 focus:ring-brand-500/20 focus:border-brand-300 focus:outline-hidden transition" />
               </div>
               <label className="flex items-center space-x-2">
-                <input type="checkbox" {...form.register('is_active')} className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-                <span className="text-sm text-slate-700">Active</span>
+                <input type="checkbox" {...form.register('is_active')} className="rounded border-gray-300 text-brand-500 focus:ring-brand-500" />
+                <span className="text-sm text-gray-700">Active</span>
               </label>
               <div className="flex justify-end space-x-3 pt-4">
                 <button type="button" onClick={closeModal} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium">Cancel</button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium disabled:opacity-50 flex items-center space-x-2"
+                  className="px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition font-medium disabled:opacity-50 flex items-center space-x-2"
                 >
                   {submitting && <ButtonSpinner />}
                   <span>{editingProduct ? 'Update' : 'Create'}</span>

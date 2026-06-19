@@ -31,11 +31,11 @@ const Cart = () => {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
         <ShoppingBag className="w-20 h-20 text-gray-300 mx-auto mb-6" />
-        <h2 className="text-2xl font-bold text-slate-800 mb-2">Your cart is empty</h2>
-        <p className="text-slate-500 mb-8">Looks like you haven't added anything to your cart yet.</p>
+        <h2 className="text-2xl font-bold text-gray-800 mb-2">Your cart is empty</h2>
+        <p className="text-gray-500 mb-8">Looks like you haven't added anything to your cart yet.</p>
         <Link
           to="/products"
-          className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium"
+          className="inline-flex items-center px-6 py-3 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition font-medium"
         >
           Continue Shopping <ArrowRight className="ml-2 w-5 h-5" />
         </Link>
@@ -45,23 +45,23 @@ const Cart = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-3xl font-bold text-slate-800 mb-8">Shopping Cart</h1>
+      <h1 className="text-title-sm font-bold text-gray-800 mb-8">Shopping Cart</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Cart Items */}
         <div className="lg:col-span-2 space-y-4">
           {items.map((item) => (
-            <div key={item.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex items-center gap-4">
-              <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
+            <div key={item.id} className="bg-white rounded-xl shadow-theme-xs border border-gray-200 p-4 flex items-center gap-4">
+              <div className="w-20 h-20 bg-gradient-to-br from-brand-400 to-brand-600 rounded-lg flex items-center justify-center flex-shrink-0">
                 <span className="text-white font-bold text-lg">
                   {item.product?.name?.substring(0, 2).toUpperCase() || 'P'}
                 </span>
               </div>
               <div className="flex-1 min-w-0">
-                <Link to={`/products/${item.product_id}`} className="font-semibold text-slate-800 hover:text-indigo-600 truncate block">
+                <Link to={`/products/${item.product_id}`} className="font-semibold text-gray-800 hover:text-brand-500 truncate block">
                   {item.product?.name || 'Product'}
                 </Link>
-                <p className="text-indigo-600 font-medium">${Number(item.product?.price || 0).toFixed(2)}</p>
+                <p className="text-brand-500 font-medium">${Number(item.product?.price || 0).toFixed(2)}</p>
               </div>
               <div className="flex items-center border border-gray-300 rounded-lg">
                 <button
@@ -81,7 +81,7 @@ const Cart = () => {
                 </button>
               </div>
               <div className="text-right min-w-[80px]">
-                <p className="font-semibold text-slate-800">
+                <p className="font-semibold text-gray-800">
                   ${(Number(item.product?.price || 0) * item.quantity).toFixed(2)}
                 </p>
               </div>
@@ -97,19 +97,19 @@ const Cart = () => {
         </div>
 
         {/* Order Summary */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 h-fit sticky top-24">
-          <h2 className="text-lg font-semibold text-slate-800 mb-4">Order Summary</h2>
+        <div className="bg-white rounded-xl shadow-theme-xs border border-gray-200 p-6 h-fit sticky top-24">
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">Order Summary</h2>
           <div className="space-y-3 mb-6">
-            <div className="flex justify-between text-slate-600">
+            <div className="flex justify-between text-gray-600">
               <span>Subtotal ({items.length} items)</span>
               <span>${subtotal.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between text-slate-600">
+            <div className="flex justify-between text-gray-600">
               <span>Shipping</span>
               <span className="text-green-600">Free</span>
             </div>
             <hr />
-            <div className="flex justify-between font-semibold text-lg text-slate-800">
+            <div className="flex justify-between font-semibold text-lg text-gray-800">
               <span>Total</span>
               <span>${subtotal.toFixed(2)}</span>
             </div>
@@ -117,12 +117,12 @@ const Cart = () => {
           <button
             onClick={() => navigate('/checkout')}
             disabled={submitting}
-            className="w-full py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium disabled:opacity-50 flex items-center justify-center space-x-2"
+            className="w-full py-3 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition font-medium disabled:opacity-50 flex items-center justify-center space-x-2"
           >
             {submitting && <ButtonSpinner />}
             <span>Proceed to Checkout</span>
           </button>
-          <Link to="/products" className="block text-center mt-4 text-indigo-600 hover:text-indigo-700 text-sm font-medium">
+          <Link to="/products" className="block text-center mt-4 text-brand-500 hover:text-brand-600 text-sm font-medium">
             Continue Shopping
           </Link>
         </div>

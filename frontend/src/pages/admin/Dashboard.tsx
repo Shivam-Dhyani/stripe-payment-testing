@@ -63,7 +63,7 @@ const Dashboard = () => {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-slate-800 mb-8">Dashboard</h1>
+      <h1 className="text-3xl font-bold text-gray-800 mb-8">Dashboard</h1>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -73,11 +73,11 @@ const Dashboard = () => {
           kpiCards.map((card) => {
             const Icon = card.icon;
             return (
-              <div key={card.title} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <div key={card.title} className="bg-white rounded-xl shadow-theme-xs border border-gray-200 p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-slate-500 font-medium">{card.title}</p>
-                    <p className="text-2xl font-bold text-slate-800 mt-1">{card.value}</p>
+                    <p className="text-sm text-gray-500 font-medium">{card.title}</p>
+                    <p className="text-2xl font-bold text-gray-800 mt-1">{card.value}</p>
                   </div>
                   <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${card.color}`}>
                     <Icon className="w-6 h-6" />
@@ -98,8 +98,8 @@ const Dashboard = () => {
           </>
         ) : (
           <>
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <h2 className="text-lg font-semibold text-slate-800 mb-4">Revenue (Last 30 Days)</h2>
+            <div className="bg-white rounded-xl shadow-theme-xs border border-gray-200 p-6">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4">Revenue (Last 30 Days)</h2>
               <ResponsiveContainer width="100%" height={300}>
                 <AreaChart data={revenue}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -110,8 +110,8 @@ const Dashboard = () => {
                 </AreaChart>
               </ResponsiveContainer>
             </div>
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <h2 className="text-lg font-semibold text-slate-800 mb-4">Order Trends (Last 30 Days)</h2>
+            <div className="bg-white rounded-xl shadow-theme-xs border border-gray-200 p-6">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4">Order Trends (Last 30 Days)</h2>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={orderTrends}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -135,8 +135,8 @@ const Dashboard = () => {
           </>
         ) : (
           <>
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <h2 className="text-lg font-semibold text-slate-800 mb-4">Top Selling Products</h2>
+            <div className="bg-white rounded-xl shadow-theme-xs border border-gray-200 p-6">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4">Top Selling Products</h2>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={topProducts} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -147,8 +147,8 @@ const Dashboard = () => {
                 </BarChart>
               </ResponsiveContainer>
             </div>
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <h2 className="text-lg font-semibold text-slate-800 mb-4">Category Distribution</h2>
+            <div className="bg-white rounded-xl shadow-theme-xs border border-gray-200 p-6">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4">Category Distribution</h2>
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie
@@ -176,16 +176,16 @@ const Dashboard = () => {
       </div>
 
       {/* Recent Orders */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <h2 className="text-lg font-semibold text-slate-800 mb-4">Recent Orders</h2>
+      <div className="bg-white rounded-xl shadow-theme-xs border border-gray-200 p-6">
+        <h2 className="text-lg font-semibold text-gray-800 mb-4">Recent Orders</h2>
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
               <tr className="border-b border-gray-200">
-                <th className="pb-3 text-sm font-semibold text-slate-600">Order ID</th>
-                <th className="pb-3 text-sm font-semibold text-slate-600">Total</th>
-                <th className="pb-3 text-sm font-semibold text-slate-600">Status</th>
-                <th className="pb-3 text-sm font-semibold text-slate-600">Date</th>
+                <th className="pb-3 text-sm font-semibold text-gray-600">Order ID</th>
+                <th className="pb-3 text-sm font-semibold text-gray-600">Total</th>
+                <th className="pb-3 text-sm font-semibold text-gray-600">Status</th>
+                <th className="pb-3 text-sm font-semibold text-gray-600">Date</th>
               </tr>
             </thead>
             <tbody>
@@ -194,14 +194,14 @@ const Dashboard = () => {
               ) : (
                 recentOrders.map((order) => (
                   <tr key={order.id} className="border-b border-gray-50 hover:bg-gray-50 transition">
-                    <td className="py-3 text-sm text-slate-800 font-medium">#{order.id}</td>
-                    <td className="py-3 text-sm text-slate-800">${Number(order.total).toFixed(2)}</td>
+                    <td className="py-3 text-sm text-gray-800 font-medium">#{order.id}</td>
+                    <td className="py-3 text-sm text-gray-800">${Number(order.total).toFixed(2)}</td>
                     <td className="py-3">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${statusColors[order.status] || 'bg-gray-100 text-gray-700'}`}>
                         {order.status}
                       </span>
                     </td>
-                    <td className="py-3 text-sm text-slate-500">{new Date(order.created_at).toLocaleDateString()}</td>
+                    <td className="py-3 text-sm text-gray-500">{new Date(order.created_at).toLocaleDateString()}</td>
                   </tr>
                 ))
               )}

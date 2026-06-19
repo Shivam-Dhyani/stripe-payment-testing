@@ -133,14 +133,14 @@ const Profile = () => {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-3xl font-bold text-slate-800 mb-8">My Profile</h1>
+      <h1 className="text-title-sm font-bold text-gray-800 mb-8">My Profile</h1>
 
       {/* Tabs */}
       <div className="flex space-x-4 mb-8 border-b border-gray-200">
         <button
           onClick={() => setActiveTab('profile')}
           className={`pb-3 px-1 font-medium transition border-b-2 ${
-            activeTab === 'profile' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700'
+            activeTab === 'profile' ? 'border-brand-500 text-brand-500' : 'border-transparent text-gray-500 hover:text-gray-700'
           }`}
         >
           <div className="flex items-center space-x-2">
@@ -151,7 +151,7 @@ const Profile = () => {
         <button
           onClick={() => setActiveTab('addresses')}
           className={`pb-3 px-1 font-medium transition border-b-2 ${
-            activeTab === 'addresses' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700'
+            activeTab === 'addresses' ? 'border-brand-500 text-brand-500' : 'border-transparent text-gray-500 hover:text-gray-700'
           }`}
         >
           <div className="flex items-center space-x-2">
@@ -163,24 +163,24 @@ const Profile = () => {
 
       {/* Profile Tab */}
       {activeTab === 'profile' && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="bg-white rounded-xl shadow-theme-xs border border-gray-200 p-6">
           <form onSubmit={profileForm.handleSubmit(handleProfileSubmit)} className="space-y-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">First Name</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
                 <input
                   {...profileForm.register('first_name')}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg h-11 shadow-theme-xs focus:outline-hidden focus:ring-3 focus:border-brand-300 focus:ring-brand-500/20 transition"
                 />
                 {profileForm.formState.errors.first_name && (
                   <p className="mt-1 text-sm text-red-600">{profileForm.formState.errors.first_name.message}</p>
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Last Name</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
                 <input
                   {...profileForm.register('last_name')}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg h-11 shadow-theme-xs focus:outline-hidden focus:ring-3 focus:border-brand-300 focus:ring-brand-500/20 transition"
                 />
                 {profileForm.formState.errors.last_name && (
                   <p className="mt-1 text-sm text-red-600">{profileForm.formState.errors.last_name.message}</p>
@@ -188,17 +188,17 @@ const Profile = () => {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
               <input
                 type="email"
                 value={user?.email || ''}
                 disabled
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-lg bg-gray-50 text-slate-500"
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-lg bg-gray-50 text-gray-500"
               />
             </div>
             <button
               type="submit"
-              className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium"
+              className="px-6 py-2.5 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition font-medium"
             >
               Save Changes
             </button>
@@ -210,14 +210,14 @@ const Profile = () => {
       {activeTab === 'addresses' && (
         <div>
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-lg font-semibold text-slate-800">Saved Addresses</h2>
+            <h2 className="text-lg font-semibold text-gray-800">Saved Addresses</h2>
             <button
               onClick={() => {
                 setEditingAddress(null);
                 addressForm.reset({ label: '', street: '', city: '', state: '', zip_code: '', country: '', is_default: false });
                 setShowAddressForm(true);
               }}
-              className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium"
+              className="flex items-center space-x-2 px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition font-medium"
             >
               <Plus className="w-4 h-4" />
               <span>Add Address</span>
@@ -225,27 +225,27 @@ const Profile = () => {
           </div>
 
           {showAddressForm && (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
-              <h3 className="text-lg font-semibold text-slate-800 mb-4">
+            <div className="bg-white rounded-xl shadow-theme-xs border border-gray-200 p-6 mb-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">
                 {editingAddress ? 'Edit Address' : 'New Address'}
               </h3>
               <form onSubmit={addressForm.handleSubmit(handleAddressSubmit)} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Label</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Label</label>
                   <input
                     {...addressForm.register('label')}
                     placeholder="e.g., Home, Office"
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg h-11 shadow-theme-xs focus:outline-hidden focus:ring-3 focus:border-brand-300 focus:ring-brand-500/20 transition"
                   />
                   {addressForm.formState.errors.label && (
                     <p className="mt-1 text-sm text-red-600">{addressForm.formState.errors.label.message}</p>
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Street</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Street</label>
                   <input
                     {...addressForm.register('street')}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg h-11 shadow-theme-xs focus:outline-hidden focus:ring-3 focus:border-brand-300 focus:ring-brand-500/20 transition"
                   />
                   {addressForm.formState.errors.street && (
                     <p className="mt-1 text-sm text-red-600">{addressForm.formState.errors.street.message}</p>
@@ -253,20 +253,20 @@ const Profile = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">City</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
                     <input
                       {...addressForm.register('city')}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg h-11 shadow-theme-xs focus:outline-hidden focus:ring-3 focus:border-brand-300 focus:ring-brand-500/20 transition"
                     />
                     {addressForm.formState.errors.city && (
                       <p className="mt-1 text-sm text-red-600">{addressForm.formState.errors.city.message}</p>
                     )}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">State</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
                     <input
                       {...addressForm.register('state')}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg h-11 shadow-theme-xs focus:outline-hidden focus:ring-3 focus:border-brand-300 focus:ring-brand-500/20 transition"
                     />
                     {addressForm.formState.errors.state && (
                       <p className="mt-1 text-sm text-red-600">{addressForm.formState.errors.state.message}</p>
@@ -275,20 +275,20 @@ const Profile = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Zip Code</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Zip Code</label>
                     <input
                       {...addressForm.register('zip_code')}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg h-11 shadow-theme-xs focus:outline-hidden focus:ring-3 focus:border-brand-300 focus:ring-brand-500/20 transition"
                     />
                     {addressForm.formState.errors.zip_code && (
                       <p className="mt-1 text-sm text-red-600">{addressForm.formState.errors.zip_code.message}</p>
                     )}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Country</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
                     <input
                       {...addressForm.register('country')}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg h-11 shadow-theme-xs focus:outline-hidden focus:ring-3 focus:border-brand-300 focus:ring-brand-500/20 transition"
                     />
                     {addressForm.formState.errors.country && (
                       <p className="mt-1 text-sm text-red-600">{addressForm.formState.errors.country.message}</p>
@@ -296,13 +296,13 @@ const Profile = () => {
                   </div>
                 </div>
                 <label className="flex items-center space-x-2">
-                  <input type="checkbox" {...addressForm.register('is_default')} className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-                  <span className="text-sm text-slate-700">Set as default address</span>
+                  <input type="checkbox" {...addressForm.register('is_default')} className="rounded border-gray-300 text-brand-500 focus:ring-brand-500" />
+                  <span className="text-sm text-gray-700">Set as default address</span>
                 </label>
                 <div className="flex space-x-3">
                   <button
                     type="submit"
-                    className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium"
+                    className="px-6 py-2.5 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition font-medium"
                   >
                     {editingAddress ? 'Update Address' : 'Add Address'}
                   </button>
@@ -320,12 +320,12 @@ const Profile = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {addresses.map((address) => (
-              <div key={address.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+              <div key={address.id} className="bg-white rounded-xl shadow-theme-xs border border-gray-200 p-5">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center space-x-2">
-                    <h3 className="font-semibold text-slate-800">{address.label}</h3>
+                    <h3 className="font-semibold text-gray-800">{address.label}</h3>
                     {address.is_default && (
-                      <span className="flex items-center space-x-1 text-xs bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full">
+                      <span className="flex items-center space-x-1 text-xs bg-brand-100 text-brand-500 px-2 py-0.5 rounded-full">
                         <Star className="w-3 h-3" />
                         <span>Default</span>
                       </span>
@@ -334,21 +334,21 @@ const Profile = () => {
                   <div className="flex space-x-1">
                     <button
                       onClick={() => handleEditAddress(address)}
-                      className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition"
+                      className="p-1.5 text-gray-400 hover:text-brand-500 hover:bg-brand-50 rounded transition"
                     >
                       <Pencil className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => handleDeleteAddress(address.id)}
-                      className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition"
+                      className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
-                <p className="text-sm text-slate-600">{address.street}</p>
-                <p className="text-sm text-slate-600">{address.city}, {address.state} {address.zip_code}</p>
-                <p className="text-sm text-slate-600">{address.country}</p>
+                <p className="text-sm text-gray-600">{address.street}</p>
+                <p className="text-sm text-gray-600">{address.city}, {address.state} {address.zip_code}</p>
+                <p className="text-sm text-gray-600">{address.country}</p>
               </div>
             ))}
           </div>
@@ -356,7 +356,7 @@ const Profile = () => {
           {addresses.length === 0 && !showAddressForm && (
             <div className="text-center py-12">
               <MapPin className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-slate-500">No addresses saved yet.</p>
+              <p className="text-gray-500">No addresses saved yet.</p>
             </div>
           )}
         </div>

@@ -30,23 +30,23 @@ const Sidebar = () => {
     <>
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-slate-800 text-white rounded-lg"
+        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-gray-800 text-white rounded-lg"
       >
         {collapsed ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
       </button>
 
       <aside
-        className={`fixed left-0 top-0 h-full bg-slate-900 text-white transition-transform duration-300 z-40
+        className={`fixed left-0 top-0 h-full bg-gray-900 text-white transition-transform duration-300 z-40
           ${collapsed ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 w-64`}
       >
         <div className="p-6">
           <Link to="/admin/dashboard" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-brand-500 rounded-lg flex items-center justify-center">
               <Package className="w-5 h-5 text-white" />
             </div>
             <span className="text-xl font-bold">ShopHub</span>
           </Link>
-          <p className="text-slate-400 text-sm mt-1">Admin Panel</p>
+          <p className="text-gray-400 text-sm mt-1">Admin Panel</p>
         </div>
 
         <nav className="mt-4 px-4 space-y-1">
@@ -60,8 +60,8 @@ const Sidebar = () => {
                 onClick={() => setCollapsed(false)}
                 className={`flex items-center justify-between px-4 py-3 rounded-lg transition font-medium
                   ${isActive
-                    ? 'bg-indigo-600 text-white'
-                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                    ? 'bg-brand-500 text-white'
+                    : 'text-gray-300 hover:bg-gray-800 hover:text-white'
                   }`}
               >
                 <div className="flex items-center space-x-3">
@@ -81,7 +81,7 @@ const Sidebar = () => {
         <div className="absolute bottom-4 left-4 right-4">
           <Link
             to="/"
-            className="flex items-center space-x-2 px-4 py-3 text-slate-400 hover:text-white transition text-sm"
+            className="flex items-center space-x-2 px-4 py-3 text-gray-400 hover:text-white transition text-sm"
           >
             <span>Back to Store</span>
           </Link>

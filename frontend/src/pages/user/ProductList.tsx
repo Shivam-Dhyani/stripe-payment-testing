@@ -10,7 +10,7 @@ import { CardSkeleton } from '../../components/common/Skeleton';
 import ButtonSpinner from '../../components/common/ButtonSpinner';
 
 const gradients = [
-  'from-indigo-500 to-purple-600',
+  'from-brand-400 to-brand-600',
   'from-emerald-500 to-teal-600',
   'from-orange-500 to-red-600',
   'from-blue-500 to-cyan-600',
@@ -91,7 +91,7 @@ const ProductList = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-        <h1 className="text-3xl font-bold text-slate-800">Products</h1>
+        <h1 className="text-title-sm font-bold text-gray-800">Products</h1>
         <div className="flex items-center gap-4">
           <form onSubmit={handleSearch} className="relative">
             <input
@@ -99,7 +99,7 @@ const ProductList = () => {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search products..."
-              className="pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none w-64"
+              className="pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg h-11 shadow-theme-xs focus:outline-hidden focus:ring-3 focus:border-brand-300 focus:ring-brand-500/20 w-64"
             />
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           </form>
@@ -115,7 +115,7 @@ const ProductList = () => {
               const [sb, so] = e.target.value.split('-');
               updateParams({ sort: sb, order: so });
             }}
-            className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
+            className="px-4 py-2.5 border border-gray-300 rounded-lg h-11 shadow-theme-xs focus:outline-hidden focus:ring-3 focus:border-brand-300 focus:ring-brand-500/20 bg-white"
           >
             <option value="created_at-desc">Newest</option>
             <option value="created_at-asc">Oldest</option>
@@ -137,11 +137,11 @@ const ProductList = () => {
           )}
           <div className="space-y-6">
             <div>
-              <h3 className="font-semibold text-slate-800 mb-3">Categories</h3>
+              <h3 className="font-semibold text-gray-800 mb-3">Categories</h3>
               <div className="space-y-2">
                 <button
                   onClick={() => updateParams({ category: undefined, subcategory: undefined })}
-                  className={`block w-full text-left px-3 py-2 rounded-lg text-sm transition ${!categoryId ? 'bg-indigo-50 text-indigo-600 font-medium' : 'text-slate-600 hover:bg-gray-50'}`}
+                  className={`block w-full text-left px-3 py-2 rounded-lg text-sm transition ${!categoryId ? 'bg-brand-50 text-brand-500 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
                 >
                   All Categories
                 </button>
@@ -149,7 +149,7 @@ const ProductList = () => {
                   <button
                     key={cat.id}
                     onClick={() => updateParams({ category: cat.id, subcategory: undefined })}
-                    className={`block w-full text-left px-3 py-2 rounded-lg text-sm transition ${categoryId === cat.id ? 'bg-indigo-50 text-indigo-600 font-medium' : 'text-slate-600 hover:bg-gray-50'}`}
+                    className={`block w-full text-left px-3 py-2 rounded-lg text-sm transition ${categoryId === cat.id ? 'bg-brand-50 text-brand-500 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
                   >
                     {cat.name}
                   </button>
@@ -159,11 +159,11 @@ const ProductList = () => {
 
             {categoryId && subcategories.length > 0 && (
               <div>
-                <h3 className="font-semibold text-slate-800 mb-3">Subcategories</h3>
+                <h3 className="font-semibold text-gray-800 mb-3">Subcategories</h3>
                 <div className="space-y-2">
                   <button
                     onClick={() => updateParams({ subcategory: undefined })}
-                    className={`block w-full text-left px-3 py-2 rounded-lg text-sm transition ${!subCategoryId ? 'bg-indigo-50 text-indigo-600 font-medium' : 'text-slate-600 hover:bg-gray-50'}`}
+                    className={`block w-full text-left px-3 py-2 rounded-lg text-sm transition ${!subCategoryId ? 'bg-brand-50 text-brand-500 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
                   >
                     All Subcategories
                   </button>
@@ -171,7 +171,7 @@ const ProductList = () => {
                     <button
                       key={sc.id}
                       onClick={() => updateParams({ subcategory: sc.id })}
-                      className={`block w-full text-left px-3 py-2 rounded-lg text-sm transition ${subCategoryId === sc.id ? 'bg-indigo-50 text-indigo-600 font-medium' : 'text-slate-600 hover:bg-gray-50'}`}
+                      className={`block w-full text-left px-3 py-2 rounded-lg text-sm transition ${subCategoryId === sc.id ? 'bg-brand-50 text-brand-500 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
                     >
                       {sc.name}
                     </button>
@@ -191,8 +191,8 @@ const ProductList = () => {
           ) : products.length === 0 ? (
             <div className="text-center py-16">
               <ShoppingBag className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-slate-700">No products found</h3>
-              <p className="text-slate-500 mt-2">Try adjusting your filters or search terms.</p>
+              <h3 className="text-xl font-semibold text-gray-700">No products found</h3>
+              <p className="text-gray-500 mt-2">Try adjusting your filters or search terms.</p>
             </div>
           ) : (
             <>
@@ -201,7 +201,7 @@ const ProductList = () => {
                   <Link
                     key={product.id}
                     to={`/products/${product.id}`}
-                    className="group bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100"
+                    className="group bg-white rounded-xl shadow-theme-xs hover:shadow-theme-md transition-all duration-300 overflow-hidden border border-gray-200"
                   >
                     <div className={`h-48 bg-gradient-to-br ${gradients[index % gradients.length]} flex items-center justify-center relative`}>
                       <span className="text-5xl font-bold text-white/20">
@@ -211,22 +211,22 @@ const ProductList = () => {
                         <button
                           onClick={(e) => handleAddToCart(e, product.id)}
                           disabled={addingProductId === product.id}
-                          className="absolute bottom-3 right-3 p-2 bg-white rounded-lg shadow-md opacity-0 group-hover:opacity-100 transition-all hover:bg-indigo-50 disabled:opacity-75"
+                          className="absolute bottom-3 right-3 p-2 bg-white rounded-lg shadow-theme-sm opacity-0 group-hover:opacity-100 transition-all hover:bg-brand-50 disabled:opacity-75"
                         >
-                          {addingProductId === product.id ? <ButtonSpinner /> : <ShoppingCart className="w-5 h-5 text-indigo-600" />}
+                          {addingProductId === product.id ? <ButtonSpinner /> : <ShoppingCart className="w-5 h-5 text-brand-500" />}
                         </button>
                       )}
                     </div>
                     <div className="p-4">
-                      <p className="text-xs text-indigo-600 font-medium mb-1">
+                      <p className="text-xs text-brand-500 font-medium mb-1">
                         {product.sub_category?.category?.name || 'Category'} / {product.sub_category?.name || 'Sub'}
                       </p>
-                      <h3 className="font-semibold text-slate-800 group-hover:text-indigo-600 transition truncate">
+                      <h3 className="font-semibold text-gray-800 group-hover:text-brand-500 transition truncate">
                         {product.name}
                       </h3>
-                      <p className="text-sm text-slate-500 mt-1 line-clamp-2">{product.description}</p>
+                      <p className="text-sm text-gray-500 mt-1 line-clamp-2">{product.description}</p>
                       <div className="flex items-center justify-between mt-3">
-                        <span className="text-lg font-bold text-indigo-600">${Number(product.price).toFixed(2)}</span>
+                        <span className="text-lg font-bold text-brand-500">${Number(product.price).toFixed(2)}</span>
                         <span className={`text-xs px-2 py-1 rounded-full ${product.stock > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                           {product.stock > 0 ? `${product.stock} left` : 'Out of Stock'}
                         </span>
@@ -250,7 +250,7 @@ const ProductList = () => {
                     <button
                       key={p}
                       onClick={() => updateParams({ page: String(p) })}
-                      className={`px-4 py-2 rounded-lg transition ${p === page ? 'bg-indigo-600 text-white' : 'border border-gray-300 hover:bg-gray-50'}`}
+                      className={`px-4 py-2 rounded-lg transition ${p === page ? 'bg-brand-500 text-white' : 'border border-gray-300 hover:bg-gray-50'}`}
                     >
                       {p}
                     </button>

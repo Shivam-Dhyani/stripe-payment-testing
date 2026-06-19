@@ -64,9 +64,9 @@ const CheckoutForm = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center space-x-2">
-          <CreditCard className="w-5 h-5 text-indigo-600" />
+      <div className="bg-white rounded-xl shadow-theme-xs border border-gray-200 p-6">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
+          <CreditCard className="w-5 h-5 text-brand-500" />
           <span>Card Details</span>
         </h3>
         <div className="border border-gray-300 rounded-lg p-4">
@@ -86,7 +86,7 @@ const CheckoutForm = ({
       <button
         type="submit"
         disabled={!stripe || processing}
-        className="w-full py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium disabled:opacity-50"
+        className="w-full py-3 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition font-medium disabled:opacity-50"
       >
         {processing ? 'Processing...' : 'Pay Now'}
       </button>
@@ -143,22 +143,22 @@ const Checkout = () => {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-3xl font-bold text-slate-800 mb-8">Checkout</h1>
+      <h1 className="text-title-sm font-bold text-gray-800 mb-8">Checkout</h1>
 
       {/* Progress Steps */}
       <div className="flex items-center justify-center mb-12">
         {steps.map((step, index) => (
           <div key={step} className="flex items-center">
             <div className={`flex items-center justify-center w-10 h-10 rounded-full font-semibold text-sm ${
-              index <= currentStep ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-500'
+              index <= currentStep ? 'bg-brand-500 text-white' : 'bg-gray-200 text-gray-500'
             }`}>
               {index < currentStep ? <Check className="w-5 h-5" /> : index + 1}
             </div>
-            <span className={`ml-2 text-sm font-medium ${index <= currentStep ? 'text-indigo-600' : 'text-gray-500'}`}>
+            <span className={`ml-2 text-sm font-medium ${index <= currentStep ? 'text-brand-500' : 'text-gray-500'}`}>
               {step}
             </span>
             {index < steps.length - 1 && (
-              <div className={`w-16 h-0.5 mx-4 ${index < currentStep ? 'bg-indigo-600' : 'bg-gray-200'}`} />
+              <div className={`w-16 h-0.5 mx-4 ${index < currentStep ? 'bg-brand-500' : 'bg-gray-200'}`} />
             )}
           </div>
         ))}
@@ -167,17 +167,17 @@ const Checkout = () => {
       {/* Step 1: Address */}
       {currentStep === 0 && (
         <div>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
-            <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center space-x-2">
-              <MapPin className="w-5 h-5 text-indigo-600" />
+          <div className="bg-white rounded-xl shadow-theme-xs border border-gray-200 p-6 mb-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
+              <MapPin className="w-5 h-5 text-brand-500" />
               <span>Select Delivery Address</span>
             </h3>
             {addresses.length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-slate-500 mb-4">No addresses found. Please add one in your profile.</p>
+                <p className="text-gray-500 mb-4">No addresses found. Please add one in your profile.</p>
                 <button
                   onClick={() => navigate('/profile')}
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium"
+                  className="px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition font-medium"
                 >
                   Go to Profile
                 </button>
@@ -189,15 +189,15 @@ const Checkout = () => {
                     key={addr.id}
                     onClick={() => setSelectedAddressId(addr.id)}
                     className={`text-left p-4 rounded-lg border-2 transition ${
-                      selectedAddressId === addr.id ? 'border-indigo-600 bg-indigo-50' : 'border-gray-200 hover:border-indigo-300'
+                      selectedAddressId === addr.id ? 'border-brand-500 bg-brand-50' : 'border-gray-200 hover:border-brand-300'
                     }`}
                   >
-                    <p className="font-semibold text-slate-800">{addr.label}</p>
-                    <p className="text-sm text-slate-600 mt-1">{addr.street}</p>
-                    <p className="text-sm text-slate-600">{addr.city}, {addr.state} {addr.zip_code}</p>
-                    <p className="text-sm text-slate-600">{addr.country}</p>
+                    <p className="font-semibold text-gray-800">{addr.label}</p>
+                    <p className="text-sm text-gray-600 mt-1">{addr.street}</p>
+                    <p className="text-sm text-gray-600">{addr.city}, {addr.state} {addr.zip_code}</p>
+                    <p className="text-sm text-gray-600">{addr.country}</p>
                     {addr.is_default && (
-                      <span className="inline-block mt-2 text-xs bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full">Default</span>
+                      <span className="inline-block mt-2 text-xs bg-brand-100 text-brand-500 px-2 py-0.5 rounded-full">Default</span>
                     )}
                   </button>
                 ))}
@@ -208,7 +208,7 @@ const Checkout = () => {
             <button
               onClick={() => setCurrentStep(1)}
               disabled={!selectedAddressId}
-              className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium disabled:opacity-50"
+              className="px-6 py-3 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition font-medium disabled:opacity-50"
             >
               Continue to Review
             </button>
@@ -219,21 +219,21 @@ const Checkout = () => {
       {/* Step 2: Review */}
       {currentStep === 1 && (
         <div>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
-            <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center space-x-2">
-              <Package className="w-5 h-5 text-indigo-600" />
+          <div className="bg-white rounded-xl shadow-theme-xs border border-gray-200 p-6 mb-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
+              <Package className="w-5 h-5 text-brand-500" />
               <span>Order Review</span>
             </h3>
             <div className="space-y-3">
               {items.map((item) => (
-                <div key={item.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
+                <div key={item.id} className="flex items-center justify-between py-3 border-b border-gray-200 last:border-0">
                   <div className="flex items-center space-x-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
+                    <div className="w-12 h-12 bg-gradient-to-br from-brand-400 to-brand-600 rounded-lg flex items-center justify-center">
                       <span className="text-white text-xs font-bold">{item.product?.name?.substring(0, 2).toUpperCase()}</span>
                     </div>
                     <div>
-                      <p className="font-medium text-slate-800">{item.product?.name}</p>
-                      <p className="text-sm text-slate-500">Qty: {item.quantity}</p>
+                      <p className="font-medium text-gray-800">{item.product?.name}</p>
+                      <p className="text-sm text-gray-500">Qty: {item.quantity}</p>
                     </div>
                   </div>
                   <p className="font-semibold">${(Number(item.product?.price || 0) * item.quantity).toFixed(2)}</p>
@@ -243,7 +243,7 @@ const Checkout = () => {
             <div className="border-t border-gray-200 mt-4 pt-4">
               <div className="flex justify-between font-semibold text-lg">
                 <span>Total</span>
-                <span className="text-indigo-600">${subtotal.toFixed(2)}</span>
+                <span className="text-brand-500">${subtotal.toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -257,7 +257,7 @@ const Checkout = () => {
             <button
               onClick={handleCheckout}
               disabled={loading}
-              className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium disabled:opacity-50"
+              className="px-6 py-3 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition font-medium disabled:opacity-50"
             >
               {loading ? 'Processing...' : 'Proceed to Payment'}
             </button>
