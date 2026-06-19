@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, ChevronLeft, Package } from 'lucide-react';
+import { Eye, EyeOff, Package } from 'lucide-react';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { registerUser, clearError } from '../../store/slices/authSlice';
@@ -56,19 +56,33 @@ const Register = () => {
   };
 
   return (
-    <div className="relative flex flex-col justify-center w-full min-h-screen lg:flex-row bg-white">
-      {/* Form Panel */}
-      <div className="flex flex-col flex-1 w-full overflow-y-auto lg:w-1/2 p-6 sm:p-0">
-        <div className="w-full max-w-md mx-auto mb-5 sm:pt-10">
-          <Link
-            to="/"
-            className="inline-flex items-center text-sm text-gray-500 transition-colors hover:text-gray-700"
-          >
-            <ChevronLeft className="size-5" />
-            Back to store
-          </Link>
+    <div className="relative flex flex-col-reverse w-full min-h-screen lg:flex-row bg-white">
+      {/* Branding Panel — Left */}
+      <div className="hidden lg:grid w-full lg:w-1/2 h-screen bg-brand-950 items-center sticky top-0">
+        <div className="relative flex items-center justify-center z-1">
+          <div className="absolute inset-0 opacity-[0.04]"
+            style={{
+              backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
+              backgroundSize: '24px 24px',
+            }}
+          />
+          <div className="flex flex-col items-center max-w-sm relative">
+            <div className="flex items-center space-x-3 mb-6">
+              <div className="w-14 h-14 bg-brand-500 rounded-2xl flex items-center justify-center shadow-lg">
+                <Package className="w-8 h-8 text-white" />
+              </div>
+              <span className="text-4xl font-bold text-white tracking-tight">ShopHub</span>
+            </div>
+            <p className="text-center text-brand-200/60 text-lg leading-relaxed">
+              Your modern e-commerce platform for seamless shopping experiences
+            </p>
+          </div>
         </div>
-        <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
+      </div>
+
+      {/* Form Panel — Right */}
+      <div className="flex flex-col flex-1 w-full overflow-y-auto lg:w-1/2 p-6 sm:p-0">
+        <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto py-10">
           <div className="mb-5 sm:mb-8">
             <h1 className="mb-2 font-semibold text-gray-800 text-title-sm sm:text-title-md">
               Sign Up
@@ -200,7 +214,7 @@ const Register = () => {
             </div>
           </form>
 
-          <div className="mt-5 mb-10">
+          <div className="mt-5">
             <p className="text-sm font-normal text-center text-gray-700 sm:text-start">
               Already have an account?{' '}
               <Link
@@ -209,29 +223,6 @@ const Register = () => {
               >
                 Sign In
               </Link>
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Branding Panel */}
-      <div className="hidden lg:grid w-full lg:w-1/2 h-screen bg-brand-950 items-center">
-        <div className="relative flex items-center justify-center z-1">
-          <div className="absolute inset-0 opacity-[0.03]"
-            style={{
-              backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
-              backgroundSize: '24px 24px',
-            }}
-          />
-          <div className="flex flex-col items-center max-w-xs relative">
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="w-12 h-12 bg-brand-500 rounded-xl flex items-center justify-center">
-                <Package className="w-7 h-7 text-white" />
-              </div>
-              <span className="text-3xl font-bold text-white">ShopHub</span>
-            </div>
-            <p className="text-center text-gray-400">
-              Your modern e-commerce platform for seamless shopping experiences
             </p>
           </div>
         </div>
