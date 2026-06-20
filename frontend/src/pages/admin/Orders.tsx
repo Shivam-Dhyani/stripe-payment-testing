@@ -5,6 +5,7 @@ import { useAppSelector } from '../../hooks/useAppSelector';
 import { fetchAllOrders, updateOrderStatus } from '../../store/slices/orderSlice';
 import { Order, PaymentEvent, OrderStatusHistory } from '../../types';
 import ButtonSpinner from '../../components/common/ButtonSpinner';
+import { formatDate, formatDateTime } from '../../utils/date';
 
 const statusColors: Record<string, string> = {
   confirmed: 'bg-blue-100 text-blue-700',
@@ -268,7 +269,7 @@ const Orders = () => {
                           {order.status}
                         </span>
                       </td>
-                      <td className="px-5 py-4 text-sm text-gray-800">{new Date(order.created_at).toLocaleDateString()}</td>
+                      <td className="px-5 py-4 text-sm text-gray-800">{formatDate(order.created_at)}</td>
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-2">
                           <button
@@ -436,7 +437,7 @@ const Orders = () => {
               </div>
               <div>
                 <p className="text-sm text-gray-500">Date</p>
-                <p className="font-medium">{new Date(detailOrder.created_at).toLocaleString()}</p>
+                <p className="font-medium">{formatDateTime(detailOrder.created_at)}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Payment</p>
@@ -486,7 +487,7 @@ const Orders = () => {
                           </div>
                           <div className="flex items-center space-x-2 mt-0.5">
                             <span className="text-xs text-gray-400">
-                              {new Date(entry.created_at).toLocaleString()}
+                              {formatDateTime(entry.created_at)}
                             </span>
                             {entry.changed_by_name && (
                               <span className="text-xs text-gray-500">by {entry.changed_by_name}</span>
@@ -524,10 +525,14 @@ const Orders = () => {
               </button>
               {paymentEventsOpen && (
                 <div className="px-4 py-3">
-                  {detailOrder.payment_events && detailOrder.payment_events.length > 0 ? (
+                  {(() => {
+                    const paymentOnlyEvents = (detailOrder.payment_events || []).filter(
+                      (e: PaymentEvent) => ['created', 'succeeded', 'failed', 'refunded'].includes(e.event_type)
+                    );
+                    return paymentOnlyEvents.length > 0 ? (
                     <div className="relative pl-6 border-l-2 border-gray-200 space-y-4">
-                      {detailOrder.payment_events.map((event: PaymentEvent, index: number) => {
-                        const isLast = index === detailOrder.payment_events!.length - 1;
+                      {paymentOnlyEvents.map((event: PaymentEvent, index: number) => {
+                        const isLast = index === paymentOnlyEvents.length - 1;
                         const eventConfig: Record<string, { icon: React.ReactNode; color: string; bg: string }> = {
                           created: { icon: <CreditCard className="w-4 h-4" />, color: 'text-blue-600', bg: 'bg-blue-100' },
                           processing: { icon: <Truck className="w-4 h-4" />, color: 'text-purple-600', bg: 'bg-purple-100' },
@@ -548,7 +553,7 @@ const Orders = () => {
                                   {event.event_type}
                                 </span>
                                 <span className="text-xs text-gray-400">
-                                  {new Date(event.created_at).toLocaleString()}
+                                  {formatDateTime(event.created_at)}
                                 </span>
                               </div>
                               {event.message && (
@@ -564,7 +569,8 @@ const Orders = () => {
                       <Clock className="w-4 h-4" />
                       <p className="text-sm">No payment events recorded</p>
                     </div>
-                  )}
+                  );
+                  })()}
                 </div>
               )}
             </div>

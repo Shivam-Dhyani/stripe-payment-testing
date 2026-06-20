@@ -5,6 +5,7 @@ import { fetchOrders, fetchOrderById } from '../../store/slices/orderSlice';
 import { Package, ChevronDown, ChevronUp, Calendar, Hash, Check, X, XCircle, CreditCard } from 'lucide-react';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { Order, OrderStatusHistory } from '../../types';
+import { formatDate, formatShortDateTime } from '../../utils/date';
 
 const statusColors: Record<string, string> = {
   confirmed: 'bg-blue-100 text-blue-700',
@@ -53,7 +54,7 @@ const getStepData = (order: Order) => {
         completed: true,
         active: false,
         cancelled: false,
-        date: new Date(order.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+        date: formatShortDateTime(order.created_at),
       };
     }
 
@@ -82,7 +83,7 @@ const getStepData = (order: Order) => {
       active: isActive,
       cancelled: showCancelled,
       date: stepDate
-        ? new Date(stepDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+        ? formatShortDateTime(stepDate)
         : undefined,
     };
   });
@@ -134,7 +135,7 @@ const OrderHistory = () => {
                     </div>
                     <div className="flex items-center space-x-2 text-sm text-gray-500 mt-1">
                       <Calendar className="w-4 h-4" />
-                      <span>{new Date(order.created_at).toLocaleDateString()}</span>
+                      <span>{formatDate(order.created_at)}</span>
                     </div>
                   </div>
                   <span className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${statusColors[order.status] || 'bg-gray-100 text-gray-700'}`}>

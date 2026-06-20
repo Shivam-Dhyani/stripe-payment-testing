@@ -4,6 +4,7 @@ import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { fetchAllCarts } from '../../store/slices/adminCartSlice';
 import { AdminCartUser } from '../../types';
+import { formatDate } from '../../utils/date';
 
 const Carts = () => {
   const dispatch = useAppDispatch();
@@ -171,7 +172,7 @@ const Carts = () => {
                               ${item.product_price.toFixed(2)} x {item.quantity}
                             </p>
                             <p className="text-xs text-gray-400">
-                              Stock: {item.stock} | Added: {new Date(item.created_at).toLocaleDateString()}
+                              Stock: {item.stock} | Added: {formatDate(item.created_at)}
                             </p>
                           </div>
                         </div>

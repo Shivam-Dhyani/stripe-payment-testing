@@ -7,6 +7,7 @@ import {
 import { dashboardService } from '../../services/dashboardService';
 import { DashboardStats, RevenueData, TopProduct, CategoryDistribution, OrderTrend, Order } from '../../types';
 import { KpiSkeleton, ChartSkeleton, TableRowSkeleton } from '../../components/common/Skeleton';
+import { formatDate } from '../../utils/date';
 
 const COLORS = ['#8b5cf6', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e'];
 
@@ -224,7 +225,7 @@ const Dashboard = () => {
                         {order.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{new Date(order.created_at).toLocaleDateString()}</td>
+                    <td className="px-6 py-4 text-sm text-gray-500">{formatDate(order.created_at)}</td>
                   </tr>
                 ))
               )}
