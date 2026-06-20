@@ -11,6 +11,8 @@ class ProductCreate(BaseModel):
     price: float
     stock: int = 0
     image_url: Optional[str] = None
+    is_returnable: bool = False
+    return_window_days: Optional[int] = None
 
 
 class ProductUpdate(BaseModel):
@@ -21,6 +23,8 @@ class ProductUpdate(BaseModel):
     stock: Optional[int] = None
     image_url: Optional[str] = None
     is_active: Optional[bool] = None
+    is_returnable: Optional[bool] = None
+    return_window_days: Optional[int] = None
 
 
 class CategoryInfo(BaseModel):
@@ -48,6 +52,8 @@ class ProductResponse(BaseModel):
     stock: int
     image_url: Optional[str] = None
     is_active: bool
+    is_returnable: bool
+    return_window_days: Optional[int] = None
     created_at: datetime
     updated_at: datetime
     sub_category: Optional[SubCategoryInfo] = Field(default=None, validation_alias="subcategory")

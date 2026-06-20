@@ -46,6 +46,8 @@ export interface Product {
   stock: number;
   image_url: string | null;
   is_active: boolean;
+  is_returnable: boolean;
+  return_window_days: number | null;
   sub_category?: SubCategory & { category?: Category };
 }
 
@@ -163,6 +165,52 @@ export interface CategoryDistribution {
 export interface OrderTrend {
   date: string;
   orders: number;
+}
+
+export interface CancellationRequest {
+  id: string;
+  order_id: string;
+  user_id: string;
+  reason: string;
+  status: 'pending' | 'approved' | 'rejected';
+  admin_notes: string | null;
+  resolved_by: string | null;
+  resolver_name: string | null;
+  customer_name: string | null;
+  customer_email: string | null;
+  order_total: number | null;
+  order_status: string | null;
+  created_at: string;
+  resolved_at: string | null;
+}
+
+export interface ReturnRequestItem {
+  id: string;
+  order_item_id: string;
+  quantity: number;
+  product_name: string | null;
+  product_price: number | null;
+}
+
+export interface ReturnRequest {
+  id: string;
+  order_id: string;
+  user_id: string;
+  reason: string;
+  status: 'requested' | 'approved' | 'rejected' | 'pickup_scheduled' | 'received' | 'refunded';
+  admin_notes: string | null;
+  pickup_date: string | null;
+  pickup_address: string | null;
+  refund_amount: number | null;
+  resolved_by: string | null;
+  resolver_name: string | null;
+  customer_name: string | null;
+  customer_email: string | null;
+  order_total: number | null;
+  order_status: string | null;
+  created_at: string;
+  updated_at: string;
+  items: ReturnRequestItem[];
 }
 
 export interface AdminCartItem {

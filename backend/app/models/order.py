@@ -34,6 +34,8 @@ class Order(Base):
     items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
     payment_events = relationship("PaymentEvent", back_populates="order", cascade="all, delete-orphan", order_by="PaymentEvent.created_at")
     status_history = relationship("OrderStatusHistory", back_populates="order", cascade="all, delete-orphan", order_by="OrderStatusHistory.created_at")
+    cancellation_requests = relationship("CancellationRequest", back_populates="order", cascade="all, delete-orphan")
+    return_requests = relationship("ReturnRequest", back_populates="order", cascade="all, delete-orphan")
 
 
 class OrderItem(Base):

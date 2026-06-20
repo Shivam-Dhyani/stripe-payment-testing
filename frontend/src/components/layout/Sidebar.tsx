@@ -1,9 +1,11 @@
 import { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, FolderTree, Layers, ShoppingBag, ClipboardList, Package, ShoppingCart, Store } from 'lucide-react';
+import { LayoutDashboard, FolderTree, Layers, ShoppingBag, ClipboardList, Package, ShoppingCart, Store, Ban, RotateCcw } from 'lucide-react';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { fetchAllOrders } from '../../store/slices/orderSlice';
+import { fetchCancellationPendingCount } from '../../store/slices/cancellationSlice';
+import { fetchReturnPendingCount } from '../../store/slices/returnSlice';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -14,19 +16,25 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const location = useLocation();
   const dispatch = useAppDispatch();
   const { orders } = useAppSelector((state) => state.orders);
+  const { pendingCount: cancelPendingCount } = useAppSelector((state) => state.cancellations);
+  const { pendingCount: returnPendingCount } = useAppSelector((state) => state.returns);
 
   useEffect(() => {
     dispatch(fetchAllOrders());
+    dispatch(fetchCancellationPendingCount());
+    dispatch(fetchReturnPendingCount());
   }, [dispatch]);
 
-  const pendingCount = orders.filter(o => o.status === 'confirmed' || o.status === 'processing').length;
+  const orderPendingCount = orders.filter(o => o.status === 'confirmed' || o.status === 'processing').length;
 
   const menuItems = [
     { path: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard, badge: 0 },
     { path: '/admin/categories', label: 'Categories', icon: FolderTree, badge: 0 },
     { path: '/admin/subcategories', label: 'Sub Categories', icon: Layers, badge: 0 },
     { path: '/admin/products', label: 'Products', icon: ShoppingBag, badge: 0 },
-    { path: '/admin/orders', label: 'Orders', icon: ClipboardList, badge: pendingCount },
+    { path: '/admin/orders', label: 'Orders', icon: ClipboardList, badge: orderPendingCount },
+    { path: '/admin/cancellations', label: 'Cancellations', icon: Ban, badge: cancelPendingCount },
+    { path: '/admin/returns', label: 'Returns', icon: RotateCcw, badge: returnPendingCount },
     { path: '/admin/carts', label: 'User Carts', icon: ShoppingCart, badge: 0 },
   ];
 

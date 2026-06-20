@@ -4,10 +4,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text, inspect
 from app.database import engine, Base, SessionLocal
 from app.models import (
-    User, Address, Category, SubCategory, Product, CartItem, Order, OrderItem, OrderStatusHistory, PaymentEvent
+    User, Address, Category, SubCategory, Product, CartItem, Order, OrderItem, OrderStatusHistory, PaymentEvent,
+    CancellationRequest, ReturnRequest, ReturnRequestItem
 )
 from app.seed import seed_database
-from app.routers import auth, categories, subcategories, products, addresses, cart, orders, dashboard, webhooks
+from app.routers import auth, categories, subcategories, products, addresses, cart, orders, dashboard, webhooks, cancellation_requests, return_requests
 
 
 def run_migrations(db):
@@ -37,6 +38,16 @@ def run_migrations(db):
     # Step 3: Migrate any remaining 'pending' statuses to 'confirmed'
     db.execute(text("UPDATE orders SET status = 'confirmed' WHERE status = 'pending'"))
     db.commit()
+
+    # Step 4: Add returnable fields to products table
+    if "products" in inspector.get_table_names():
+        product_columns = [col["name"] for col in inspector.get_columns("products")]
+        if "is_returnable" not in product_columns:
+            db.execute(text("ALTER TABLE products ADD COLUMN is_returnable BOOLEAN DEFAULT FALSE NOT NULL"))
+            db.execute(text("ALTER TABLE products ADD COLUMN return_window_days INTEGER"))
+            db.commit()
+            print("Added returnable fields to products table")
+
     print("Database migrations completed.")
 
 
@@ -88,6 +99,8 @@ app.include_router(cart.router, prefix="/api")
 app.include_router(orders.router, prefix="/api")
 app.include_router(dashboard.router, prefix="/api")
 app.include_router(webhooks.router, prefix="/api")
+app.include_router(cancellation_requests.router, prefix="/api")
+app.include_router(return_requests.router, prefix="/api")
 
 
 @app.get("/")

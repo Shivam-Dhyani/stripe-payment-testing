@@ -7,3 +7,5 @@ from app.schemas.cart import CartItemCreate, CartItemUpdate, CartItemResponse
 from app.schemas.order import OrderResponse, OrderItemResponse, OrderStatusUpdate, CheckoutRequest, ConfirmPaymentRequest
 from app.schemas.auth import Token, TokenData
 from app.schemas.dashboard import DashboardStats, RevenueData, TopProduct, CategoryDistribution, OrderTrend
+from app.schemas.cancellation_request import CancellationRequestCreate, CancellationRequestResolve, CancellationRequestResponse
+from app.schemas.return_request import ReturnRequestItemCreate, ReturnRequestCreate, ReturnRequestResolve, ReturnRequestItemResponse, ReturnRequestResponse

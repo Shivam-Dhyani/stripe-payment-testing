@@ -31,6 +31,8 @@ import SubCategories from './pages/admin/SubCategories';
 import Products from './pages/admin/Products';
 import Orders from './pages/admin/Orders';
 import Carts from './pages/admin/Carts';
+import CancellationRequests from './pages/admin/CancellationRequests';
+import ReturnRequests from './pages/admin/ReturnRequests';
 
 const AppContent = () => {
   const dispatch = useAppDispatch();
@@ -108,6 +110,8 @@ const AppContent = () => {
         <Route path="/admin/subcategories" element={<SubCategories />} />
         <Route path="/admin/products" element={<Products />} />
         <Route path="/admin/orders" element={<Orders />} />
+        <Route path="/admin/cancellations" element={<CancellationRequests />} />
+        <Route path="/admin/returns" element={<ReturnRequests />} />
         <Route path="/admin/carts" element={<Carts />} />
       </Route>
     </Routes>

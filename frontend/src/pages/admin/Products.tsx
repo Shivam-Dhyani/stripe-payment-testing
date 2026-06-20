@@ -18,6 +18,8 @@ const productSchema = z.object({
   sub_category_id: z.string().min(1, 'Sub-category is required'),
   image_url: z.string().optional(),
   is_active: z.boolean(),
+  is_returnable: z.boolean(),
+  return_window_days: z.number().nullable().optional(),
 });
 
 type ProductFormData = z.infer<typeof productSchema>;
@@ -39,7 +41,7 @@ const Products = () => {
 
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
-    defaultValues: { name: '', description: '', price: 0, stock: 0, sub_category_id: '', image_url: '', is_active: true },
+    defaultValues: { name: '', description: '', price: 0, stock: 0, sub_category_id: '', image_url: '', is_active: true, is_returnable: false, return_window_days: null },
   });
 
   useEffect(() => {
@@ -104,6 +106,8 @@ const Products = () => {
       sub_category_id: product.sub_category_id,
       image_url: product.image_url || '',
       is_active: product.is_active,
+      is_returnable: product.is_returnable || false,
+      return_window_days: product.return_window_days ?? null,
     });
     setShowModal(true);
   };
@@ -112,7 +116,7 @@ const Products = () => {
     setShowModal(false);
     setEditingProduct(null);
     setSelectedCategoryInForm(undefined);
-    form.reset({ name: '', description: '', price: 0, stock: 0, sub_category_id: '', image_url: '', is_active: true });
+    form.reset({ name: '', description: '', price: 0, stock: 0, sub_category_id: '', image_url: '', is_active: true, is_returnable: false, return_window_days: null });
   };
 
   const handleDelete = async (id: string) => {
@@ -152,7 +156,7 @@ const Products = () => {
           onClick={() => {
             setEditingProduct(null);
             setSelectedCategoryInForm(undefined);
-            form.reset({ name: '', description: '', price: 0, stock: 0, sub_category_id: '', image_url: '', is_active: true });
+            form.reset({ name: '', description: '', price: 0, stock: 0, sub_category_id: '', image_url: '', is_active: true, is_returnable: false, return_window_days: null });
             setShowModal(true);
           }}
           className="flex items-center space-x-2 px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition font-medium"
@@ -416,6 +420,27 @@ const Products = () => {
                 <input type="checkbox" {...form.register('is_active')} className="rounded border-gray-300 text-brand-500 focus:ring-brand-500" />
                 <span className="text-sm text-gray-700">Active</span>
               </label>
+              <div className="border-t border-gray-200 pt-4 mt-2">
+                <label className="flex items-center space-x-2">
+                  <input type="checkbox" {...form.register('is_returnable')} className="rounded border-gray-300 text-brand-500 focus:ring-brand-500" />
+                  <span className="text-sm text-gray-700">Returnable</span>
+                </label>
+                {form.watch('is_returnable') && (
+                  <div className="mt-3">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Return Window</label>
+                    <select
+                      value={form.watch('return_window_days') ?? ''}
+                      onChange={(e) => form.setValue('return_window_days', e.target.value ? Number(e.target.value) : null)}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-3 focus:ring-brand-500/20 focus:border-brand-300 focus:outline-hidden bg-white"
+                    >
+                      <option value="">Select return window</option>
+                      <option value="7">7 days</option>
+                      <option value="14">14 days</option>
+                      <option value="30">30 days</option>
+                    </select>
+                  </div>
+                )}
+              </div>
               <div className="flex justify-end space-x-3 pt-4">
                 <button type="button" onClick={closeModal} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium">Cancel</button>
                 <button
