@@ -6,14 +6,26 @@ from app.database import get_db
 from app.models.user import User, UserRole
 from app.models.cart import CartItem
 from app.models.product import Product
-from app.models.order import Order, OrderItem, OrderStatus
+from app.models.order import Order, OrderItem, OrderStatusHistory, VALID_ORDER_STATUSES, VALID_TRANSITIONS
 from app.models.address import Address
 from app.models.payment_event import PaymentEvent, PaymentEventType
-from app.schemas.order import OrderResponse, OrderStatusUpdate, CheckoutRequest, ConfirmPaymentRequest, PaymentFailureReport
+from app.schemas.order import OrderResponse, OrderStatusUpdate, CheckoutRequest, ConfirmPaymentRequest, PaymentFailureReport, OrderStatusHistoryResponse
 from app.middleware.auth import get_current_user, get_admin_user
 from app.services.stripe_service import create_payment_intent
+from app.config import settings
+import stripe
+
+stripe.api_key = settings.STRIPE_SECRET_KEY
 
 router = APIRouter(prefix="/orders", tags=["Orders"], redirect_slashes=False)
+
+
+def _order_query(db: Session):
+    return db.query(Order).options(
+        joinedload(Order.items),
+        joinedload(Order.payment_events),
+        joinedload(Order.status_history),
+    )
 
 
 @router.post("/checkout", response_model=dict)
@@ -23,7 +35,6 @@ def checkout(
     db: Session = Depends(get_db),
 ):
     """Create an order from the cart, create Stripe PaymentIntent, and decrement stock."""
-    # Get user's cart items
     cart_items = (
         db.query(CartItem)
         .options(joinedload(CartItem.product))
@@ -33,14 +44,12 @@ def checkout(
     if not cart_items:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cart is empty")
 
-    # Validate address
     address = db.query(Address).filter(
         Address.id == data.address_id, Address.user_id == current_user.id
     ).first()
     if not address:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Address not found")
 
-    # Validate stock and calculate total
     total = Decimal("0.00")
     order_items_data = []
     for item in cart_items:
@@ -64,7 +73,6 @@ def checkout(
             "quantity": item.quantity,
         })
 
-    # Create address snapshot
     address_snapshot = {
         "label": address.label,
         "street": address.street,
@@ -74,7 +82,6 @@ def checkout(
         "country": address.country,
     }
 
-    # Create Stripe PaymentIntent
     try:
         amount_cents = int(total * 100)
         payment_intent = create_payment_intent(
@@ -88,25 +95,22 @@ def checkout(
             detail=f"Payment processing error: {str(e)}",
         )
 
-    # Create order
     order = Order(
         user_id=current_user.id,
         address_snapshot=address_snapshot,
         total=total,
-        status=OrderStatus.pending,
+        status="confirmed",
         stripe_payment_intent_id=payment_intent["id"],
     )
     db.add(order)
     db.flush()
 
-    # Create order items and decrement stock
     for item_data in order_items_data:
         order_item = OrderItem(order_id=order.id, **item_data)
         db.add(order_item)
         product = db.query(Product).filter(Product.id == item_data["product_id"]).first()
         product.stock -= item_data["quantity"]
 
-    # Record payment created event
     payment_event = PaymentEvent(
         order_id=order.id,
         event_type=PaymentEventType.created,
@@ -115,7 +119,15 @@ def checkout(
     )
     db.add(payment_event)
 
-    # Clear cart
+    history_entry = OrderStatusHistory(
+        order_id=order.id,
+        from_status=None,
+        to_status="confirmed",
+        changed_by=current_user.id,
+        notes="Order placed",
+    )
+    db.add(history_entry)
+
     db.query(CartItem).filter(CartItem.user_id == current_user.id).delete()
     db.commit()
     db.refresh(order)
@@ -134,10 +146,9 @@ def confirm_payment(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Confirm payment and update order status to processing."""
+    """Confirm payment and update order status."""
     order = (
-        db.query(Order)
-        .options(joinedload(Order.items), joinedload(Order.payment_events))
+        _order_query(db)
         .filter(
             Order.stripe_payment_intent_id == data.payment_intent_id,
             Order.user_id == current_user.id,
@@ -146,7 +157,7 @@ def confirm_payment(
     )
     if not order:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
-    order.status = OrderStatus.processing
+    order.status = "confirmed"
     payment_event = PaymentEvent(
         order_id=order.id,
         event_type=PaymentEventType.succeeded,
@@ -166,10 +177,9 @@ def confirm_payment_by_order(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Confirm payment by order ID and update order status to processing."""
+    """Confirm payment by order ID."""
     order = (
-        db.query(Order)
-        .options(joinedload(Order.items), joinedload(Order.payment_events))
+        _order_query(db)
         .filter(
             Order.id == order_id,
             Order.user_id == current_user.id,
@@ -178,7 +188,7 @@ def confirm_payment_by_order(
     )
     if not order:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
-    order.status = OrderStatus.processing
+    order.status = "confirmed"
     payment_event = PaymentEvent(
         order_id=order.id,
         event_type=PaymentEventType.succeeded,
@@ -197,7 +207,7 @@ def report_payment_failure(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Report a payment failure from the frontend (card decline, etc.)."""
+    """Report a payment failure from the frontend."""
     order = db.query(Order).filter(
         Order.id == data.order_id,
         Order.user_id == current_user.id,
@@ -225,8 +235,7 @@ def list_all_orders(
 ):
     """List all orders (admin only)."""
     return (
-        db.query(Order)
-        .options(joinedload(Order.items), joinedload(Order.payment_events))
+        _order_query(db)
         .order_by(Order.created_at.desc())
         .all()
     )
@@ -237,8 +246,8 @@ def list_orders(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """List orders. Admins see all orders, customers see their own."""
-    query = db.query(Order).options(joinedload(Order.items), joinedload(Order.payment_events))
+    """List orders. Admins see all, customers see their own."""
+    query = _order_query(db)
     if current_user.role != UserRole.admin:
         query = query.filter(Order.user_id == current_user.id)
     return query.order_by(Order.created_at.desc()).all()
@@ -251,13 +260,43 @@ def get_order(
     db: Session = Depends(get_db),
 ):
     """Get a single order by ID."""
-    query = db.query(Order).options(joinedload(Order.items), joinedload(Order.payment_events)).filter(Order.id == order_id)
+    query = _order_query(db).filter(Order.id == order_id)
     if current_user.role != UserRole.admin:
         query = query.filter(Order.user_id == current_user.id)
     order = query.first()
     if not order:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
     return order
+
+
+@router.get("/{order_id}/timeline", response_model=List[OrderStatusHistoryResponse])
+def get_order_timeline(
+    order_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Get the fulfillment timeline for an order."""
+    order = db.query(Order).filter(Order.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
+    if current_user.role != UserRole.admin and order.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+
+    entries = (
+        db.query(OrderStatusHistory)
+        .filter(OrderStatusHistory.order_id == order_id)
+        .order_by(OrderStatusHistory.created_at)
+        .all()
+    )
+
+    result = []
+    for entry in entries:
+        user = db.query(User).filter(User.id == entry.changed_by).first() if entry.changed_by else None
+        resp = OrderStatusHistoryResponse.model_validate(entry)
+        if user:
+            resp.changed_by_name = f"{user.first_name} {user.last_name}"
+        result.append(resp)
+    return result
 
 
 @router.patch("/{order_id}/status", response_model=OrderResponse)
@@ -268,30 +307,72 @@ def update_order_status(
     admin: User = Depends(get_admin_user),
     db: Session = Depends(get_db),
 ):
-    """Update order status (admin only)."""
-    order = db.query(Order).options(joinedload(Order.items), joinedload(Order.payment_events)).filter(Order.id == order_id).first()
+    """Update order status (admin only) with forward-only validation."""
+    order = _order_query(db).filter(Order.id == order_id).first()
     if not order:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
-    try:
-        new_status = OrderStatus(data.status)
-    except ValueError:
+
+    new_status = data.status
+    if new_status not in VALID_ORDER_STATUSES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid status. Must be one of: {[s.value for s in OrderStatus]}",
+            detail=f"Invalid status. Must be one of: {sorted(VALID_ORDER_STATUSES)}",
         )
-    event_type_map = {
-        OrderStatus.cancelled: PaymentEventType.cancelled,
-        OrderStatus.shipped: PaymentEventType.processing,
-        OrderStatus.delivered: PaymentEventType.succeeded,
-    }
-    if new_status in event_type_map:
+
+    current_status = order.status
+    allowed = VALID_TRANSITIONS.get(current_status, set())
+    if new_status not in allowed:
+        if not allowed:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Order is '{current_status}' which is a terminal status and cannot be changed",
+            )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot change status from '{current_status}' to '{new_status}'. Allowed: {sorted(allowed)}",
+        )
+
+    old_status = order.status
+    order.status = new_status
+
+    if new_status == "cancelled":
+        order.cancellation_reason = data.cancellation_reason
+
         event = PaymentEvent(
             order_id=order.id,
-            event_type=event_type_map[new_status],
-            message=f"Order status changed to {new_status.value}",
+            event_type=PaymentEventType.cancelled,
+            message=f"Order cancelled: {data.cancellation_reason}",
         )
         db.add(event)
-    order.status = new_status
+
+        if order.stripe_payment_intent_id:
+            try:
+                stripe.Refund.create(payment_intent=order.stripe_payment_intent_id)
+            except stripe.StripeError:
+                pass
+
+    status_messages = {
+        "processing": "Order is being prepared",
+        "shipped": "Order has been shipped",
+        "delivered": "Order has been delivered",
+    }
+    if new_status in status_messages:
+        event = PaymentEvent(
+            order_id=order.id,
+            event_type=PaymentEventType.processing if new_status in ("processing", "shipped") else PaymentEventType.succeeded,
+            message=status_messages[new_status],
+        )
+        db.add(event)
+
+    history = OrderStatusHistory(
+        order_id=order.id,
+        from_status=old_status,
+        to_status=new_status,
+        changed_by=admin.id,
+        notes=data.cancellation_reason if new_status == "cancelled" else data.notes,
+    )
+    db.add(history)
+
     db.commit()
     db.refresh(order)
     return order

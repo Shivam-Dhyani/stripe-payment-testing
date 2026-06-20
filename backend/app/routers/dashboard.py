@@ -4,7 +4,7 @@ from sqlalchemy import func, desc
 from datetime import datetime, timedelta
 from app.database import get_db
 from app.models.user import User, UserRole
-from app.models.order import Order, OrderItem, OrderStatus
+from app.models.order import Order, OrderItem
 from app.models.product import Product
 from app.models.subcategory import SubCategory
 from app.models.category import Category
@@ -23,7 +23,7 @@ def get_stats(
 ):
     """Get KPI dashboard statistics (admin only)."""
     total_revenue = db.query(func.coalesce(func.sum(Order.total), 0)).filter(
-        Order.status != OrderStatus.cancelled
+        Order.status != "cancelled"
     ).scalar()
     total_orders = db.query(func.count(Order.id)).scalar()
     total_products = db.query(func.count(Product.id)).filter(Product.is_active == True).scalar()
@@ -50,7 +50,7 @@ def get_revenue_chart(
             func.date(Order.created_at).label("date"),
             func.coalesce(func.sum(Order.total), 0).label("revenue"),
         )
-        .filter(Order.created_at >= thirty_days_ago, Order.status != OrderStatus.cancelled)
+        .filter(Order.created_at >= thirty_days_ago, Order.status != "cancelled")
         .group_by(func.date(Order.created_at))
         .order_by(func.date(Order.created_at))
         .all()

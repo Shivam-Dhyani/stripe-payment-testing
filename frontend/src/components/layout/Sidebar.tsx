@@ -19,7 +19,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     dispatch(fetchAllOrders());
   }, [dispatch]);
 
-  const pendingCount = orders.filter(o => o.status === 'pending' || o.status === 'processing').length;
+  const pendingCount = orders.filter(o => o.status === 'confirmed' || o.status === 'processing').length;
 
   const menuItems = [
     { path: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard, badge: 0 },

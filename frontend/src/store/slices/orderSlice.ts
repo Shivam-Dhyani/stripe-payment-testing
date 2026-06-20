@@ -57,13 +57,15 @@ export const fetchOrderById = createAsyncThunk('orders/fetchById', async (id: st
 
 export const updateOrderStatus = createAsyncThunk(
   'orders/updateStatus',
-  async ({ id, status }: { id: string; status: string }, { rejectWithValue }) => {
+  async ({ id, status, notes, cancellationReason }: { id: string; status: string; notes?: string; cancellationReason?: string }, { rejectWithValue }) => {
     try {
-      const order = await orderService.updateOrderStatus(id, status);
+      const order = await orderService.updateOrderStatus(id, status, notes, cancellationReason);
       toast.success('Order status updated');
       return order;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.detail || 'Failed to update status');
+      const detail = error.response?.data?.detail;
+      toast.error(typeof detail === 'string' ? detail : 'Failed to update status');
+      return rejectWithValue(detail || 'Failed to update status');
     }
   }
 );

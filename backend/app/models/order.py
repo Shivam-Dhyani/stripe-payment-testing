@@ -1,17 +1,20 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, DateTime, ForeignKey, Integer, Numeric, JSON, Enum as SAEnum
+from sqlalchemy import Column, String, DateTime, ForeignKey, Integer, Numeric, JSON, Text
 from sqlalchemy.orm import relationship
 from app.database import Base
-import enum
 
 
-class OrderStatus(str, enum.Enum):
-    pending = "pending"
-    processing = "processing"
-    shipped = "shipped"
-    delivered = "delivered"
-    cancelled = "cancelled"
+VALID_ORDER_STATUSES = {"confirmed", "processing", "shipped", "delivered", "cancelled", "refunded"}
+
+VALID_TRANSITIONS = {
+    "confirmed": {"processing", "cancelled"},
+    "processing": {"shipped", "cancelled"},
+    "shipped": {"delivered"},
+    "delivered": set(),
+    "cancelled": set(),
+    "refunded": set(),
+}
 
 
 class Order(Base):
@@ -21,14 +24,16 @@ class Order(Base):
     user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
     address_snapshot = Column(JSON, nullable=True)
     total = Column(Numeric(10, 2), nullable=False)
-    status = Column(SAEnum(OrderStatus), default=OrderStatus.pending, nullable=False)
+    status = Column(String(20), default="confirmed", nullable=False)
     stripe_payment_intent_id = Column(String(255), nullable=True)
+    cancellation_reason = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     user = relationship("User", back_populates="orders")
     items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
     payment_events = relationship("PaymentEvent", back_populates="order", cascade="all, delete-orphan", order_by="PaymentEvent.created_at")
+    status_history = relationship("OrderStatusHistory", back_populates="order", cascade="all, delete-orphan", order_by="OrderStatusHistory.created_at")
 
 
 class OrderItem(Base):
@@ -43,3 +48,18 @@ class OrderItem(Base):
 
     order = relationship("Order", back_populates="items")
     product = relationship("Product", back_populates="order_items")
+
+
+class OrderStatusHistory(Base):
+    __tablename__ = "order_status_history"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    order_id = Column(String(36), ForeignKey("orders.id"), nullable=False)
+    from_status = Column(String(20), nullable=True)
+    to_status = Column(String(20), nullable=False)
+    changed_by = Column(String(36), ForeignKey("users.id"), nullable=True)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    order = relationship("Order", back_populates="status_history")
+    user = relationship("User", foreign_keys=[changed_by])

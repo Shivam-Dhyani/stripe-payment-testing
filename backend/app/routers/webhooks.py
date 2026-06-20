@@ -78,6 +78,11 @@ async def stripe_webhook(request: Request):
             event_data=event_data,
         )
         db.add(payment_event)
+
+        # Auto-update order status on refund
+        if event_type == "charge.refunded":
+            order.status = "refunded"
+
         db.commit()
     finally:
         db.close()

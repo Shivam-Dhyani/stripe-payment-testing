@@ -9,7 +9,7 @@ from app.models.address import Address
 from app.models.category import Category
 from app.models.subcategory import SubCategory
 from app.models.product import Product
-from app.models.order import Order, OrderItem, OrderStatus
+from app.models.order import Order, OrderItem
 
 
 def hash_password(password: str) -> str:
@@ -260,7 +260,7 @@ def seed_database(db: Session):
     db.flush()
 
     # --- Create Sample Orders for Dashboard Data ---
-    statuses = [OrderStatus.processing, OrderStatus.shipped, OrderStatus.delivered]
+    statuses = ["processing", "shipped", "delivered"]
     now = datetime.utcnow()
 
     for day_offset in range(30):

@@ -4,7 +4,7 @@ from app.models.category import Category
 from app.models.subcategory import SubCategory
 from app.models.product import Product
 from app.models.cart import CartItem
-from app.models.order import Order, OrderItem, OrderStatus
+from app.models.order import Order, OrderItem, OrderStatusHistory, VALID_ORDER_STATUSES, VALID_TRANSITIONS
 from app.models.payment_event import PaymentEvent, PaymentEventType
 
 __all__ = [
@@ -17,7 +17,9 @@ __all__ = [
     "CartItem",
     "Order",
     "OrderItem",
-    "OrderStatus",
+    "OrderStatusHistory",
+    "VALID_ORDER_STATUSES",
+    "VALID_TRANSITIONS",
     "PaymentEvent",
     "PaymentEventType",
 ]

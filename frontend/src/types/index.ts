@@ -66,16 +66,29 @@ export interface PaymentEvent {
   created_at: string;
 }
 
+export interface OrderStatusHistory {
+  id: string;
+  order_id: string;
+  from_status: string | null;
+  to_status: string;
+  changed_by: string | null;
+  changed_by_name: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
 export interface Order {
   id: string;
   user_id: string;
   address_snapshot: Record<string, string>;
   total: number | string;
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  status: 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'refunded';
   stripe_payment_intent_id: string | null;
+  cancellation_reason?: string | null;
   created_at: string;
   items?: OrderItem[];
   payment_events?: PaymentEvent[];
+  status_history?: OrderStatusHistory[];
 }
 
 export interface OrderItem {

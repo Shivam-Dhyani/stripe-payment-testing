@@ -2,15 +2,90 @@ import { useEffect, useState } from 'react';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { fetchOrders, fetchOrderById } from '../../store/slices/orderSlice';
-import { Package, ChevronDown, ChevronUp, Calendar, Hash } from 'lucide-react';
+import { Package, ChevronDown, ChevronUp, Calendar, Hash, Check, X, XCircle, CreditCard } from 'lucide-react';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import { Order, OrderStatusHistory } from '../../types';
 
 const statusColors: Record<string, string> = {
-  pending: 'bg-yellow-100 text-yellow-700',
-  processing: 'bg-blue-100 text-blue-700',
+  confirmed: 'bg-blue-100 text-blue-700',
+  processing: 'bg-amber-100 text-amber-700',
   shipped: 'bg-purple-100 text-purple-700',
   delivered: 'bg-green-100 text-green-700',
   cancelled: 'bg-red-100 text-red-700',
+  refunded: 'bg-gray-100 text-gray-700',
+};
+
+const STEP_DEFINITIONS = [
+  { key: 'order_placed', label: 'Order Placed' },
+  { key: 'confirmed', label: 'Confirmed' },
+  { key: 'processing', label: 'Processing' },
+  { key: 'shipped', label: 'Shipped' },
+  { key: 'delivered', label: 'Delivered' },
+];
+
+const STATUS_ORDER = ['confirmed', 'processing', 'shipped', 'delivered'];
+
+const getStepData = (order: Order) => {
+  const history = order.status_history || [];
+  const isCancelled = order.status === 'cancelled';
+
+  // Find the index of the current status in the flow
+  const currentStatusIndex = STATUS_ORDER.indexOf(order.status);
+
+  // Build date map from status_history
+  const dateMap: Record<string, string> = {};
+  history.forEach((entry: OrderStatusHistory) => {
+    if (!dateMap[entry.to_status]) {
+      dateMap[entry.to_status] = entry.created_at;
+    }
+  });
+
+  // Order placed date is always the order creation date
+  dateMap['order_placed'] = order.created_at;
+
+  return STEP_DEFINITIONS.map((step, index) => {
+    const stepStatusIndex = index - 1; // offset because index 0 is "order_placed"
+
+    if (step.key === 'order_placed') {
+      // Order placed is always completed
+      return {
+        ...step,
+        completed: true,
+        active: false,
+        cancelled: false,
+        date: new Date(order.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+      };
+    }
+
+    const isCompleted = currentStatusIndex >= stepStatusIndex && !isCancelled;
+    const wasReachedBeforeCancel = isCancelled && dateMap[step.key];
+    const isActive = !isCancelled && order.status === step.key;
+
+    // Show cancelled marker on the step after the last completed step
+    let showCancelled = false;
+    if (isCancelled) {
+      // Find the last status reached before cancellation
+      const cancelEntry = history.find((e: OrderStatusHistory) => e.to_status === 'cancelled');
+      const cancelledFrom = cancelEntry?.from_status;
+      const cancelledFromIndex = cancelledFrom ? STATUS_ORDER.indexOf(cancelledFrom) : -1;
+      // Show cancelled on the step right after the cancelled-from step
+      if (stepStatusIndex === cancelledFromIndex + 1) {
+        showCancelled = true;
+      }
+    }
+
+    const stepDate = dateMap[step.key];
+
+    return {
+      ...step,
+      completed: isCompleted || !!wasReachedBeforeCancel,
+      active: isActive,
+      cancelled: showCancelled,
+      date: stepDate
+        ? new Date(stepDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+        : undefined,
+    };
+  });
 };
 
 const OrderHistory = () => {
@@ -72,24 +147,76 @@ const OrderHistory = () => {
                 </div>
               </button>
 
-              {expandedOrderId === order.id && selectedOrder?.id === order.id && selectedOrder.items && (
+              {expandedOrderId === order.id && selectedOrder?.id === order.id && (
                 <div className="border-t border-gray-200 p-6 bg-gray-50">
-                  <div className="space-y-3">
-                    {selectedOrder.items.map((item) => (
-                      <div key={item.id} className="flex items-center justify-between py-2">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-gradient-to-br from-brand-400 to-brand-600 rounded-lg flex items-center justify-center">
-                            <span className="text-white text-xs font-bold">{item.product_name.substring(0, 2).toUpperCase()}</span>
+                  {/* Step Tracker */}
+                  {(() => {
+                    const steps = getStepData(selectedOrder);
+                    return (
+                      <div className="flex items-center justify-between mb-6">
+                        {steps.map((step, index) => (
+                          <div key={step.key} className="flex items-center flex-1">
+                            <div className="flex flex-col items-center">
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                                step.completed ? 'bg-green-500 text-white' :
+                                step.active ? 'bg-brand-500 text-white' :
+                                step.cancelled ? 'bg-red-500 text-white' :
+                                'bg-gray-200 text-gray-400'
+                              }`}>
+                                {step.completed ? <Check className="w-4 h-4" /> :
+                                 step.cancelled ? <X className="w-4 h-4" /> :
+                                 <span className="text-xs font-bold">{index + 1}</span>}
+                              </div>
+                              <span className="text-xs mt-1 text-gray-500">{step.label}</span>
+                              {step.date && <span className="text-[10px] text-gray-400">{step.date}</span>}
+                            </div>
+                            {index < steps.length - 1 && (
+                              <div className={`flex-1 h-0.5 mx-2 ${step.completed ? 'bg-green-500' : 'bg-gray-200'}`} />
+                            )}
                           </div>
-                          <div>
-                            <p className="font-medium text-gray-800">{item.product_name}</p>
-                            <p className="text-sm text-gray-500">Qty: {item.quantity} x ${Number(item.product_price).toFixed(2)}</p>
-                          </div>
-                        </div>
-                        <p className="font-medium text-gray-800">${(item.quantity * Number(item.product_price)).toFixed(2)}</p>
+                        ))}
                       </div>
-                    ))}
+                    );
+                  })()}
+
+                  {/* Payment line */}
+                  <div className="flex items-center space-x-2 mb-4 text-sm text-gray-500">
+                    <CreditCard className="w-4 h-4" />
+                    <span>Paid via Stripe</span>
                   </div>
+
+                  {/* Cancellation Reason */}
+                  {selectedOrder.status === 'cancelled' && selectedOrder.cancellation_reason && (
+                    <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start space-x-3">
+                      <XCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-red-800">Order Cancelled</p>
+                        <p className="text-sm text-red-600 mt-0.5">{selectedOrder.cancellation_reason}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Items */}
+                  {selectedOrder.items && (
+                    <div className="space-y-3">
+                      {selectedOrder.items.map((item) => (
+                        <div key={item.id} className="flex items-center justify-between py-2">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 bg-gradient-to-br from-brand-400 to-brand-600 rounded-lg flex items-center justify-center">
+                              <span className="text-white text-xs font-bold">{item.product_name.substring(0, 2).toUpperCase()}</span>
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-800">{item.product_name}</p>
+                              <p className="text-sm text-gray-500">Qty: {item.quantity} x ${Number(item.product_price).toFixed(2)}</p>
+                            </div>
+                          </div>
+                          <p className="font-medium text-gray-800">${(item.quantity * Number(item.product_price)).toFixed(2)}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Address */}
                   {selectedOrder.address_snapshot && (
                     <div className="mt-4 pt-4 border-t border-gray-200">
                       <h4 className="text-sm font-semibold text-gray-700 mb-2">Delivery Address</h4>

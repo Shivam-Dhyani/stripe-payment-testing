@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, model_validator
 from typing import Optional, List, Any
 from datetime import datetime
 from app.schemas.payment_event import PaymentEventResponse
@@ -15,6 +15,19 @@ class OrderItemResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class OrderStatusHistoryResponse(BaseModel):
+    id: str
+    order_id: str
+    from_status: Optional[str] = None
+    to_status: str
+    changed_by: Optional[str] = None
+    changed_by_name: Optional[str] = None
+    notes: Optional[str] = None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class OrderResponse(BaseModel):
     id: str
     user_id: str
@@ -22,16 +35,26 @@ class OrderResponse(BaseModel):
     total: float
     status: str
     stripe_payment_intent_id: Optional[str] = None
+    cancellation_reason: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     items: List[OrderItemResponse] = []
     payment_events: List[PaymentEventResponse] = []
+    status_history: List[OrderStatusHistoryResponse] = []
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class OrderStatusUpdate(BaseModel):
     status: str
+    notes: Optional[str] = None
+    cancellation_reason: Optional[str] = None
+
+    @model_validator(mode='after')
+    def validate_cancellation_reason(self):
+        if self.status == 'cancelled' and not self.cancellation_reason:
+            raise ValueError('Cancellation reason is required when cancelling an order')
+        return self
 
 
 class CheckoutRequest(BaseModel):

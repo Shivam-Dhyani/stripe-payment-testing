@@ -24,8 +24,12 @@ export const orderService = {
     return response.data;
   },
 
-  updateOrderStatus: async (id: string, status: string): Promise<Order> => {
-    const response = await api.put(`/orders/${id}/status`, { status });
+  updateOrderStatus: async (id: string, status: string, notes?: string, cancellationReason?: string): Promise<Order> => {
+    const response = await api.put(`/orders/${id}/status`, {
+      status,
+      notes: notes || undefined,
+      cancellation_reason: cancellationReason || undefined,
+    });
     return response.data;
   },
 
