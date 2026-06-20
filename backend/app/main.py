@@ -14,27 +14,30 @@ def run_migrations(db):
     """Run database migrations for schema changes."""
     inspector = inspect(engine)
 
-    if "orders" in inspector.get_table_names():
-        columns = [col["name"] for col in inspector.get_columns("orders")]
+    if "orders" not in inspector.get_table_names():
+        return
 
-        if "cancellation_reason" not in columns:
-            db.execute(text("ALTER TABLE orders ADD COLUMN cancellation_reason TEXT"))
-            print("Added cancellation_reason column to orders table")
-
-        # Change status column from enum to varchar if needed
-        status_col = next((col for col in inspector.get_columns("orders") if col["name"] == "status"), None)
-        if status_col and "VARCHAR" not in str(status_col["type"]).upper() and "TEXT" not in str(status_col["type"]).upper():
-            db.execute(text("ALTER TABLE orders ALTER COLUMN status DROP DEFAULT"))
-            db.execute(text("ALTER TABLE orders ALTER COLUMN status TYPE VARCHAR(20) USING status::text"))
-            db.execute(text("ALTER TABLE orders ALTER COLUMN status SET DEFAULT 'confirmed'"))
-            db.execute(text("DROP TYPE IF EXISTS orderstatus"))
-            print("Changed status column type to VARCHAR(20)")
-
-        # Migrate 'pending' statuses to 'confirmed'
-        db.execute(text("UPDATE orders SET status = 'confirmed' WHERE status = 'pending'"))
-
+    # Step 1: Convert status column from enum to varchar if the enum type exists
+    row = db.execute(text("SELECT 1 FROM pg_type WHERE typname = 'orderstatus'")).fetchone()
+    if row:
+        db.execute(text("ALTER TABLE orders ALTER COLUMN status DROP DEFAULT"))
+        db.execute(text("ALTER TABLE orders ALTER COLUMN status TYPE VARCHAR(20) USING status::text"))
+        db.execute(text("ALTER TABLE orders ALTER COLUMN status SET DEFAULT 'confirmed'"))
+        db.execute(text("DROP TYPE IF EXISTS orderstatus"))
         db.commit()
-        print("Database migrations completed.")
+        print("Converted status column from enum to VARCHAR(20)")
+
+    # Step 2: Add cancellation_reason column if missing
+    columns = [col["name"] for col in inspector.get_columns("orders")]
+    if "cancellation_reason" not in columns:
+        db.execute(text("ALTER TABLE orders ADD COLUMN cancellation_reason TEXT"))
+        db.commit()
+        print("Added cancellation_reason column to orders table")
+
+    # Step 3: Migrate any remaining 'pending' statuses to 'confirmed'
+    db.execute(text("UPDATE orders SET status = 'confirmed' WHERE status = 'pending'"))
+    db.commit()
+    print("Database migrations completed.")
 
 
 @asynccontextmanager
