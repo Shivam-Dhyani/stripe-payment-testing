@@ -351,19 +351,6 @@ def update_order_status(
             except stripe.StripeError:
                 pass
 
-    status_messages = {
-        "processing": "Order is being prepared",
-        "shipped": "Order has been shipped",
-        "delivered": "Order has been delivered",
-    }
-    if new_status in status_messages:
-        event = PaymentEvent(
-            order_id=order.id,
-            event_type=PaymentEventType.processing if new_status in ("processing", "shipped") else PaymentEventType.succeeded,
-            message=status_messages[new_status],
-        )
-        db.add(event)
-
     history = OrderStatusHistory(
         order_id=order.id,
         from_status=old_status,
