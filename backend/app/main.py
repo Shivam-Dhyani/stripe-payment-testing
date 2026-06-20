@@ -24,7 +24,10 @@ def run_migrations(db):
         # Change status column from enum to varchar if needed
         status_col = next((col for col in inspector.get_columns("orders") if col["name"] == "status"), None)
         if status_col and "VARCHAR" not in str(status_col["type"]).upper() and "TEXT" not in str(status_col["type"]).upper():
+            db.execute(text("ALTER TABLE orders ALTER COLUMN status DROP DEFAULT"))
             db.execute(text("ALTER TABLE orders ALTER COLUMN status TYPE VARCHAR(20) USING status::text"))
+            db.execute(text("ALTER TABLE orders ALTER COLUMN status SET DEFAULT 'confirmed'"))
+            db.execute(text("DROP TYPE IF EXISTS orderstatus"))
             print("Changed status column type to VARCHAR(20)")
 
         # Migrate 'pending' statuses to 'confirmed'
@@ -43,9 +46,13 @@ async def lifespan(app: FastAPI):
     db = SessionLocal()
     try:
         run_migrations(db)
+    except Exception as e:
+        print(f"Migration error: {e}")
+        db.rollback()
+    try:
         seed_database(db)
     except Exception as e:
-        print(f"Startup error: {e}")
+        print(f"Seed error: {e}")
         db.rollback()
     finally:
         db.close()
