@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ShoppingCart, ChevronDown, ChevronUp, User, Package } from 'lucide-react';
+import { ShoppingCart, ChevronDown, ChevronUp, User, Package, Search } from 'lucide-react';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { fetchAllCarts } from '../../store/slices/adminCartSlice';
@@ -9,6 +9,7 @@ const Carts = () => {
   const dispatch = useAppDispatch();
   const { carts, loading } = useAppSelector((state) => state.adminCart);
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     dispatch(fetchAllCarts());
@@ -17,6 +18,13 @@ const Carts = () => {
   const toggleExpand = (userId: string) => {
     setExpandedUser(expandedUser === userId ? null : userId);
   };
+
+  const filteredCarts = carts.filter((cart) => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    const fullName = `${cart.first_name || ''} ${cart.last_name || ''}`.toLowerCase();
+    return fullName.includes(q) || cart.email.toLowerCase().includes(q);
+  });
 
   const totalCartValue = carts.reduce((sum, c) => sum + c.cart_total, 0);
   const totalItems = carts.reduce((sum, c) => sum + c.total_items, 0);
@@ -52,6 +60,19 @@ const Carts = () => {
               {carts.length} active
             </span>
           )}
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-3 mb-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by customer name or email..."
+            className="pl-9 pr-4 py-2 h-10 w-72 border border-gray-200 rounded-lg text-sm bg-white focus:outline-hidden focus:ring-3 focus:border-brand-300 focus:ring-brand-500/20"
+          />
         </div>
       </div>
 
@@ -91,14 +112,15 @@ const Carts = () => {
         </div>
       </div>
 
-      {carts.length === 0 ? (
+      {filteredCarts.length === 0 ? (
         <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
           <ShoppingCart className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500 text-lg">No users have items in their cart</p>
+          <p className="text-gray-500 text-lg">{search ? 'No matching carts found' : 'No users have items in their cart'}</p>
+          {search && <p className="text-sm text-gray-400 mt-1">Try adjusting your search</p>}
         </div>
       ) : (
         <div className="space-y-3">
-          {carts.map((cart: AdminCartUser) => (
+          {filteredCarts.map((cart: AdminCartUser) => (
             <div key={cart.user_id} className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
               <button
                 onClick={() => toggleExpand(cart.user_id)}

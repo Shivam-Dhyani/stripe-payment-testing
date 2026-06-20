@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, Search, ChevronDown, User, LogOut, Store } from 'lucide-react';
+import { Menu, ChevronDown, User, LogOut, Store } from 'lucide-react';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { logoutUser } from '../../store/slices/authSlice';
@@ -32,16 +32,6 @@ const AdminHeader = ({ onToggleSidebar }: AdminHeaderProps) => {
           >
             <Menu className="w-5 h-5" />
           </button>
-          <div className="relative hidden sm:block max-w-md w-full">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-              <Search className="w-5 h-5" />
-            </span>
-            <input
-              type="text"
-              placeholder="Search or type command..."
-              className="h-11 w-full rounded-lg border border-gray-200 bg-transparent py-2.5 pl-11 pr-4 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 xl:w-[430px]"
-            />
-          </div>
         </div>
 
         {/* Right: store link + user */}

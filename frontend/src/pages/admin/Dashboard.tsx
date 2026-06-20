@@ -64,7 +64,7 @@ const Dashboard = () => {
   return (
     <div>
       <h1 className="text-title-sm font-bold text-gray-800 mb-1">Dashboard</h1>
-      <p className="text-sm text-gray-500 mb-6">Overview of your store performance</p>
+      <p className="text-sm text-gray-500 mb-6">Welcome back! Here's what's happening with your store.</p>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6">
@@ -81,6 +81,7 @@ const Dashboard = () => {
                 <div className="mt-5">
                   <span className="text-sm text-gray-500">{card.title}</span>
                   <h4 className="mt-1 font-bold text-gray-800 text-title-sm">{card.value}</h4>
+                  <p className="text-xs text-gray-400 mt-1">All time</p>
                 </div>
               </div>
             );
@@ -97,29 +98,39 @@ const Dashboard = () => {
           </>
         ) : (
           <>
-            <div className="bg-white rounded-2xl border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-800 mb-4">Revenue (Last 30 Days)</h2>
-              <ResponsiveContainer width="100%" height={300}>
-                <AreaChart data={revenue}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis dataKey="date" tick={{ fontSize: 12 }} stroke="#94a3b8" />
-                  <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" />
-                  <Tooltip />
-                  <Area type="monotone" dataKey="revenue" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.1} />
-                </AreaChart>
-              </ResponsiveContainer>
+            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+              <div className="p-6 pb-0">
+                <h2 className="text-lg font-semibold text-gray-800">Revenue (Last 30 Days)</h2>
+                <p className="text-sm text-gray-500 mt-1 mb-4">Daily revenue overview</p>
+              </div>
+              <div className="p-6 pt-2">
+                <ResponsiveContainer width="100%" height={300}>
+                  <AreaChart data={revenue}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                    <XAxis dataKey="date" tick={{ fontSize: 12 }} stroke="#94a3b8" />
+                    <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" />
+                    <Tooltip />
+                    <Area type="monotone" dataKey="revenue" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.1} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
             </div>
-            <div className="bg-white rounded-2xl border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-800 mb-4">Order Trends (Last 30 Days)</h2>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={orderTrends}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis dataKey="date" tick={{ fontSize: 12 }} stroke="#94a3b8" />
-                  <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="orders" stroke="#8b5cf6" strokeWidth={2} dot={false} />
-                </LineChart>
-              </ResponsiveContainer>
+            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+              <div className="p-6 pb-0">
+                <h2 className="text-lg font-semibold text-gray-800">Order Trends (Last 30 Days)</h2>
+                <p className="text-sm text-gray-500 mt-1 mb-4">Daily order volume</p>
+              </div>
+              <div className="p-6 pt-2">
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={orderTrends}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                    <XAxis dataKey="date" tick={{ fontSize: 12 }} stroke="#94a3b8" />
+                    <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="orders" stroke="#8b5cf6" strokeWidth={2} dot={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
             </div>
           </>
         )}
@@ -134,57 +145,70 @@ const Dashboard = () => {
           </>
         ) : (
           <>
-            <div className="bg-white rounded-2xl border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-800 mb-4">Top Selling Products</h2>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={topProducts} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis type="number" tick={{ fontSize: 12 }} stroke="#94a3b8" />
-                  <YAxis dataKey="name" type="category" tick={{ fontSize: 12 }} stroke="#94a3b8" width={120} />
-                  <Tooltip />
-                  <Bar dataKey="total_sold" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+              <div className="p-6 pb-0">
+                <h2 className="text-lg font-semibold text-gray-800">Top Selling Products</h2>
+                <p className="text-sm text-gray-500 mt-1 mb-4">By units sold</p>
+              </div>
+              <div className="p-6 pt-2">
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={topProducts} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                    <XAxis type="number" tick={{ fontSize: 12 }} stroke="#94a3b8" />
+                    <YAxis dataKey="name" type="category" tick={{ fontSize: 12 }} stroke="#94a3b8" width={120} />
+                    <Tooltip />
+                    <Bar dataKey="total_sold" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </div>
-            <div className="bg-white rounded-2xl border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-800 mb-4">Category Distribution</h2>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={categoryDist}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={5}
-                    dataKey="value"
-                    nameKey="name"
-                    label={({ name, percent }: { name?: string; percent?: number }) => `${name ?? ''} ${((percent ?? 0) * 100).toFixed(0)}%`}
-                  >
-                    {categoryDist.map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
+            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+              <div className="p-6 pb-0">
+                <h2 className="text-lg font-semibold text-gray-800">Category Distribution</h2>
+                <p className="text-sm text-gray-500 mt-1 mb-4">Product distribution across categories</p>
+              </div>
+              <div className="p-6 pt-2">
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={categoryDist}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={100}
+                      paddingAngle={5}
+                      dataKey="value"
+                      nameKey="name"
+                      label={({ name, percent }: { name?: string; percent?: number }) => `${name ?? ''} ${((percent ?? 0) * 100).toFixed(0)}%`}
+                    >
+                      {categoryDist.map((_, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
             </div>
           </>
         )}
       </div>
 
       {/* Recent Orders */}
-      <div className="bg-white rounded-2xl border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-800 mb-4">Recent Orders</h2>
+      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        <div className="px-6 py-5 border-b border-gray-200">
+          <h2 className="text-lg font-semibold text-gray-800">Recent Orders</h2>
+          <p className="text-sm text-gray-500 mt-1">Latest 5 orders</p>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
               <tr className="border-b border-gray-200">
-                <th className="pb-3 text-sm font-semibold text-gray-600">Order ID</th>
-                <th className="pb-3 text-sm font-semibold text-gray-600">Total</th>
-                <th className="pb-3 text-sm font-semibold text-gray-600">Status</th>
-                <th className="pb-3 text-sm font-semibold text-gray-600">Date</th>
+                <th className="px-6 py-3.5 text-sm font-semibold text-gray-600">Order ID</th>
+                <th className="px-6 py-3.5 text-sm font-semibold text-gray-600">Total</th>
+                <th className="px-6 py-3.5 text-sm font-semibold text-gray-600">Status</th>
+                <th className="px-6 py-3.5 text-sm font-semibold text-gray-600">Date</th>
               </tr>
             </thead>
             <tbody>
@@ -192,15 +216,15 @@ const Dashboard = () => {
                 Array.from({ length: 5 }).map((_, i) => <TableRowSkeleton key={i} cols={4} />)
               ) : (
                 recentOrders.map((order) => (
-                  <tr key={order.id} className="border-b border-gray-50 hover:bg-gray-50 transition">
-                    <td className="py-3 text-sm text-gray-800 font-medium">#{order.id}</td>
-                    <td className="py-3 text-sm text-gray-800">${Number(order.total).toFixed(2)}</td>
-                    <td className="py-3">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${statusColors[order.status] || 'bg-gray-100 text-gray-700'}`}>
+                  <tr key={order.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                    <td className="px-6 py-4 text-sm text-gray-800 font-mono">#{order.id}</td>
+                    <td className="px-6 py-4 text-sm text-gray-800 font-semibold">${Number(order.total).toFixed(2)}</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize ${statusColors[order.status] || 'bg-gray-100 text-gray-700'}`}>
                         {order.status}
                       </span>
                     </td>
-                    <td className="py-3 text-sm text-gray-500">{new Date(order.created_at).toLocaleDateString()}</td>
+                    <td className="px-6 py-4 text-sm text-gray-500">{new Date(order.created_at).toLocaleDateString()}</td>
                   </tr>
                 ))
               )}

@@ -1,7 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AgGridReact } from 'ag-grid-react';
-import { ColDef, ICellRendererParams, themeAlpine } from 'ag-grid-community';
-import { Eye, X, CheckCircle, XCircle, Clock, CreditCard, Truck, RefreshCw } from 'lucide-react';
+import { Eye, X, CheckCircle, XCircle, Clock, CreditCard, Truck, RefreshCw, Search, ShoppingBag, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { fetchAllOrders, updateOrderStatus } from '../../store/slices/orderSlice';
@@ -22,6 +20,9 @@ const Orders = () => {
   const [detailOrder, setDetailOrder] = useState<Order | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const perPage = 10;
 
   useEffect(() => {
     dispatch(fetchAllOrders());
@@ -45,65 +46,38 @@ const Orders = () => {
     setUpdatingOrderId(null);
   };
 
-  const filteredOrders = statusFilter
-    ? orders.filter((o) => o.status === statusFilter)
-    : orders;
+  const filteredOrders = orders.filter((o) => {
+    const matchesStatus = statusFilter ? o.status === statusFilter : true;
+    const matchesSearch = search
+      ? o.id.toLowerCase().includes(search.toLowerCase()) || o.user_id.toLowerCase().includes(search.toLowerCase())
+      : true;
+    return matchesStatus && matchesSearch;
+  });
+
+  const totalPages = Math.ceil(filteredOrders.length / perPage);
+  const paginatedOrders = filteredOrders.slice((currentPage - 1) * perPage, currentPage * perPage);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, search]);
 
   const pendingCount = orders.filter(o => o.status === 'pending' || o.status === 'processing').length;
 
-  const StatusCellRenderer = (params: ICellRendererParams) => (
-    <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${statusColors[params.value] || 'bg-gray-100 text-gray-700'}`}>
-      {params.value}
-    </span>
-  );
-
-  const ActionCellRenderer = (params: ICellRendererParams) => (
-    <div className="flex items-center space-x-2 h-full">
-      <button
-        onClick={() => viewOrder(params.data.id)}
-        className="p-1.5 text-brand-500 hover:bg-brand-50 rounded transition"
-      >
-        <Eye className="w-4 h-4" />
-      </button>
-      <select
-        value={params.data.status}
-        onChange={(e) => handleStatusChange(params.data.id, e.target.value)}
-        disabled={updatingOrderId === params.data.id}
-        className="text-xs border border-gray-300 rounded px-1 py-1 bg-white disabled:opacity-50"
-      >
-        <option value="pending">Pending</option>
-        <option value="processing">Processing</option>
-        <option value="shipped">Shipped</option>
-        <option value="delivered">Delivered</option>
-        <option value="cancelled">Cancelled</option>
-      </select>
-      {updatingOrderId === params.data.id && <ButtonSpinner />}
-    </div>
-  );
-
-  const DateCellRenderer = (params: ICellRendererParams) => (
-    <span>{new Date(params.value).toLocaleDateString()}</span>
-  );
-
-  const PriceCellRenderer = (params: ICellRendererParams) => (
-    <span>${Number(params.value).toFixed(2)}</span>
-  );
-
-  const columnDefs: ColDef[] = [
-    { field: 'id', headerName: 'Order ID', width: 100, valueFormatter: (params) => `#${params.value}` },
-    { field: 'user_id', headerName: 'Customer ID', width: 110 },
-    {
-      headerName: 'Items',
-      width: 90,
-      valueGetter: (params) => params.data?.items?.length || '-',
-    },
-    { field: 'total', headerName: 'Total', width: 110, cellRenderer: PriceCellRenderer },
-    { field: 'status', headerName: 'Status', width: 130, cellRenderer: StatusCellRenderer },
-    { field: 'created_at', headerName: 'Date', width: 120, cellRenderer: DateCellRenderer },
-    { headerName: 'Actions', width: 200, cellRenderer: ActionCellRenderer, sortable: false, filter: false },
-  ];
-
-  const defaultColDef: ColDef = { sortable: true, resizable: true };
+  const getPageNumbers = () => {
+    const pages: (number | string)[] = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      if (currentPage > 3) pages.push('...');
+      for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
+        pages.push(i);
+      }
+      if (currentPage < totalPages - 2) pages.push('...');
+      pages.push(totalPages);
+    }
+    return pages;
+  };
 
   return (
     <div>
@@ -118,11 +92,21 @@ const Orders = () => {
         </div>
       </div>
 
-      <div className="mb-4">
+      <div className="flex flex-wrap gap-3 mb-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by order ID or customer..."
+            className="pl-9 pr-4 py-2 h-10 w-64 border border-gray-200 rounded-lg text-sm bg-white focus:outline-hidden focus:ring-3 focus:border-brand-300 focus:ring-brand-500/20"
+          />
+        </div>
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-3 focus:ring-brand-500/20 focus:outline-hidden bg-white"
+          className="px-4 py-2 h-10 border border-gray-200 rounded-lg text-sm bg-white focus:outline-hidden focus:ring-3 focus:border-brand-300 focus:ring-brand-500/20"
         >
           <option value="">All Statuses</option>
           <option value="pending">Pending</option>
@@ -133,16 +117,127 @@ const Orders = () => {
         </select>
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-200" style={{ height: 500 }}>
-        <AgGridReact
-          theme={themeAlpine}
-          rowData={filteredOrders}
-          columnDefs={columnDefs}
-          defaultColDef={defaultColDef}
-          pagination={true}
-          paginationPageSize={10}
-          loading={loading}
-        />
+      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-gray-200">
+                <th className="px-5 py-4 text-left text-sm font-semibold text-gray-600">Order</th>
+                <th className="px-5 py-4 text-left text-sm font-semibold text-gray-600">Customer</th>
+                <th className="px-5 py-4 text-left text-sm font-semibold text-gray-600">Items</th>
+                <th className="px-5 py-4 text-left text-sm font-semibold text-gray-600">Total</th>
+                <th className="px-5 py-4 text-left text-sm font-semibold text-gray-600">Status</th>
+                <th className="px-5 py-4 text-left text-sm font-semibold text-gray-600">Date</th>
+                <th className="px-5 py-4 text-left text-sm font-semibold text-gray-600">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i} className="border-b border-gray-100">
+                    <td className="px-5 py-4"><div className="h-4 w-20 bg-gray-200 rounded animate-pulse" /></td>
+                    <td className="px-5 py-4"><div className="h-4 w-24 bg-gray-200 rounded animate-pulse" /></td>
+                    <td className="px-5 py-4"><div className="h-4 w-10 bg-gray-200 rounded animate-pulse" /></td>
+                    <td className="px-5 py-4"><div className="h-4 w-16 bg-gray-200 rounded animate-pulse" /></td>
+                    <td className="px-5 py-4"><div className="h-6 w-20 bg-gray-200 rounded-full animate-pulse" /></td>
+                    <td className="px-5 py-4"><div className="h-4 w-24 bg-gray-200 rounded animate-pulse" /></td>
+                    <td className="px-5 py-4"><div className="h-4 w-28 bg-gray-200 rounded animate-pulse" /></td>
+                  </tr>
+                ))
+              ) : paginatedOrders.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-5 py-16 text-center">
+                    <ShoppingBag className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-sm text-gray-500 font-medium">No orders found</p>
+                    <p className="text-xs text-gray-400 mt-1">Try adjusting your search or filters</p>
+                  </td>
+                </tr>
+              ) : (
+                paginatedOrders.map((order) => (
+                  <tr key={order.id} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
+                    <td className="px-5 py-4">
+                      <span className="font-mono text-xs text-gray-500">#{order.id.substring(0, 8)}</span>
+                    </td>
+                    <td className="px-5 py-4">
+                      <span className="font-mono text-xs text-gray-500">{order.user_id.substring(0, 8)}</span>
+                    </td>
+                    <td className="px-5 py-4 text-sm text-gray-800">{order.items?.length || '-'}</td>
+                    <td className="px-5 py-4 text-sm font-medium text-gray-800">${Number(order.total).toFixed(2)}</td>
+                    <td className="px-5 py-4">
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize ${statusColors[order.status] || 'bg-gray-100 text-gray-700'}`}>
+                        {order.status}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4 text-sm text-gray-800">{new Date(order.created_at).toLocaleDateString()}</td>
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => viewOrder(order.id)}
+                          className="p-1.5 text-brand-500 hover:bg-gray-100 rounded-lg transition-colors"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <select
+                          value={order.status}
+                          onChange={(e) => handleStatusChange(order.id, e.target.value)}
+                          disabled={updatingOrderId === order.id}
+                          className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white disabled:opacity-50 focus:outline-hidden focus:ring-3 focus:border-brand-300 focus:ring-brand-500/20"
+                        >
+                          <option value="pending">Pending</option>
+                          <option value="processing">Processing</option>
+                          <option value="shipped">Shipped</option>
+                          <option value="delivered">Delivered</option>
+                          <option value="cancelled">Cancelled</option>
+                        </select>
+                        {updatingOrderId === order.id && <ButtonSpinner />}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+        {!loading && filteredOrders.length > 0 && (
+          <div className="flex items-center justify-between px-5 py-4 border-t border-gray-200">
+            <p className="text-sm text-gray-500">
+              Showing {Math.min((currentPage - 1) * perPage + 1, filteredOrders.length)} to {Math.min(currentPage * perPage, filteredOrders.length)} of {filteredOrders.length} results
+            </p>
+            <div className="flex gap-1">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft className="w-4 h-4 text-gray-600" />
+              </button>
+              {getPageNumbers().map((page, idx) =>
+                typeof page === 'string' ? (
+                  <span key={`ellipsis-${idx}`} className="px-2 py-1 text-sm text-gray-400">...</span>
+                ) : (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`min-w-[32px] h-8 px-2 rounded-lg text-sm font-medium transition-colors ${
+                      currentPage === page
+                        ? 'bg-brand-500 text-white'
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                )
+              )}
+              <button
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <ChevronRight className="w-4 h-4 text-gray-600" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {detailOrder && (

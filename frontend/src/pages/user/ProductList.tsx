@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Search, ShoppingCart, Filter, X, ShoppingBag } from 'lucide-react';
+import { Search, ShoppingCart, Filter, X, Package } from 'lucide-react';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { fetchProducts } from '../../store/slices/productSlice';
@@ -8,15 +8,6 @@ import { fetchCategories, fetchSubCategories } from '../../store/slices/category
 import { addToCart } from '../../store/slices/cartSlice';
 import { CardSkeleton } from '../../components/common/Skeleton';
 import ButtonSpinner from '../../components/common/ButtonSpinner';
-
-const gradients = [
-  'from-brand-400 to-brand-600',
-  'from-emerald-500 to-teal-600',
-  'from-orange-500 to-red-600',
-  'from-blue-500 to-cyan-600',
-  'from-pink-500 to-rose-600',
-  'from-violet-500 to-purple-600',
-];
 
 const ProductList = () => {
   const dispatch = useAppDispatch();
@@ -87,27 +78,41 @@ const ProductList = () => {
     }
   };
 
+  const hasActiveFilters = categoryId || subCategoryId || searchParams.get('search');
+
+  const clearAllFilters = () => {
+    setSearch('');
+    setSearchParams(new URLSearchParams());
+  };
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-        <h1 className="text-title-sm font-bold text-gray-800">Products</h1>
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Products</h1>
+          {pagination.total > 0 && (
+            <p className="mt-1 text-sm text-gray-400">
+              Showing {products.length} of {pagination.total} products
+            </p>
+          )}
+        </div>
+        <div className="flex items-center gap-3">
           <form onSubmit={handleSearch} className="relative">
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search products..."
-              className="pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg h-11 shadow-theme-xs focus:outline-hidden focus:ring-3 focus:border-brand-300 focus:ring-brand-500/20 w-64"
+              placeholder="Search by name, category..."
+              className="pl-9 pr-4 py-2 border border-gray-200 rounded-full h-10 text-sm focus:outline-hidden focus:ring-3 focus:border-brand-300 focus:ring-brand-500/20 w-64 bg-white"
             />
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
           </form>
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="md:hidden p-2.5 border border-gray-300 rounded-lg"
+            className="md:hidden p-2 border border-gray-200 rounded-full h-10 w-10 flex items-center justify-center"
           >
-            <Filter className="w-5 h-5" />
+            <Filter className="w-4 h-4 text-gray-500" />
           </button>
           <select
             value={`${sortBy}-${sortOrder}`}
@@ -115,7 +120,7 @@ const ProductList = () => {
               const [sb, so] = e.target.value.split('-');
               updateParams({ sort: sb, order: so });
             }}
-            className="px-4 py-2.5 border border-gray-300 rounded-lg h-11 shadow-theme-xs focus:outline-hidden focus:ring-3 focus:border-brand-300 focus:ring-brand-500/20 bg-white"
+            className="px-4 py-2 border border-gray-200 rounded-full h-10 text-sm focus:outline-hidden focus:ring-3 focus:border-brand-300 focus:ring-brand-500/20 bg-white text-gray-700"
           >
             <option value="created_at-desc">Newest</option>
             <option value="created_at-asc">Oldest</option>
@@ -128,106 +133,170 @@ const ProductList = () => {
       </div>
 
       <div className="flex gap-8">
+        {/* Mobile Filter Backdrop */}
+        {showFilters && (
+          <div
+            className="fixed inset-0 z-40 bg-black/30 md:hidden"
+            onClick={() => setShowFilters(false)}
+          />
+        )}
+
         {/* Sidebar Filters */}
-        <aside className={`${showFilters ? 'fixed inset-0 z-50 bg-white p-6 overflow-y-auto' : 'hidden'} md:block md:relative md:w-64 flex-shrink-0`}>
-          {showFilters && (
-            <button onClick={() => setShowFilters(false)} className="md:hidden absolute top-4 right-4">
-              <X className="w-6 h-6" />
-            </button>
-          )}
-          <div className="space-y-6">
-            <div>
-              <h3 className="font-semibold text-gray-800 mb-3">Categories</h3>
-              <div className="space-y-2">
-                <button
-                  onClick={() => updateParams({ category: undefined, subcategory: undefined })}
-                  className={`block w-full text-left px-3 py-2 rounded-lg text-sm transition ${!categoryId ? 'bg-brand-50 text-brand-500 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
-                >
-                  All Categories
-                </button>
-                {categories.filter(c => c.is_active).map((cat) => (
+        <aside
+          className={`${
+            showFilters
+              ? 'fixed inset-y-0 left-0 z-50 w-72 bg-white shadow-lg p-6 overflow-y-auto'
+              : 'hidden'
+          } md:block md:relative md:w-56 md:shadow-none md:p-0 flex-shrink-0`}
+        >
+          <div className="bg-white rounded-2xl border border-gray-200 p-5 md:sticky md:top-24">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Filters</h3>
+              <div className="flex items-center gap-2">
+                {hasActiveFilters && (
                   <button
-                    key={cat.id}
-                    onClick={() => updateParams({ category: cat.id, subcategory: undefined })}
-                    className={`block w-full text-left px-3 py-2 rounded-lg text-sm transition ${categoryId === cat.id ? 'bg-brand-50 text-brand-500 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
+                    onClick={clearAllFilters}
+                    className="text-xs text-brand-500 hover:text-brand-600 font-medium"
                   >
-                    {cat.name}
+                    Clear All
                   </button>
-                ))}
+                )}
+                <button onClick={() => setShowFilters(false)} className="md:hidden">
+                  <X className="w-5 h-5 text-gray-400" />
+                </button>
               </div>
             </div>
 
-            {categoryId && subcategories.length > 0 && (
+            <div className="space-y-6">
               <div>
-                <h3 className="font-semibold text-gray-800 mb-3">Subcategories</h3>
-                <div className="space-y-2">
+                <h4 className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">Categories</h4>
+                <div className="space-y-1">
                   <button
-                    onClick={() => updateParams({ subcategory: undefined })}
-                    className={`block w-full text-left px-3 py-2 rounded-lg text-sm transition ${!subCategoryId ? 'bg-brand-50 text-brand-500 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
+                    onClick={() => updateParams({ category: undefined, subcategory: undefined })}
+                    className={`block w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                      !categoryId
+                        ? 'bg-brand-50 text-brand-600 font-medium border-l-2 border-brand-500'
+                        : 'text-gray-600 hover:bg-gray-50'
+                    }`}
                   >
-                    All Subcategories
+                    All Categories
                   </button>
-                  {subcategories.filter(sc => sc.is_active).map((sc) => (
+                  {categories.filter(c => c.is_active).map((cat) => (
                     <button
-                      key={sc.id}
-                      onClick={() => updateParams({ subcategory: sc.id })}
-                      className={`block w-full text-left px-3 py-2 rounded-lg text-sm transition ${subCategoryId === sc.id ? 'bg-brand-50 text-brand-500 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
+                      key={cat.id}
+                      onClick={() => updateParams({ category: cat.id, subcategory: undefined })}
+                      className={`block w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                        categoryId === cat.id
+                          ? 'bg-brand-50 text-brand-600 font-medium border-l-2 border-brand-500'
+                          : 'text-gray-600 hover:bg-gray-50'
+                      }`}
                     >
-                      {sc.name}
+                      {cat.name}
                     </button>
                   ))}
                 </div>
               </div>
-            )}
+
+              {categoryId && subcategories.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">Subcategories</h4>
+                  <div className="space-y-1">
+                    <button
+                      onClick={() => updateParams({ subcategory: undefined })}
+                      className={`block w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                        !subCategoryId
+                          ? 'bg-brand-50 text-brand-600 font-medium border-l-2 border-brand-500'
+                          : 'text-gray-600 hover:bg-gray-50'
+                      }`}
+                    >
+                      All Subcategories
+                    </button>
+                    {subcategories.filter(sc => sc.is_active).map((sc) => (
+                      <button
+                        key={sc.id}
+                        onClick={() => updateParams({ subcategory: sc.id })}
+                        className={`block w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                          subCategoryId === sc.id
+                            ? 'bg-brand-50 text-brand-600 font-medium border-l-2 border-brand-500'
+                            : 'text-gray-600 hover:bg-gray-50'
+                        }`}
+                      >
+                        {sc.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </aside>
 
         {/* Products Grid */}
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)}
             </div>
           ) : products.length === 0 ? (
-            <div className="text-center py-16">
-              <ShoppingBag className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-700">No products found</h3>
-              <p className="text-gray-500 mt-2">Try adjusting your filters or search terms.</p>
+            <div className="text-center py-24">
+              <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-5">
+                <Package className="w-10 h-10 text-gray-300" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-1">No products found</h3>
+              <p className="text-sm text-gray-400 max-w-sm mx-auto">
+                We could not find any products matching your criteria. Try adjusting your filters or search terms.
+              </p>
+              {hasActiveFilters && (
+                <button
+                  onClick={clearAllFilters}
+                  className="mt-4 text-sm text-brand-500 hover:text-brand-600 font-medium"
+                >
+                  Clear all filters
+                </button>
+              )}
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {products.map((product, index) => (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {products.map((product) => (
                   <Link
                     key={product.id}
                     to={`/products/${product.id}`}
-                    className="group bg-white rounded-2xl hover:shadow-theme-lg transition-all duration-300 overflow-hidden border border-gray-200"
+                    className="group rounded-2xl border border-gray-200 hover:border-brand-200 transition-all duration-300 overflow-hidden bg-white"
                   >
-                    <div className={`h-48 bg-gradient-to-br ${gradients[index % gradients.length]} flex items-center justify-center relative`}>
-                      <span className="text-5xl font-bold text-white/20">
+                    <div className="h-48 bg-gray-100 flex items-center justify-center relative">
+                      <span className="text-5xl font-semibold text-gray-300 select-none">
                         {product.name.substring(0, 2).toUpperCase()}
                       </span>
                       {user?.role === 'customer' && product.stock > 0 && (
                         <button
                           onClick={(e) => handleAddToCart(e, product.id)}
                           disabled={addingProductId === product.id}
-                          className="absolute bottom-3 right-3 p-2 bg-white rounded-lg shadow-theme-sm opacity-0 group-hover:opacity-100 transition-all hover:bg-brand-50 disabled:opacity-75"
+                          className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/5"
                         >
-                          {addingProductId === product.id ? <ButtonSpinner /> : <ShoppingCart className="w-5 h-5 text-brand-500" />}
+                          <span className="px-4 py-2 bg-white rounded-full text-sm font-medium text-gray-800 shadow-sm flex items-center gap-1.5 hover:bg-brand-50 transition-colors">
+                            {addingProductId === product.id ? (
+                              <ButtonSpinner />
+                            ) : (
+                              <>
+                                <ShoppingCart className="w-3.5 h-3.5" /> Quick Add
+                              </>
+                            )}
+                          </span>
                         </button>
                       )}
                     </div>
                     <div className="p-4">
-                      <p className="text-xs text-brand-500 font-medium mb-1">
+                      <p className="text-xs text-gray-400 mb-1">
                         {product.sub_category?.category?.name || 'Category'} / {product.sub_category?.name || 'Sub'}
                       </p>
-                      <h3 className="font-semibold text-gray-800 group-hover:text-brand-500 transition truncate">
+                      <h3 className="font-medium text-gray-800 group-hover:text-brand-500 transition-colors truncate">
                         {product.name}
                       </h3>
-                      <p className="text-sm text-gray-500 mt-1 line-clamp-2">{product.description}</p>
+                      <p className="text-sm text-gray-500 mt-1 line-clamp-1">{product.description}</p>
                       <div className="flex items-center justify-between mt-3">
-                        <span className="text-lg font-bold text-brand-500">${Number(product.price).toFixed(2)}</span>
-                        <span className={`text-xs px-2 py-1 rounded-full ${product.stock > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                        <span className="text-base font-semibold text-gray-900">${Number(product.price).toFixed(2)}</span>
+                        <span className={`text-xs font-medium ${product.stock > 0 ? 'text-emerald-600' : 'text-red-500'}`}>
                           {product.stock > 0 ? `${product.stock} left` : 'Out of Stock'}
                         </span>
                       </div>
@@ -238,11 +307,11 @@ const ProductList = () => {
 
               {/* Pagination */}
               {pagination.pages > 1 && (
-                <div className="flex justify-center mt-8 gap-2">
+                <div className="flex items-center justify-center mt-10 gap-1.5">
                   <button
                     onClick={() => updateParams({ page: String(page - 1) })}
                     disabled={page <= 1}
-                    className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition"
+                    className="px-4 py-2 text-sm border border-gray-200 rounded-full disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors text-gray-600"
                   >
                     Previous
                   </button>
@@ -250,7 +319,11 @@ const ProductList = () => {
                     <button
                       key={p}
                       onClick={() => updateParams({ page: String(p) })}
-                      className={`px-4 py-2 rounded-lg transition ${p === page ? 'bg-brand-500 text-white' : 'border border-gray-300 hover:bg-gray-50'}`}
+                      className={`w-9 h-9 text-sm rounded-full transition-colors ${
+                        p === page
+                          ? 'bg-brand-500 text-white font-medium'
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
                     >
                       {p}
                     </button>
@@ -258,10 +331,13 @@ const ProductList = () => {
                   <button
                     onClick={() => updateParams({ page: String(page + 1) })}
                     disabled={page >= pagination.pages}
-                    className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition"
+                    className="px-4 py-2 text-sm border border-gray-200 rounded-full disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors text-gray-600"
                   >
                     Next
                   </button>
+                  <span className="ml-3 text-xs text-gray-400">
+                    Page {page} of {pagination.pages}
+                  </span>
                 </div>
               )}
             </>
