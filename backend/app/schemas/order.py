@@ -11,8 +11,22 @@ class OrderItemResponse(BaseModel):
     product_name: str
     product_price: float
     quantity: int
+    is_returnable: bool = False
+    return_window_days: Optional[int] = None
 
     model_config = ConfigDict(from_attributes=True)
+
+    @model_validator(mode='before')
+    @classmethod
+    def resolve_product_fields(cls, data: Any) -> Any:
+        if hasattr(data, 'product') and data.product:
+            product = data.product
+            if hasattr(data, '__dict__'):
+                d = {k: v for k, v in data.__dict__.items() if not k.startswith('_')}
+                d['is_returnable'] = getattr(product, 'is_returnable', False) or False
+                d['return_window_days'] = getattr(product, 'return_window_days', None)
+                return d
+        return data
 
 
 class OrderStatusHistoryResponse(BaseModel):

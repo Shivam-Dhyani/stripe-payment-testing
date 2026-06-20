@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ShoppingCart, Minus, Plus } from 'lucide-react';
+import { ShoppingCart, Minus, Plus, RotateCcw } from 'lucide-react';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { fetchProductById, clearSelectedProduct } from '../../store/slices/productSlice';
@@ -106,6 +106,16 @@ const ProductDetail = () => {
               ? `Only ${product.stock} left in stock`
               : 'Out of Stock'}
           </p>
+
+          {/* Return Policy */}
+          {product.is_returnable && (
+            <p className="text-sm text-brand-600 mb-6 flex items-center gap-1.5">
+              <RotateCcw className="w-4 h-4" />
+              {product.return_window_days
+                ? `Returnable within ${product.return_window_days} days of delivery`
+                : 'Returnable'}
+            </p>
+          )}
 
           {/* Description */}
           <div className="border-t border-gray-100 pt-6 mb-8">

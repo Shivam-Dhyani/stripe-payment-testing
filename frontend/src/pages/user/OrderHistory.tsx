@@ -374,6 +374,11 @@ const OrderHistory = () => {
                             <div>
                               <p className="font-medium text-gray-800">{item.product_name}</p>
                               <p className="text-sm text-gray-500">Qty: {item.quantity} x ${Number(item.product_price).toFixed(2)}</p>
+                              {selectedOrder.status === 'delivered' && item.is_returnable && (
+                                <p className="text-xs text-brand-500 mt-0.5">
+                                  Returnable{item.return_window_days ? ` within ${item.return_window_days} days` : ''}
+                                </p>
+                              )}
                             </div>
                           </div>
                           <p className="font-medium text-gray-800">${(item.quantity * Number(item.product_price)).toFixed(2)}</p>
@@ -403,9 +408,9 @@ const OrderHistory = () => {
                         <span>Request Cancellation</span>
                       </button>
                     )}
-                    {canRequestReturn(selectedOrder) && selectedOrder.items && (
+                    {canRequestReturn(selectedOrder) && selectedOrder.items && selectedOrder.items.some(i => i.is_returnable) && (
                       <button
-                        onClick={(e) => { e.stopPropagation(); openReturnModal(selectedOrder.id, selectedOrder.items!); }}
+                        onClick={(e) => { e.stopPropagation(); openReturnModal(selectedOrder.id, selectedOrder.items!.filter(i => i.is_returnable)); }}
                         className="flex items-center space-x-2 px-4 py-2 border border-brand-300 text-brand-600 rounded-lg hover:bg-brand-50 transition font-medium text-sm"
                       >
                         <RotateCcw className="w-4 h-4" />

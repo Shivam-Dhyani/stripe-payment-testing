@@ -100,6 +100,8 @@ export interface OrderItem {
   product_name: string;
   product_price: number | string;
   quantity: number;
+  is_returnable: boolean;
+  return_window_days: number | null;
 }
 
 export interface DashboardStats {

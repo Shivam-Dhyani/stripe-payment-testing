@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, subqueryload
 from typing import List
 from decimal import Decimal
 from app.database import get_db
@@ -22,7 +22,7 @@ router = APIRouter(prefix="/orders", tags=["Orders"], redirect_slashes=False)
 
 def _order_query(db: Session):
     return db.query(Order).options(
-        joinedload(Order.items),
+        subqueryload(Order.items).joinedload(OrderItem.product),
         joinedload(Order.payment_events),
         joinedload(Order.status_history),
     )
