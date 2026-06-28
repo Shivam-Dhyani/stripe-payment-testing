@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Eye, X, CheckCircle, XCircle, Clock, CreditCard, Truck, RefreshCw, Search, ShoppingBag, ChevronLeft, ChevronRight, ChevronDown, ArrowRight, AlertTriangle, Package, Check } from 'lucide-react';
+import { Eye, X, CheckCircle, XCircle, Clock, CreditCard, Truck, RefreshCw, Search, ShoppingBag, ChevronLeft, ChevronRight, ChevronDown, ArrowRight, AlertTriangle, Package, Check, RotateCcw } from 'lucide-react';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { fetchAllOrders, updateOrderStatus } from '../../store/slices/orderSlice';
+import { fetchReturnRequests } from '../../store/slices/returnSlice';
 import { Order, PaymentEvent, OrderStatusHistory } from '../../types';
 import ButtonSpinner from '../../components/common/ButtonSpinner';
 import { formatDate, formatDateTime } from '../../utils/date';
@@ -14,6 +15,15 @@ const statusColors: Record<string, string> = {
   delivered: 'bg-green-100 text-green-700',
   cancelled: 'bg-red-100 text-red-700',
   refunded: 'bg-gray-100 text-gray-700',
+};
+
+const returnStatusColors: Record<string, string> = {
+  requested: 'bg-amber-100 text-amber-700',
+  approved: 'bg-blue-100 text-blue-700',
+  rejected: 'bg-red-100 text-red-700',
+  pickup_scheduled: 'bg-purple-100 text-purple-700',
+  received: 'bg-cyan-100 text-cyan-700',
+  refunded: 'bg-green-100 text-green-700',
 };
 
 const validTransitions: Record<string, string[]> = {
@@ -33,6 +43,7 @@ const CANCEL_REASONS = [
 const Orders = () => {
   const dispatch = useAppDispatch();
   const { orders, loading } = useAppSelector((state) => state.orders);
+  const { requests: returnRequests } = useAppSelector((state) => state.returns);
   const [detailOrder, setDetailOrder] = useState<Order | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
@@ -50,7 +61,25 @@ const Orders = () => {
 
   useEffect(() => {
     dispatch(fetchAllOrders());
+    dispatch(fetchReturnRequests());
   }, [dispatch]);
+
+  // Return requests for a given order (most recent first, as returned by the API).
+  const getOrderReturns = (orderId: string) =>
+    returnRequests.filter((r) => r.order_id === orderId);
+
+  // Return activity for a specific order item: status + quantity per matching return.
+  const getItemReturns = (orderId: string, orderItemId: string) => {
+    const result: { status: string; quantity: number }[] = [];
+    getOrderReturns(orderId).forEach((r) => {
+      r.items.forEach((it) => {
+        if (it.order_item_id === orderItemId) {
+          result.push({ status: r.status, quantity: it.quantity });
+        }
+      });
+    });
+    return result;
+  };
 
   const viewOrder = (orderId: string) => {
     const order = orders.find(o => o.id === orderId);
@@ -265,9 +294,20 @@ const Orders = () => {
                       <td className="px-5 py-4 text-sm text-gray-800">{order.items?.length || '-'}</td>
                       <td className="px-5 py-4 text-sm font-medium text-gray-800">${Number(order.total).toFixed(2)}</td>
                       <td className="px-5 py-4">
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize ${statusColors[order.status] || 'bg-gray-100 text-gray-700'}`}>
-                          {order.status}
-                        </span>
+                        <div className="flex flex-col items-start gap-1">
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize ${statusColors[order.status] || 'bg-gray-100 text-gray-700'}`}>
+                            {order.status}
+                          </span>
+                          {getOrderReturns(order.id).map((r) => (
+                            <span
+                              key={r.id}
+                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium capitalize ${returnStatusColors[r.status] || 'bg-gray-100 text-gray-700'}`}
+                            >
+                              <RotateCcw className="w-2.5 h-2.5" />
+                              {r.status.replace('_', ' ')}
+                            </span>
+                          ))}
+                        </div>
                       </td>
                       <td className="px-5 py-4 text-sm text-gray-800">{formatDate(order.created_at)}</td>
                       <td className="px-5 py-4">
@@ -580,20 +620,40 @@ const Orders = () => {
               <div className="mb-6">
                 <h3 className="font-semibold text-gray-800 mb-3">Items</h3>
                 <div className="space-y-3">
-                  {detailOrder.items.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between py-3 border-b border-gray-200 last:border-0">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-brand-400 to-brand-600 rounded-lg flex items-center justify-center">
-                          <span className="text-white text-xs font-bold">{item.product_name.substring(0, 2).toUpperCase()}</span>
+                  {detailOrder.items.map((item) => {
+                    const itemReturns = getItemReturns(detailOrder.id, item.id);
+                    return (
+                      <div key={item.id} className="flex items-center justify-between py-3 border-b border-gray-200 last:border-0">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-gradient-to-br from-brand-400 to-brand-600 rounded-lg flex items-center justify-center">
+                            <span className="text-white text-xs font-bold">{item.product_name.substring(0, 2).toUpperCase()}</span>
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-800">{item.product_name}</p>
+                            <p className="text-sm text-gray-500">Qty: {item.quantity} x ${Number(item.product_price).toFixed(2)}</p>
+                            {itemReturns.length > 0 ? (
+                              <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                                {itemReturns.map((ret, i) => (
+                                  <span
+                                    key={i}
+                                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium capitalize ${returnStatusColors[ret.status] || 'bg-gray-100 text-gray-700'}`}
+                                  >
+                                    <RotateCcw className="w-2.5 h-2.5" />
+                                    Return {ret.status.replace('_', ' ')} &times;{ret.quantity}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : item.is_returnable ? (
+                              <p className="text-[11px] text-gray-400 mt-1">
+                                Returnable{item.return_window_days ? ` within ${item.return_window_days} days` : ''}
+                              </p>
+                            ) : null}
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-medium text-gray-800">{item.product_name}</p>
-                          <p className="text-sm text-gray-500">Qty: {item.quantity} x ${Number(item.product_price).toFixed(2)}</p>
-                        </div>
+                        <p className="font-medium">${(item.quantity * Number(item.product_price)).toFixed(2)}</p>
                       </div>
-                      <p className="font-medium">${(item.quantity * Number(item.product_price)).toFixed(2)}</p>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
