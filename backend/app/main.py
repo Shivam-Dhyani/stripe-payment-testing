@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text, inspect
+from sqlalchemy.exc import OperationalError
 from app.database import engine, Base, SessionLocal
 from app.models import (
     User, Address, Category, SubCategory, Product, CartItem, Order, OrderItem, OrderStatusHistory, PaymentEvent,
@@ -54,7 +55,26 @@ def run_migrations(db):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan handler: create tables and seed data on startup."""
-    Base.metadata.create_all(bind=engine)
+    try:
+        Base.metadata.create_all(bind=engine)
+    except OperationalError as e:
+        masked_url = str(engine.url).split("@")[-1] if "@" in str(engine.url) else str(engine.url)
+        print("\n" + "=" * 70)
+        print("  DATABASE CONNECTION FAILED")
+        print("=" * 70)
+        print(f"  Could not connect to the database at: {masked_url}")
+        print()
+        print("  The server cannot start without a database. Common causes:")
+        print("    1. Supabase project is PAUSED  -> resume it in the dashboard")
+        print("    2. Wrong DATABASE_URL in backend/.env")
+        print("       Supabase now requires the connection POOLER host, e.g.:")
+        print("       postgresql://postgres.<ref>:<pw>@aws-0-<region>"
+              ".pooler.supabase.com:5432/postgres")
+        print("    3. No internet / DNS or firewall blocking the host")
+        print()
+        print(f"  Underlying error: {e.orig}")
+        print("=" * 70 + "\n")
+        raise SystemExit(1)
     print("Database tables created.")
 
     db = SessionLocal()
