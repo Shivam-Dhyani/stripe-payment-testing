@@ -1,3 +1,5 @@
+import os
+import sys
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -74,7 +76,10 @@ async def lifespan(app: FastAPI):
         print()
         print(f"  Underlying error: {e.orig}")
         print("=" * 70 + "\n")
-        raise SystemExit(1)
+        sys.stdout.flush()
+        # Exit immediately so Starlette/uvicorn doesn't re-raise and dump the
+        # full traceback on top of our readable message.
+        os._exit(1)
     print("Database tables created.")
 
     db = SessionLocal()
