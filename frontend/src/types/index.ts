@@ -102,6 +102,8 @@ export interface OrderItem {
   quantity: number;
   is_returnable: boolean;
   return_window_days: number | null;
+  returned_quantity: number;
+  returnable_quantity: number;
 }
 
 export interface DashboardStats {

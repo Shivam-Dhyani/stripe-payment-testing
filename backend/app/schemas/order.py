@@ -13,20 +13,34 @@ class OrderItemResponse(BaseModel):
     quantity: int
     is_returnable: bool = False
     return_window_days: Optional[int] = None
+    returned_quantity: int = 0
+    returnable_quantity: int = 0
 
     model_config = ConfigDict(from_attributes=True)
 
     @model_validator(mode='before')
     @classmethod
-    def resolve_product_fields(cls, data: Any) -> Any:
-        if hasattr(data, 'product') and data.product:
-            product = data.product
-            if hasattr(data, '__dict__'):
-                d = {k: v for k, v in data.__dict__.items() if not k.startswith('_')}
-                d['is_returnable'] = getattr(product, 'is_returnable', False) or False
-                d['return_window_days'] = getattr(product, 'return_window_days', None)
-                return d
-        return data
+    def resolve_related_fields(cls, data: Any) -> Any:
+        if not hasattr(data, '__dict__'):
+            return data
+        d = {k: v for k, v in data.__dict__.items() if not k.startswith('_')}
+
+        product = getattr(data, 'product', None)
+        if product:
+            d['is_returnable'] = getattr(product, 'is_returnable', False) or False
+            d['return_window_days'] = getattr(product, 'return_window_days', None)
+
+        # Quantity already claimed by non-rejected return requests is no longer
+        # eligible to be returned/refunded again.
+        ordered = getattr(data, 'quantity', 0) or 0
+        returned = 0
+        for ri in getattr(data, 'return_items', None) or []:
+            rr = getattr(ri, 'return_request', None)
+            if rr is not None and rr.status != 'rejected':
+                returned += ri.quantity or 0
+        d['returned_quantity'] = returned
+        d['returnable_quantity'] = max(ordered - returned, 0)
+        return d
 
 
 class OrderStatusHistoryResponse(BaseModel):

@@ -6,6 +6,7 @@ from app.database import get_db
 from app.models.user import User, UserRole
 from app.models.order import Order, OrderItem
 from app.models.product import Product
+from app.models.return_request import ReturnRequest
 from app.models.subcategory import SubCategory
 from app.models.category import Category
 from app.schemas.dashboard import DashboardStats, RevenueData, TopProduct, CategoryDistribution, OrderTrend
@@ -22,15 +23,20 @@ def get_stats(
     db: Session = Depends(get_db),
 ):
     """Get KPI dashboard statistics (admin only)."""
-    total_revenue = db.query(func.coalesce(func.sum(Order.total), 0)).filter(
+    gross_revenue = db.query(func.coalesce(func.sum(Order.total), 0)).filter(
         Order.status != "cancelled"
     ).scalar()
+    # Subtract amounts refunded via completed returns so revenue reflects net income.
+    total_refunded = db.query(func.coalesce(func.sum(ReturnRequest.refund_amount), 0)).filter(
+        ReturnRequest.status == "refunded"
+    ).scalar()
+    total_revenue = float(gross_revenue) - float(total_refunded)
     total_orders = db.query(func.count(Order.id)).scalar()
     total_products = db.query(func.count(Product.id)).filter(Product.is_active == True).scalar()
     total_customers = db.query(func.count(User.id)).filter(User.role == UserRole.customer).scalar()
 
     return DashboardStats(
-        total_revenue=float(total_revenue),
+        total_revenue=total_revenue,
         total_orders=total_orders,
         total_products=total_products,
         total_customers=total_customers,
@@ -55,7 +61,24 @@ def get_revenue_chart(
         .order_by(func.date(Order.created_at))
         .all()
     )
-    return [RevenueData(date=str(r.date), revenue=float(r.revenue)) for r in results]
+
+    # Refunds from completed returns, attributed to the original order's day.
+    refund_results = (
+        db.query(
+            func.date(Order.created_at).label("date"),
+            func.coalesce(func.sum(ReturnRequest.refund_amount), 0).label("refunded"),
+        )
+        .join(ReturnRequest, ReturnRequest.order_id == Order.id)
+        .filter(Order.created_at >= thirty_days_ago, ReturnRequest.status == "refunded")
+        .group_by(func.date(Order.created_at))
+        .all()
+    )
+    refund_map = {str(r.date): float(r.refunded) for r in refund_results}
+
+    return [
+        RevenueData(date=str(r.date), revenue=float(r.revenue) - refund_map.get(str(r.date), 0))
+        for r in results
+    ]
 
 
 @router.get("/top-products", response_model=List[TopProduct])

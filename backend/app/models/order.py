@@ -50,6 +50,7 @@ class OrderItem(Base):
 
     order = relationship("Order", back_populates="items")
     product = relationship("Product", back_populates="order_items")
+    return_items = relationship("ReturnRequestItem", back_populates="order_item")
 
 
 class OrderStatusHistory(Base):

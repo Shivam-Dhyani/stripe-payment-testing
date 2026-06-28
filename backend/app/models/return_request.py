@@ -39,4 +39,4 @@ class ReturnRequestItem(Base):
     quantity = Column(Integer, nullable=False)
 
     return_request = relationship("ReturnRequest", back_populates="items")
-    order_item = relationship("OrderItem")
+    order_item = relationship("OrderItem", back_populates="return_items")

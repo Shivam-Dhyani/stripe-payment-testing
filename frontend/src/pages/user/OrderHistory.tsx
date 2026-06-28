@@ -137,7 +137,9 @@ const OrderHistory = () => {
 
   const canRequestReturn = (order: Order): boolean => {
     if (order.status !== 'delivered') return false;
-    return !returnRequests.some(r => r.order_id === order.id && ['requested', 'approved', 'pickup_scheduled'].includes(r.status));
+    if (!order.items) return false;
+    // Only allow if at least one item still has units eligible for return.
+    return order.items.some(i => i.is_returnable && i.returnable_quantity > 0);
   };
 
   const getExistingCancelRequest = (orderId: string) => {
@@ -375,9 +377,17 @@ const OrderHistory = () => {
                               <p className="font-medium text-gray-800">{item.product_name}</p>
                               <p className="text-sm text-gray-500">Qty: {item.quantity} x ${Number(item.product_price).toFixed(2)}</p>
                               {selectedOrder.status === 'delivered' && item.is_returnable && (
-                                <p className="text-xs text-brand-500 mt-0.5">
-                                  Returnable{item.return_window_days ? ` within ${item.return_window_days} days` : ''}
-                                </p>
+                                item.returned_quantity > 0 && item.returnable_quantity === 0 ? (
+                                  <p className="text-xs text-gray-400 mt-0.5">Returned &amp; refunded</p>
+                                ) : item.returned_quantity > 0 ? (
+                                  <p className="text-xs text-amber-600 mt-0.5">
+                                    {item.returned_quantity} returned &middot; {item.returnable_quantity} still returnable
+                                  </p>
+                                ) : (
+                                  <p className="text-xs text-brand-500 mt-0.5">
+                                    Returnable{item.return_window_days ? ` within ${item.return_window_days} days` : ''}
+                                  </p>
+                                )
                               )}
                             </div>
                           </div>
@@ -408,9 +418,9 @@ const OrderHistory = () => {
                         <span>Request Cancellation</span>
                       </button>
                     )}
-                    {canRequestReturn(selectedOrder) && selectedOrder.items && selectedOrder.items.some(i => i.is_returnable) && (
+                    {canRequestReturn(selectedOrder) && selectedOrder.items && (
                       <button
-                        onClick={(e) => { e.stopPropagation(); openReturnModal(selectedOrder.id, selectedOrder.items!.filter(i => i.is_returnable)); }}
+                        onClick={(e) => { e.stopPropagation(); openReturnModal(selectedOrder.id, selectedOrder.items!.filter(i => i.is_returnable && i.returnable_quantity > 0)); }}
                         className="flex items-center space-x-2 px-4 py-2 border border-brand-300 text-brand-600 rounded-lg hover:bg-brand-50 transition font-medium text-sm"
                       >
                         <RotateCcw className="w-4 h-4" />
@@ -515,12 +525,14 @@ const OrderHistory = () => {
                       <input
                         type="checkbox"
                         checked={isSelected}
-                        onChange={() => toggleReturnItem(item.id, item.quantity)}
+                        onChange={() => toggleReturnItem(item.id, item.returnable_quantity)}
                         className="rounded border-gray-300 text-brand-500 focus:ring-brand-500"
                       />
                       <div>
                         <p className="text-sm font-medium text-gray-800">{item.product_name}</p>
-                        <p className="text-xs text-gray-500">${Number(item.product_price).toFixed(2)} each</p>
+                        <p className="text-xs text-gray-500">
+                          ${Number(item.product_price).toFixed(2)} each &middot; {item.returnable_quantity} eligible
+                        </p>
                       </div>
                     </div>
                     {isSelected && (
@@ -531,7 +543,7 @@ const OrderHistory = () => {
                           onChange={(e) => setReturnItems(prev => ({ ...prev, [item.id]: Number(e.target.value) }))}
                           className="px-2 py-1 border border-gray-200 rounded text-sm bg-white focus:outline-hidden focus:ring-2 focus:ring-brand-500/20"
                         >
-                          {Array.from({ length: item.quantity }, (_, i) => i + 1).map(n => (
+                          {Array.from({ length: item.returnable_quantity }, (_, i) => i + 1).map(n => (
                             <option key={n} value={n}>{n}</option>
                           ))}
                         </select>

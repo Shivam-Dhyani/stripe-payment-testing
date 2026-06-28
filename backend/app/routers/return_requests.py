@@ -22,6 +22,20 @@ stripe.api_key = settings.STRIPE_SECRET_KEY
 router = APIRouter(prefix="/return-requests", tags=["Return Requests"], redirect_slashes=False)
 
 
+def _already_returned_qty(db: Session, order_item_id: str) -> int:
+    """Total quantity of an order item already claimed by non-rejected return requests."""
+    rows = (
+        db.query(ReturnRequestItem.quantity)
+        .join(ReturnRequest, ReturnRequest.id == ReturnRequestItem.return_request_id)
+        .filter(
+            ReturnRequestItem.order_item_id == order_item_id,
+            ReturnRequest.status != "rejected",
+        )
+        .all()
+    )
+    return sum(r.quantity for r in rows)
+
+
 def _build_response(req, db: Session) -> ReturnRequestResponse:
     """Build a ReturnRequestResponse with computed fields from related models."""
     user = db.query(User).filter(User.id == req.user_id).first()
@@ -127,11 +141,23 @@ def create_return_request(
                            f"for product '{product.name}'",
                 )
 
-        if item_data.quantity > order_item.quantity:
+        if item_data.quantity <= 0:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Return quantity ({item_data.quantity}) exceeds ordered quantity "
-                       f"({order_item.quantity}) for '{order_item.product_name}'",
+                detail=f"Return quantity must be at least 1 for '{order_item.product_name}'",
+            )
+
+        remaining = order_item.quantity - _already_returned_qty(db, order_item.id)
+        if remaining <= 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"'{order_item.product_name}' has already been returned and cannot be returned again",
+            )
+        if item_data.quantity > remaining:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Only {remaining} unit(s) of '{order_item.product_name}' are still "
+                       f"eligible for return",
             )
 
         refund_amount += order_item.product_price * item_data.quantity
