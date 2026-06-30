@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Eye, X, CheckCircle, XCircle, Clock, CreditCard, Truck, RefreshCw, Search, ShoppingBag, ChevronLeft, ChevronRight, ChevronDown, ArrowRight, AlertTriangle, Package, Check, RotateCcw, Ban } from 'lucide-react';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
@@ -129,6 +130,7 @@ const CANCEL_REASONS = [
 
 const Orders = () => {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const { orders, loading } = useAppSelector((state) => state.orders);
   const { requests: returnRequests } = useAppSelector((state) => state.returns);
   const { requests: cancelRequests } = useAppSelector((state) => state.cancellations);
@@ -160,6 +162,16 @@ const Orders = () => {
   // Cancellation requests for a given order.
   const getOrderCancellations = (orderId: string) =>
     cancelRequests.filter((c) => c.order_id === orderId);
+
+  // An unresolved cancellation (pending) blocks further order processing.
+  const getActiveCancel = (orderId: string) =>
+    cancelRequests.find((c) => c.order_id === orderId && c.status === 'pending');
+
+  // An in-progress return (not yet refunded or rejected) blocks further order processing.
+  const getActiveReturn = (orderId: string) =>
+    returnRequests.find(
+      (r) => r.order_id === orderId && ['requested', 'approved', 'pickup_scheduled', 'received'].includes(r.status)
+    );
 
   // Return activity for a specific order item: status + quantity per matching return.
   const getItemReturns = (orderId: string, orderItemId: string) => {
@@ -376,6 +388,9 @@ const Orders = () => {
                 paginatedOrders.map((order) => {
                   const nextAction = getNextAction(order.status);
                   const showCancel = canCancel(order.status);
+                  const activeCancel = getActiveCancel(order.id);
+                  const activeReturn = getActiveReturn(order.id);
+                  const blocked = Boolean(activeCancel || activeReturn);
                   return (
                     <tr key={order.id} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
                       <td className="px-5 py-4">
@@ -421,26 +436,53 @@ const Orders = () => {
                           >
                             <Eye className="w-4 h-4" />
                           </button>
-                          {nextAction ? (
-                            <button
-                              onClick={() => handleAdvanceStatus(order.id, nextAction)}
-                              disabled={updatingOrderId === order.id}
-                              className="text-xs px-3 py-1.5 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition-colors disabled:opacity-50 font-medium"
-                            >
-                              {updatingOrderId === order.id ? <ButtonSpinner /> : getActionLabel(nextAction)}
-                            </button>
-                          ) : !showCancel ? (
-                            <span className="text-xs text-gray-400">&mdash;</span>
-                          ) : null}
-                          {showCancel && (
-                            <button
-                              onClick={() => openCancelModal(order.id)}
-                              disabled={updatingOrderId === order.id}
-                              className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                              title="Cancel order"
-                            >
-                              <XCircle className="w-4 h-4" />
-                            </button>
+                          {blocked ? (
+                            <>
+                              {activeCancel && (
+                                <button
+                                  onClick={() => navigate('/admin/cancellations')}
+                                  className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors font-medium"
+                                  title="Resolve the cancellation request before processing this order"
+                                >
+                                  <Ban className="w-3.5 h-3.5" />
+                                  Review Cancellation
+                                </button>
+                              )}
+                              {activeReturn && (
+                                <button
+                                  onClick={() => navigate('/admin/returns')}
+                                  className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors font-medium"
+                                  title="Resolve the return/refund request before processing this order"
+                                >
+                                  <RotateCcw className="w-3.5 h-3.5" />
+                                  Review Refund
+                                </button>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              {nextAction ? (
+                                <button
+                                  onClick={() => handleAdvanceStatus(order.id, nextAction)}
+                                  disabled={updatingOrderId === order.id}
+                                  className="text-xs px-3 py-1.5 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition-colors disabled:opacity-50 font-medium"
+                                >
+                                  {updatingOrderId === order.id ? <ButtonSpinner /> : getActionLabel(nextAction)}
+                                </button>
+                              ) : !showCancel ? (
+                                <span className="text-xs text-gray-400">&mdash;</span>
+                              ) : null}
+                              {showCancel && (
+                                <button
+                                  onClick={() => openCancelModal(order.id)}
+                                  disabled={updatingOrderId === order.id}
+                                  className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                                  title="Cancel order"
+                                >
+                                  <XCircle className="w-4 h-4" />
+                                </button>
+                              )}
+                            </>
                           )}
                         </div>
                       </td>
