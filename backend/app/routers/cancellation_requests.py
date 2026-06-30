@@ -5,7 +5,7 @@ from typing import List
 from datetime import datetime
 from app.database import get_db
 from app.models.user import User, UserRole
-from app.models.order import Order, OrderStatusHistory, VALID_TRANSITIONS
+from app.models.order import Order, OrderStatusHistory
 from app.models.cancellation_request import CancellationRequest
 from app.models.payment_event import PaymentEvent, PaymentEventType
 from app.schemas.cancellation_request import (
@@ -18,6 +18,9 @@ import stripe
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
 router = APIRouter(prefix="/cancellation-requests", tags=["Cancellation Requests"], redirect_slashes=False)
+
+# Orders in these (pre-delivery) statuses may be cancelled via a cancellation request.
+CANCELLABLE_ORDER_STATUSES = {"confirmed", "processing", "shipped"}
 
 
 def _build_response(req, db: Session) -> CancellationRequestResponse:
@@ -60,8 +63,7 @@ def create_cancellation_request(
     if order.user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
 
-    allowed_statuses = {"confirmed", "processing", "shipped"}
-    if order.status not in allowed_statuses:
+    if order.status not in CANCELLABLE_ORDER_STATUSES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Cannot request cancellation for order with status '{order.status}'. "
@@ -145,11 +147,13 @@ def resolve_cancellation_request(
         if not order:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
 
-        allowed = VALID_TRANSITIONS.get(order.status, set())
-        if "cancelled" not in allowed:
+        # Approving a cancellation request may cancel any pre-delivery order
+        # (confirmed/processing/shipped) — the same statuses a request is allowed for.
+        if order.status not in CANCELLABLE_ORDER_STATUSES:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Order status '{order.status}' does not allow cancellation",
+                detail=f"Order status '{order.status}' can no longer be cancelled "
+                       f"(it may already be delivered or cancelled)",
             )
 
         old_status = order.status
