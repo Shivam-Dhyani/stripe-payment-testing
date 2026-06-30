@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Eye, X, CheckCircle, XCircle, Clock, CreditCard, Truck, RefreshCw, Search, ShoppingBag, ChevronLeft, ChevronRight, ChevronDown, ArrowRight, AlertTriangle, Package, Check, RotateCcw } from 'lucide-react';
+import { Eye, X, CheckCircle, XCircle, Clock, CreditCard, Truck, RefreshCw, Search, ShoppingBag, ChevronLeft, ChevronRight, ChevronDown, ArrowRight, AlertTriangle, Package, Check, RotateCcw, Ban } from 'lucide-react';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { fetchAllOrders, updateOrderStatus } from '../../store/slices/orderSlice';
 import { fetchReturnRequests } from '../../store/slices/returnSlice';
-import { Order, PaymentEvent, OrderStatusHistory } from '../../types';
+import { fetchCancellationRequests } from '../../store/slices/cancellationSlice';
+import { Order, PaymentEvent, OrderStatusHistory, CancellationRequest, ReturnRequest } from '../../types';
 import ButtonSpinner from '../../components/common/ButtonSpinner';
 import { formatDate, formatDateTime } from '../../utils/date';
 
@@ -26,6 +27,92 @@ const returnStatusColors: Record<string, string> = {
   refunded: 'bg-green-100 text-green-700',
 };
 
+const cancelStatusColors: Record<string, string> = {
+  pending: 'bg-amber-100 text-amber-700',
+  approved: 'bg-green-100 text-green-700',
+  rejected: 'bg-red-100 text-red-700',
+};
+
+const RETURN_FLOW: { key: string; label: string }[] = [
+  { key: 'requested', label: 'Return Requested' },
+  { key: 'approved', label: 'Approved' },
+  { key: 'pickup_scheduled', label: 'Pickup Scheduled' },
+  { key: 'received', label: 'Item Received' },
+  { key: 'refunded', label: 'Refunded' },
+];
+
+type TimelineStep = { key: string; label: string; state: 'done' | 'current' | 'todo' | 'rejected'; date: string | null };
+
+const buildReturnSteps = (r: ReturnRequest): TimelineStep[] => {
+  if (r.status === 'rejected') {
+    return [
+      { key: 'requested', label: 'Return Requested', state: 'done', date: r.created_at },
+      { key: 'rejected', label: 'Rejected', state: 'rejected', date: r.updated_at },
+    ];
+  }
+  const idx = RETURN_FLOW.findIndex((s) => s.key === r.status);
+  return RETURN_FLOW.map((s, i) => ({
+    key: s.key,
+    label: s.label,
+    state: i < idx ? 'done' : i === idx ? 'current' : 'todo',
+    date:
+      s.key === 'requested'
+        ? r.created_at
+        : s.key === 'pickup_scheduled' && r.pickup_date
+        ? r.pickup_date
+        : i === idx
+        ? r.updated_at
+        : null,
+  }));
+};
+
+const buildCancelSteps = (c: CancellationRequest): TimelineStep[] => {
+  const second: TimelineStep =
+    c.status === 'pending'
+      ? { key: 'pending', label: 'Awaiting Review', state: 'current', date: null }
+      : c.status === 'approved'
+      ? { key: 'approved', label: 'Approved — Order Cancelled', state: 'done', date: c.resolved_at }
+      : { key: 'rejected', label: 'Rejected', state: 'rejected', date: c.resolved_at };
+  return [
+    { key: 'requested', label: 'Cancellation Requested', state: 'done', date: c.created_at },
+    second,
+  ];
+};
+
+const renderRequestTimeline = (steps: TimelineStep[]) => (
+  <div className="relative pl-6 border-l-2 border-gray-200 space-y-3">
+    {steps.map((s) => (
+      <div key={s.key} className="relative">
+        <div
+          className={`absolute -left-[calc(0.75rem+1px)] top-0 w-6 h-6 rounded-full flex items-center justify-center ${
+            s.state === 'done'
+              ? 'bg-green-500 text-white'
+              : s.state === 'current'
+              ? 'bg-brand-500 text-white'
+              : s.state === 'rejected'
+              ? 'bg-red-500 text-white'
+              : 'bg-gray-200 text-gray-400'
+          }`}
+        >
+          {s.state === 'done' ? (
+            <Check className="w-3.5 h-3.5" />
+          ) : s.state === 'rejected' ? (
+            <X className="w-3.5 h-3.5" />
+          ) : s.state === 'current' ? (
+            <span className="w-2 h-2 bg-white rounded-full" />
+          ) : (
+            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full" />
+          )}
+        </div>
+        <div className="ml-3">
+          <span className={`text-sm font-medium ${s.state === 'todo' ? 'text-gray-400' : 'text-gray-700'}`}>{s.label}</span>
+          {s.date && <p className="text-[11px] text-gray-400">{formatDateTime(s.date)}</p>}
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
 const validTransitions: Record<string, string[]> = {
   confirmed: ['processing', 'cancelled'],
   processing: ['shipped', 'cancelled'],
@@ -44,6 +131,7 @@ const Orders = () => {
   const dispatch = useAppDispatch();
   const { orders, loading } = useAppSelector((state) => state.orders);
   const { requests: returnRequests } = useAppSelector((state) => state.returns);
+  const { requests: cancelRequests } = useAppSelector((state) => state.cancellations);
   const [detailOrder, setDetailOrder] = useState<Order | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
@@ -62,11 +150,16 @@ const Orders = () => {
   useEffect(() => {
     dispatch(fetchAllOrders());
     dispatch(fetchReturnRequests());
+    dispatch(fetchCancellationRequests());
   }, [dispatch]);
 
   // Return requests for a given order (most recent first, as returned by the API).
   const getOrderReturns = (orderId: string) =>
     returnRequests.filter((r) => r.order_id === orderId);
+
+  // Cancellation requests for a given order.
+  const getOrderCancellations = (orderId: string) =>
+    cancelRequests.filter((c) => c.order_id === orderId);
 
   // Return activity for a specific order item: status + quantity per matching return.
   const getItemReturns = (orderId: string, orderItemId: string) => {
@@ -298,13 +391,22 @@ const Orders = () => {
                           <span className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize ${statusColors[order.status] || 'bg-gray-100 text-gray-700'}`}>
                             {order.status}
                           </span>
+                          {getOrderCancellations(order.id).map((c) => (
+                            <span
+                              key={c.id}
+                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium capitalize ${cancelStatusColors[c.status] || 'bg-gray-100 text-gray-700'}`}
+                            >
+                              <Ban className="w-2.5 h-2.5" />
+                              Cancel {c.status}
+                            </span>
+                          ))}
                           {getOrderReturns(order.id).map((r) => (
                             <span
                               key={r.id}
                               className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium capitalize ${returnStatusColors[r.status] || 'bg-gray-100 text-gray-700'}`}
                             >
                               <RotateCcw className="w-2.5 h-2.5" />
-                              {r.status.replace('_', ' ')}
+                              Return {r.status.replace('_', ' ')}
                             </span>
                           ))}
                         </div>
@@ -614,6 +716,52 @@ const Orders = () => {
                 </div>
               )}
             </div>
+
+            {/* Cancellation & Return Requests */}
+            {(() => {
+              const cancels = getOrderCancellations(detailOrder.id);
+              const returns = getOrderReturns(detailOrder.id);
+              if (cancels.length === 0 && returns.length === 0) return null;
+              return (
+                <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50/40 p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold text-gray-800">Cancellation &amp; Return Requests</h3>
+                    <span className="text-xs text-gray-500">Manage in the Cancellations / Returns modules</span>
+                  </div>
+                  <div className="space-y-5">
+                    {cancels.map((c) => (
+                      <div key={c.id} className="rounded-lg bg-white border border-gray-200 p-3">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Ban className="w-4 h-4 text-red-400" />
+                          <span className="text-sm font-semibold text-gray-700">Cancellation Request</span>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium capitalize ${cancelStatusColors[c.status] || 'bg-gray-100 text-gray-700'}`}>
+                            {c.status}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-500 mb-3">Reason: {c.reason}</p>
+                        {renderRequestTimeline(buildCancelSteps(c))}
+                      </div>
+                    ))}
+                    {returns.map((r) => (
+                      <div key={r.id} className="rounded-lg bg-white border border-gray-200 p-3">
+                        <div className="flex items-center gap-2 mb-3">
+                          <RotateCcw className="w-4 h-4 text-brand-400" />
+                          <span className="text-sm font-semibold text-gray-700">Return Request</span>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium capitalize ${returnStatusColors[r.status] || 'bg-gray-100 text-gray-700'}`}>
+                            {r.status.replace('_', ' ')}
+                          </span>
+                          {r.refund_amount != null && (
+                            <span className="text-xs text-gray-500 ml-auto">Refund: ${Number(r.refund_amount).toFixed(2)}</span>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500 mb-3">Reason: {r.reason}</p>
+                        {renderRequestTimeline(buildReturnSteps(r))}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Items */}
             {detailOrder.items && (
