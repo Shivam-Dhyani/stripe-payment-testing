@@ -3,8 +3,8 @@ import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { fetchOrders, fetchOrderById } from '../../store/slices/orderSlice';
 import { createCancellationRequest, fetchCancellationRequests } from '../../store/slices/cancellationSlice';
-import { createReturnRequest, fetchReturnRequests } from '../../store/slices/returnSlice';
-import { Package, ChevronDown, ChevronUp, Calendar, Hash, Check, X, XCircle, CreditCard, Ban, RotateCcw } from 'lucide-react';
+import { createReturnRequest, fetchReturnRequests, schedulePickup, confirmHandover, withdrawReturn } from '../../store/slices/returnSlice';
+import { Package, ChevronDown, ChevronUp, Calendar, Hash, Check, X, XCircle, CreditCard, Ban, RotateCcw, Truck, MapPin } from 'lucide-react';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ButtonSpinner from '../../components/common/ButtonSpinner';
 import { Order, OrderItem, OrderStatusHistory, CancellationRequest, ReturnRequest } from '../../types';
@@ -50,8 +50,10 @@ const returnPillColors: Record<string, string> = {
   approved: 'bg-blue-100 text-blue-700',
   rejected: 'bg-red-100 text-red-700',
   pickup_scheduled: 'bg-purple-100 text-purple-700',
+  handed_over: 'bg-indigo-100 text-indigo-700',
   received: 'bg-cyan-100 text-cyan-700',
   refunded: 'bg-green-100 text-green-700',
+  withdrawn: 'bg-gray-100 text-gray-600',
 };
 
 const cancelPillColors: Record<string, string> = {
@@ -64,6 +66,7 @@ const RETURN_FLOW: { key: string; label: string }[] = [
   { key: 'requested', label: 'Return Requested' },
   { key: 'approved', label: 'Approved' },
   { key: 'pickup_scheduled', label: 'Pickup Scheduled' },
+  { key: 'handed_over', label: 'Handed to Courier' },
   { key: 'received', label: 'Item Received' },
   { key: 'refunded', label: 'Refunded' },
 ];
@@ -75,6 +78,12 @@ const buildReturnSteps = (r: ReturnRequest): TimelineStep[] => {
     return [
       { key: 'requested', label: 'Return Requested', state: 'done', date: r.created_at },
       { key: 'rejected', label: 'Rejected', state: 'rejected', date: r.updated_at },
+    ];
+  }
+  if (r.status === 'withdrawn') {
+    return [
+      { key: 'requested', label: 'Return Requested', state: 'done', date: r.created_at },
+      { key: 'withdrawn', label: 'Withdrawn by you', state: 'rejected', date: r.updated_at },
     ];
   }
   const idx = RETURN_FLOW.findIndex((s) => s.key === r.status);
@@ -210,6 +219,10 @@ const OrderHistory = () => {
   const [returnDetails, setReturnDetails] = useState('');
   const [returnItems, setReturnItems] = useState<Record<string, number>>({});
 
+  // Pickup scheduling modal state
+  const [pickupModal, setPickupModal] = useState<{ returnId: string; address: string } | null>(null);
+  const [pickupDate, setPickupDate] = useState('');
+
   useEffect(() => {
     dispatch(fetchOrders());
     dispatch(fetchCancellationRequests());
@@ -277,6 +290,33 @@ const OrderHistory = () => {
     if (items.length === 0) return;
     await dispatch(createReturnRequest({ order_id: returnModal.orderId, reason, items }));
     setReturnModal(null);
+    dispatch(fetchReturnRequests());
+  };
+
+  const formatAddress = (a: Order['address_snapshot']): string => {
+    if (!a) return '';
+    return [a.street, a.city, a.state, a.zip_code, a.country].filter(Boolean).join(', ');
+  };
+
+  const openPickupModal = (returnId: string, address: string) => {
+    setPickupModal({ returnId, address });
+    setPickupDate('');
+  };
+
+  const handleSchedulePickup = async () => {
+    if (!pickupModal || !pickupDate) return;
+    await dispatch(schedulePickup({ id: pickupModal.returnId, data: { pickup_date: pickupDate } }));
+    setPickupModal(null);
+    dispatch(fetchReturnRequests());
+  };
+
+  const handleConfirmHandover = async (returnId: string) => {
+    await dispatch(confirmHandover(returnId));
+    dispatch(fetchReturnRequests());
+  };
+
+  const handleWithdrawReturn = async (returnId: string) => {
+    await dispatch(withdrawReturn(returnId));
     dispatch(fetchReturnRequests());
   };
 
@@ -550,7 +590,7 @@ const OrderHistory = () => {
                   )}
 
                   {/* Action Buttons */}
-                  <div className="mt-4 pt-4 border-t border-gray-200 flex gap-3">
+                  <div className="mt-4 pt-4 border-t border-gray-200 flex flex-wrap gap-3">
                     {canRequestCancel(selectedOrder) && (
                       <button
                         onClick={(e) => { e.stopPropagation(); openCancelModal(selectedOrder.id); }}
@@ -569,6 +609,45 @@ const OrderHistory = () => {
                         <span>Request Return</span>
                       </button>
                     )}
+
+                    {/* Customer-driven return actions */}
+                    {(() => {
+                      const r = getExistingReturnRequest(selectedOrder.id);
+                      if (!r) return null;
+                      return (
+                        <>
+                          {r.status === 'approved' && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); openPickupModal(r.id, formatAddress(selectedOrder.address_snapshot)); }}
+                              className="flex items-center space-x-2 px-4 py-2 border border-purple-300 text-purple-600 rounded-lg hover:bg-purple-50 transition font-medium text-sm"
+                            >
+                              <Truck className="w-4 h-4" />
+                              <span>Schedule Pickup</span>
+                            </button>
+                          )}
+                          {r.status === 'pickup_scheduled' && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleConfirmHandover(r.id); }}
+                              disabled={returnSubmitting}
+                              className="flex items-center space-x-2 px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition font-medium text-sm disabled:opacity-50"
+                            >
+                              {returnSubmitting ? <ButtonSpinner /> : <Check className="w-4 h-4" />}
+                              <span>Confirm Hand-over</span>
+                            </button>
+                          )}
+                          {['requested', 'approved', 'pickup_scheduled'].includes(r.status) && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleWithdrawReturn(r.id); }}
+                              disabled={returnSubmitting}
+                              className="flex items-center space-x-2 px-4 py-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition font-medium text-sm disabled:opacity-50"
+                            >
+                              <X className="w-4 h-4" />
+                              <span>Withdraw Return</span>
+                            </button>
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
               )}
@@ -753,6 +832,65 @@ const OrderHistory = () => {
               >
                 {returnSubmitting && <ButtonSpinner />}
                 <span>Submit Return Request</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Schedule Pickup Modal */}
+      {pickupModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-2xl shadow-theme-lg w-full max-w-md mx-4 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-2">
+                <Truck className="w-5 h-5 text-purple-500" />
+                <h2 className="text-lg font-semibold text-gray-800">Schedule Pickup</h2>
+              </div>
+              <button onClick={() => setPickupModal(null)} className="text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-sm text-gray-500 mb-4">
+              Choose a date for our courier to collect the item.
+            </p>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <Calendar className="w-3.5 h-3.5 inline mr-1" />
+                  Pickup Date
+                </label>
+                <input
+                  type="date"
+                  value={pickupDate}
+                  onChange={(e) => setPickupDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-hidden focus:ring-3 focus:border-brand-300 focus:ring-brand-500/20"
+                />
+              </div>
+              {pickupModal.address && (
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-xs font-medium text-gray-500 mb-1 flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5" /> Pickup Address
+                  </p>
+                  <p className="text-sm text-gray-700">{pickupModal.address}</p>
+                  <p className="text-[11px] text-gray-400 mt-1">Same as your delivery address.</p>
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => setPickupModal(null)}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSchedulePickup}
+                disabled={returnSubmitting || !pickupDate}
+                className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition font-medium text-sm disabled:opacity-50 flex items-center space-x-2"
+              >
+                {returnSubmitting && <ButtonSpinner />}
+                <span>Confirm Pickup</span>
               </button>
             </div>
           </div>

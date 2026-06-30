@@ -12,8 +12,10 @@ const statusColors: Record<string, string> = {
   approved: 'bg-blue-100 text-blue-700',
   rejected: 'bg-red-100 text-red-700',
   pickup_scheduled: 'bg-purple-100 text-purple-700',
+  handed_over: 'bg-indigo-100 text-indigo-700',
   received: 'bg-cyan-100 text-cyan-700',
   refunded: 'bg-green-100 text-green-700',
+  withdrawn: 'bg-gray-100 text-gray-600',
 };
 
 type ActionType = 'approved' | 'rejected' | 'pickup_scheduled' | 'received' | 'refunded';
@@ -42,10 +44,11 @@ const formatStatus = (status: string): string => {
   return status.replace(/_/g, ' ');
 };
 
-const statusTimeline: string[] = ['requested', 'approved', 'pickup_scheduled', 'received', 'refunded'];
+const statusTimeline: string[] = ['requested', 'approved', 'pickup_scheduled', 'handed_over', 'received', 'refunded'];
 
 const getCompletedStatuses = (currentStatus: string): string[] => {
   if (currentStatus === 'rejected') return ['requested', 'rejected'];
+  if (currentStatus === 'withdrawn') return ['requested', 'withdrawn'];
   const idx = statusTimeline.indexOf(currentStatus);
   if (idx === -1) return ['requested'];
   return statusTimeline.slice(0, idx + 1);
@@ -62,15 +65,13 @@ const ReturnRequests = () => {
 
   const [selectedRequest, setSelectedRequest] = useState<ReturnRequest | null>(null);
   const [adminNotes, setAdminNotes] = useState('');
-  const [pickupDate, setPickupDate] = useState('');
-  const [pickupAddress, setPickupAddress] = useState('');
 
   useEffect(() => {
     dispatch(fetchReturnRequests());
   }, [dispatch]);
 
   const activeCount = requests.filter(
-    (r) => r.status === 'requested' || r.status === 'approved' || r.status === 'pickup_scheduled'
+    (r) => ['requested', 'approved', 'pickup_scheduled', 'handed_over', 'received'].includes(r.status)
   ).length;
 
   const filteredRequests = requests.filter((r) => {
@@ -89,28 +90,31 @@ const ReturnRequests = () => {
     setCurrentPage(1);
   }, [statusFilter, search]);
 
+  // Admin actions only. Scheduling pickup and confirming hand-over are done by the customer.
   const nextActionsFor = (status: string): ActionType[] => {
     switch (status) {
       case 'requested': return ['rejected', 'approved'];
-      case 'approved': return ['pickup_scheduled'];
-      case 'pickup_scheduled': return ['received'];
+      case 'handed_over': return ['received'];
       case 'received': return ['refunded'];
       default: return [];
     }
   };
 
+  // Statuses where the admin is waiting on the customer's next move.
+  const waitingOnCustomer = (status: string): string | null => {
+    if (status === 'approved') return 'Waiting for the customer to schedule a pickup.';
+    if (status === 'pickup_scheduled') return 'Waiting for the customer to hand the item to the courier.';
+    return null;
+  };
+
   const handleResolve = async (action: ActionType) => {
     if (!selectedRequest) return;
-    if (action === 'pickup_scheduled' && (!pickupDate || !pickupAddress.trim())) return;
-
     await dispatch(
       resolveReturnRequest({
         id: selectedRequest.id,
         data: {
           status: action,
           admin_notes: adminNotes || undefined,
-          pickup_date: action === 'pickup_scheduled' ? pickupDate : undefined,
-          pickup_address: action === 'pickup_scheduled' ? pickupAddress : undefined,
         },
       })
     );
@@ -121,15 +125,11 @@ const ReturnRequests = () => {
   const viewRequest = (request: ReturnRequest) => {
     setSelectedRequest(request);
     setAdminNotes('');
-    setPickupDate('');
-    setPickupAddress('');
   };
 
   const closeDetail = () => {
     setSelectedRequest(null);
     setAdminNotes('');
-    setPickupDate('');
-    setPickupAddress('');
   };
 
   const getPageNumbers = () => {
@@ -153,9 +153,11 @@ const ReturnRequests = () => {
       case 'requested': return <Clock className="w-3.5 h-3.5" />;
       case 'approved': return <CheckCircle className="w-3.5 h-3.5" />;
       case 'rejected': return <XCircle className="w-3.5 h-3.5" />;
-      case 'pickup_scheduled': return <Truck className="w-3.5 h-3.5" />;
+      case 'pickup_scheduled': return <Calendar className="w-3.5 h-3.5" />;
+      case 'handed_over': return <Truck className="w-3.5 h-3.5" />;
       case 'received': return <Package className="w-3.5 h-3.5" />;
       case 'refunded': return <RefreshCw className="w-3.5 h-3.5" />;
+      case 'withdrawn': return <X className="w-3.5 h-3.5" />;
       default: return <Clock className="w-3.5 h-3.5" />;
     }
   };
@@ -166,8 +168,10 @@ const ReturnRequests = () => {
       case 'approved': return { color: 'text-blue-600', bg: 'bg-blue-100' };
       case 'rejected': return { color: 'text-red-600', bg: 'bg-red-100' };
       case 'pickup_scheduled': return { color: 'text-purple-600', bg: 'bg-purple-100' };
+      case 'handed_over': return { color: 'text-indigo-600', bg: 'bg-indigo-100' };
       case 'received': return { color: 'text-cyan-600', bg: 'bg-cyan-100' };
       case 'refunded': return { color: 'text-green-600', bg: 'bg-green-100' };
+      case 'withdrawn': return { color: 'text-gray-600', bg: 'bg-gray-100' };
       default: return { color: 'text-gray-600', bg: 'bg-gray-100' };
     }
   };
@@ -206,8 +210,10 @@ const ReturnRequests = () => {
           <option value="approved">Approved</option>
           <option value="rejected">Rejected</option>
           <option value="pickup_scheduled">Pickup Scheduled</option>
+          <option value="handed_over">Handed Over</option>
           <option value="received">Received</option>
           <option value="refunded">Refunded</option>
+          <option value="withdrawn">Withdrawn</option>
         </select>
       </div>
 
@@ -471,37 +477,6 @@ const ReturnRequests = () => {
             {/* Workflow Actions */}
             {nextActionsFor(selectedRequest.status).length > 0 ? (
               <div className="border-t border-gray-200 pt-5">
-                {/* Pickup scheduling fields (only when scheduling pickup) */}
-                {selectedRequest.status === 'approved' && (
-                  <div className="space-y-4 mb-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        <Calendar className="w-3.5 h-3.5 inline mr-1" />
-                        Pickup Date <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="date"
-                        value={pickupDate}
-                        onChange={(e) => setPickupDate(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-hidden focus:ring-3 focus:border-brand-300 focus:ring-brand-500/20"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        <MapPin className="w-3.5 h-3.5 inline mr-1" />
-                        Pickup Address <span className="text-red-500">*</span>
-                      </label>
-                      <textarea
-                        value={pickupAddress}
-                        onChange={(e) => setPickupAddress(e.target.value)}
-                        placeholder="Enter the pickup address..."
-                        rows={3}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-hidden focus:ring-3 focus:border-brand-300 focus:ring-brand-500/20 resize-none"
-                      />
-                    </div>
-                  </div>
-                )}
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Admin Notes (optional)</label>
                   <textarea
@@ -525,12 +500,27 @@ const ReturnRequests = () => {
                     <button
                       key={action}
                       onClick={() => handleResolve(action)}
-                      disabled={submitting || (action === 'pickup_scheduled' && (!pickupDate || !pickupAddress.trim()))}
+                      disabled={submitting}
                       className={`inline-flex items-center gap-2 px-4 py-2 text-white rounded-lg transition font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed ${getConfirmButtonStyle(action)}`}
                     >
                       {submitting ? <ButtonSpinner /> : getActionTitle(action)}
                     </button>
                   ))}
+                </div>
+              </div>
+            ) : waitingOnCustomer(selectedRequest.status) ? (
+              <div className="border-t border-gray-200 pt-5">
+                <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg mb-4">
+                  <Clock className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-amber-800">{waitingOnCustomer(selectedRequest.status)}</p>
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    onClick={closeDetail}
+                    className="px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition font-medium"
+                  >
+                    Close
+                  </button>
                 </div>
               </div>
             ) : (

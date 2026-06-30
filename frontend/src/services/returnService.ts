@@ -35,4 +35,20 @@ export const returnService = {
     const response = await api.get('/return-requests/pending/count');
     return response.data;
   },
+
+  // Customer-driven actions
+  schedulePickup: async (id: string, data: { pickup_date: string; pickup_address?: string }): Promise<ReturnRequest> => {
+    const response = await api.post(`/return-requests/${id}/schedule-pickup`, data);
+    return response.data;
+  },
+
+  confirmHandover: async (id: string): Promise<ReturnRequest> => {
+    const response = await api.post(`/return-requests/${id}/confirm-handover`);
+    return response.data;
+  },
+
+  withdraw: async (id: string): Promise<ReturnRequest> => {
+    const response = await api.post(`/return-requests/${id}/withdraw`);
+    return response.data;
+  },
 };

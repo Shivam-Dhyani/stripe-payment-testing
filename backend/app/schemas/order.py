@@ -36,7 +36,7 @@ class OrderItemResponse(BaseModel):
         returned = 0
         for ri in getattr(data, 'return_items', None) or []:
             rr = getattr(ri, 'return_request', None)
-            if rr is not None and rr.status != 'rejected':
+            if rr is not None and rr.status not in ('rejected', 'withdrawn'):
                 returned += ri.quantity or 0
         d['returned_quantity'] = returned
         d['returnable_quantity'] = max(ordered - returned, 0)

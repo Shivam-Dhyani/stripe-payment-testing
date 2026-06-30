@@ -5,7 +5,10 @@ from sqlalchemy.orm import relationship
 from app.database import Base
 
 
-VALID_RETURN_STATUSES = {"requested", "approved", "rejected", "pickup_scheduled", "received", "refunded"}
+VALID_RETURN_STATUSES = {
+    "requested", "approved", "rejected", "pickup_scheduled",
+    "handed_over", "received", "refunded", "withdrawn",
+}
 
 
 class ReturnRequest(Base):

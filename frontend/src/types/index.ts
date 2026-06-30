@@ -201,7 +201,7 @@ export interface ReturnRequest {
   order_id: string;
   user_id: string;
   reason: string;
-  status: 'requested' | 'approved' | 'rejected' | 'pickup_scheduled' | 'received' | 'refunded';
+  status: 'requested' | 'approved' | 'rejected' | 'pickup_scheduled' | 'handed_over' | 'received' | 'refunded' | 'withdrawn';
   admin_notes: string | null;
   pickup_date: string | null;
   pickup_address: string | null;

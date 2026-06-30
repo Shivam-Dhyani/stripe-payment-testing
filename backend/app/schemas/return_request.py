@@ -15,10 +15,15 @@ class ReturnRequestCreate(BaseModel):
 
 
 class ReturnRequestResolve(BaseModel):
-    status: str  # "approved", "rejected", "pickup_scheduled", "received", "refunded"
+    status: str  # admin actions: "approved", "rejected", "received", "refunded"
     admin_notes: Optional[str] = None
     pickup_date: Optional[datetime] = None
     pickup_address: Optional[str] = None
+
+
+class SchedulePickupRequest(BaseModel):
+    pickup_date: datetime
+    pickup_address: Optional[str] = None  # defaults to the order's delivery address
 
 
 class ReturnRequestItemResponse(BaseModel):

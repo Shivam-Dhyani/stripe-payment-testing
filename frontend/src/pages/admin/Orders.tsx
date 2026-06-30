@@ -24,8 +24,10 @@ const returnStatusColors: Record<string, string> = {
   approved: 'bg-blue-100 text-blue-700',
   rejected: 'bg-red-100 text-red-700',
   pickup_scheduled: 'bg-purple-100 text-purple-700',
+  handed_over: 'bg-indigo-100 text-indigo-700',
   received: 'bg-cyan-100 text-cyan-700',
   refunded: 'bg-green-100 text-green-700',
+  withdrawn: 'bg-gray-100 text-gray-600',
 };
 
 const cancelStatusColors: Record<string, string> = {
@@ -38,6 +40,7 @@ const RETURN_FLOW: { key: string; label: string }[] = [
   { key: 'requested', label: 'Return Requested' },
   { key: 'approved', label: 'Approved' },
   { key: 'pickup_scheduled', label: 'Pickup Scheduled' },
+  { key: 'handed_over', label: 'Handed to Courier' },
   { key: 'received', label: 'Item Received' },
   { key: 'refunded', label: 'Refunded' },
 ];
@@ -49,6 +52,12 @@ const buildReturnSteps = (r: ReturnRequest): TimelineStep[] => {
     return [
       { key: 'requested', label: 'Return Requested', state: 'done', date: r.created_at },
       { key: 'rejected', label: 'Rejected', state: 'rejected', date: r.updated_at },
+    ];
+  }
+  if (r.status === 'withdrawn') {
+    return [
+      { key: 'requested', label: 'Return Requested', state: 'done', date: r.created_at },
+      { key: 'withdrawn', label: 'Withdrawn by customer', state: 'rejected', date: r.updated_at },
     ];
   }
   const idx = RETURN_FLOW.findIndex((s) => s.key === r.status);
@@ -170,7 +179,7 @@ const Orders = () => {
   // An in-progress return (not yet refunded or rejected) blocks further order processing.
   const getActiveReturn = (orderId: string) =>
     returnRequests.find(
-      (r) => r.order_id === orderId && ['requested', 'approved', 'pickup_scheduled', 'received'].includes(r.status)
+      (r) => r.order_id === orderId && ['requested', 'approved', 'pickup_scheduled', 'handed_over', 'received'].includes(r.status)
     );
 
   // Return activity for a specific order item: status + quantity per matching return.

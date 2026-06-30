@@ -11,7 +11,8 @@ from app.models.product import Product
 from app.models.return_request import ReturnRequest, ReturnRequestItem
 from app.models.payment_event import PaymentEvent, PaymentEventType
 from app.schemas.return_request import (
-    ReturnRequestCreate, ReturnRequestResolve, ReturnRequestResponse, ReturnRequestItemResponse
+    ReturnRequestCreate, ReturnRequestResolve, ReturnRequestResponse, ReturnRequestItemResponse,
+    SchedulePickupRequest,
 )
 from app.middleware.auth import get_current_user, get_admin_user
 from app.config import settings
@@ -22,18 +23,30 @@ stripe.api_key = settings.STRIPE_SECRET_KEY
 router = APIRouter(prefix="/return-requests", tags=["Return Requests"], redirect_slashes=False)
 
 
+# Returns in these statuses no longer reserve item quantity (the units are free to return again).
+INACTIVE_RETURN_STATUSES = ("rejected", "withdrawn")
+
+
 def _already_returned_qty(db: Session, order_item_id: str) -> int:
-    """Total quantity of an order item already claimed by non-rejected return requests."""
+    """Total quantity of an order item already claimed by active (non-cancelled) return requests."""
     rows = (
         db.query(ReturnRequestItem.quantity)
         .join(ReturnRequest, ReturnRequest.id == ReturnRequestItem.return_request_id)
         .filter(
             ReturnRequestItem.order_item_id == order_item_id,
-            ReturnRequest.status != "rejected",
+            ReturnRequest.status.notin_(INACTIVE_RETURN_STATUSES),
         )
         .all()
     )
     return sum(r.quantity for r in rows)
+
+
+def _format_address(addr) -> str:
+    """Build a single-line address string from an order's address snapshot."""
+    if not addr:
+        return ""
+    parts = [addr.get("street"), addr.get("city"), addr.get("state"), addr.get("zip_code"), addr.get("country")]
+    return ", ".join(p for p in parts if p)
 
 
 def _build_response(req, db: Session) -> ReturnRequestResponse:
@@ -65,7 +78,7 @@ def get_pending_count(
 ):
     """Get count of pending return requests (non-terminal, non-completed) for sidebar badge."""
     count = db.query(func.count(ReturnRequest.id)).filter(
-        ReturnRequest.status.in_(["requested", "approved", "pickup_scheduled"])
+        ReturnRequest.status.in_(["requested", "approved", "pickup_scheduled", "handed_over", "received"])
     ).scalar()
     return {"count": count}
 
@@ -217,10 +230,11 @@ def get_return_request(
     return _build_response(req, db)
 
 
+# Admin-driven transitions. Scheduling pickup and confirming hand-over are
+# customer-driven (see the dedicated endpoints below).
 VALID_RETURN_TRANSITIONS = {
     "requested": {"approved", "rejected"},
-    "approved": {"pickup_scheduled"},
-    "pickup_scheduled": {"received"},
+    "handed_over": {"received"},
     "received": {"refunded"},
 }
 
@@ -232,7 +246,7 @@ def resolve_return_request(
     admin: User = Depends(get_admin_user),
     db: Session = Depends(get_db),
 ):
-    """Admin updates return request status through the return workflow."""
+    """Admin updates return request status (approve/reject, mark received, process refund)."""
     req = db.query(ReturnRequest).filter(ReturnRequest.id == request_id).first()
     if not req:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Return request not found")
@@ -242,22 +256,14 @@ def resolve_return_request(
         if not allowed:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Return request is '{req.status}' which is a terminal status and cannot be changed",
+                detail=f"Return request is '{req.status}' and is either awaiting a customer "
+                       f"action or in a terminal state",
             )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Cannot change return status from '{req.status}' to '{data.status}'. "
                    f"Allowed: {sorted(allowed)}",
         )
-
-    if data.status == "pickup_scheduled":
-        if not data.pickup_date or not data.pickup_address:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="pickup_date and pickup_address are required when scheduling pickup",
-            )
-        req.pickup_date = data.pickup_date
-        req.pickup_address = data.pickup_address
 
     if data.status == "refunded":
         order = db.query(Order).filter(Order.id == req.order_id).first()
@@ -287,4 +293,87 @@ def resolve_return_request(
     db.commit()
     db.refresh(req)
 
+    return _build_response(req, db)
+
+
+def _get_own_return(request_id: str, current_user: User, db: Session) -> ReturnRequest:
+    """Fetch a return request and ensure it belongs to the current customer."""
+    req = (
+        db.query(ReturnRequest)
+        .options(joinedload(ReturnRequest.items))
+        .filter(ReturnRequest.id == request_id)
+        .first()
+    )
+    if not req:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Return request not found")
+    if req.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+    return req
+
+
+@router.post("/{request_id}/schedule-pickup", response_model=ReturnRequestResponse)
+def schedule_pickup(
+    request_id: str,
+    data: SchedulePickupRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Customer schedules the pickup after the return has been approved."""
+    req = _get_own_return(request_id, current_user, db)
+
+    if req.status != "approved":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Pickup can only be scheduled once the return is approved (current status: '{req.status}')",
+        )
+
+    order = db.query(Order).filter(Order.id == req.order_id).first()
+    req.pickup_date = data.pickup_date
+    req.pickup_address = data.pickup_address or _format_address(order.address_snapshot if order else None)
+    req.status = "pickup_scheduled"
+
+    db.commit()
+    db.refresh(req)
+    return _build_response(req, db)
+
+
+@router.post("/{request_id}/confirm-handover", response_model=ReturnRequestResponse)
+def confirm_handover(
+    request_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Customer confirms the item has been handed over to the courier."""
+    req = _get_own_return(request_id, current_user, db)
+
+    if req.status != "pickup_scheduled":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Hand-over can only be confirmed after a pickup is scheduled (current status: '{req.status}')",
+        )
+
+    req.status = "handed_over"
+    db.commit()
+    db.refresh(req)
+    return _build_response(req, db)
+
+
+@router.post("/{request_id}/withdraw", response_model=ReturnRequestResponse)
+def withdraw_return(
+    request_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Customer withdraws their own return before the item is handed over."""
+    req = _get_own_return(request_id, current_user, db)
+
+    if req.status not in {"requested", "approved", "pickup_scheduled"}:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"A return that is '{req.status}' can no longer be withdrawn",
+        )
+
+    req.status = "withdrawn"
+    db.commit()
+    db.refresh(req)
     return _build_response(req, db)
