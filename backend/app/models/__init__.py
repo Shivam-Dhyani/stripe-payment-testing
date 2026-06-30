@@ -1,5 +1,6 @@
-from app.models.user import User, UserRole
+from app.models.user import User, UserRole, STAFF_ROLES
 from app.models.address import Address
+from app.models.warehouse import Warehouse
 from app.models.category import Category
 from app.models.subcategory import SubCategory
 from app.models.product import Product
@@ -12,7 +13,9 @@ from app.models.return_request import ReturnRequest, ReturnRequestItem, VALID_RE
 __all__ = [
     "User",
     "UserRole",
+    "STAFF_ROLES",
     "Address",
+    "Warehouse",
     "Category",
     "SubCategory",
     "Product",

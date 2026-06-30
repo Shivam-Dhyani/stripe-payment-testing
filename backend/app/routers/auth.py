@@ -1,11 +1,12 @@
 import bcrypt
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.user import User, UserRole
-from app.schemas.user import UserCreate, UserLogin, UserResponse, UserUpdate
+from app.schemas.user import UserCreate, UserLogin, UserResponse, UserUpdate, StaffCreate
 from app.schemas.auth import Token
-from app.middleware.auth import create_access_token, get_current_user
+from app.middleware.auth import create_access_token, get_current_user, get_admin_user
 
 router = APIRouter(prefix="/auth", tags=["Authentication"], redirect_slashes=False)
 
@@ -38,7 +39,7 @@ def register(user_data: UserCreate, db: Session = Depends(get_db)):
     db.add(user)
     db.commit()
     db.refresh(user)
-    access_token = create_access_token(data={"sub": user.id, "email": user.email, "role": user.role.value})
+    access_token = create_access_token(data={"sub": user.id, "email": user.email, "role": str(user.role)})
     return Token(access_token=access_token)
 
 
@@ -56,8 +57,56 @@ def login(user_data: UserLogin, db: Session = Depends(get_db)):
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Account is inactive",
         )
-    access_token = create_access_token(data={"sub": user.id, "email": user.email, "role": user.role.value})
+    access_token = create_access_token(data={"sub": user.id, "email": user.email, "role": str(user.role)})
     return Token(access_token=access_token)
+
+
+ASSIGNABLE_STAFF_ROLES = {
+    UserRole.delivery_partner.value,
+    UserRole.warehouse_operator.value,
+    UserRole.admin.value,
+}
+
+
+@router.post("/staff", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+def create_staff(
+    data: StaffCreate,
+    admin: User = Depends(get_admin_user),
+    db: Session = Depends(get_db),
+):
+    """Admin creates a staff account (delivery partner, warehouse operator, or admin)."""
+    if data.role not in ASSIGNABLE_STAFF_ROLES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid staff role. Allowed: {sorted(ASSIGNABLE_STAFF_ROLES)}",
+        )
+    if db.query(User).filter(User.email == data.email).first():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
+
+    user = User(
+        email=data.email,
+        password_hash=hash_password(data.password),
+        first_name=data.first_name,
+        last_name=data.last_name,
+        role=data.role,
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+@router.get("/users", response_model=List[UserResponse])
+def list_users(
+    role: Optional[str] = None,
+    admin: User = Depends(get_admin_user),
+    db: Session = Depends(get_db),
+):
+    """Admin lists users, optionally filtered by role (e.g. to assign a delivery partner)."""
+    query = db.query(User)
+    if role:
+        query = query.filter(User.role == role)
+    return query.order_by(User.created_at.desc()).all()
 
 
 @router.get("/me", response_model=UserResponse)

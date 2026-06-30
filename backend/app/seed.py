@@ -6,6 +6,7 @@ import bcrypt
 from sqlalchemy.orm import Session
 from app.models.user import User, UserRole
 from app.models.address import Address
+from app.models.warehouse import Warehouse
 from app.models.category import Category
 from app.models.subcategory import SubCategory
 from app.models.product import Product
@@ -14,6 +15,53 @@ from app.models.order import Order, OrderItem
 
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+
+
+def ensure_operational_data(db: Session):
+    """Idempotent setup that must exist even on already-seeded databases:
+    a default warehouse, demo staff accounts, and a warehouse on every order."""
+    warehouse = db.query(Warehouse).first()
+    if not warehouse:
+        warehouse = Warehouse(
+            id=str(uuid.uuid4()),
+            name="Central Dark Store",
+            code="DS-001",
+            street="100 Fulfillment Way",
+            city="New York",
+            state="NY",
+            zip_code="10001",
+            country="US",
+            phone="+1-555-0100",
+            is_active=True,
+        )
+        db.add(warehouse)
+        db.flush()
+        print("Created default warehouse: Central Dark Store")
+
+    # Backfill any orders missing a warehouse.
+    db.query(Order).filter(Order.warehouse_id.is_(None)).update(
+        {Order.warehouse_id: warehouse.id}, synchronize_session=False
+    )
+
+    # Demo staff accounts (password123).
+    demo_staff = [
+        ("rider@ecommerce.com", "Ravi", "Kumar", UserRole.delivery_partner),
+        ("warehouse@ecommerce.com", "Wendy", "House", UserRole.warehouse_operator),
+    ]
+    for email, first, last, role in demo_staff:
+        if not db.query(User).filter(User.email == email).first():
+            db.add(User(
+                id=str(uuid.uuid4()),
+                email=email,
+                password_hash=hash_password("password123"),
+                first_name=first,
+                last_name=last,
+                role=role.value,
+                is_active=True,
+            ))
+            print(f"Created demo {role.value}: {email} / password123")
+
+    db.commit()
 
 
 def seed_database(db: Session):

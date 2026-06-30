@@ -21,6 +21,14 @@ class UserUpdate(BaseModel):
     email: Optional[str] = None
 
 
+class StaffCreate(BaseModel):
+    email: str
+    password: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    role: str  # "delivery_partner" | "warehouse_operator" | "admin"
+
+
 class UserResponse(BaseModel):
     id: str
     email: str

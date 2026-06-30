@@ -7,11 +7,14 @@ from sqlalchemy import text, inspect
 from sqlalchemy.exc import OperationalError
 from app.database import engine, Base, SessionLocal
 from app.models import (
-    User, Address, Category, SubCategory, Product, CartItem, Order, OrderItem, OrderStatusHistory, PaymentEvent,
-    CancellationRequest, ReturnRequest, ReturnRequestItem
+    User, Address, Warehouse, Category, SubCategory, Product, CartItem, Order, OrderItem, OrderStatusHistory,
+    PaymentEvent, CancellationRequest, ReturnRequest, ReturnRequestItem
 )
-from app.seed import seed_database
-from app.routers import auth, categories, subcategories, products, addresses, cart, orders, dashboard, webhooks, cancellation_requests, return_requests
+from app.seed import seed_database, ensure_operational_data
+from app.routers import (
+    auth, categories, subcategories, products, addresses, cart, orders, dashboard, webhooks,
+    cancellation_requests, return_requests, warehouses
+)
 
 
 def run_migrations(db):
@@ -50,6 +53,27 @@ def run_migrations(db):
             db.execute(text("ALTER TABLE products ADD COLUMN return_window_days INTEGER"))
             db.commit()
             print("Added returnable fields to products table")
+
+    # Step 5: Convert users.role from enum to VARCHAR so new roles can be added freely
+    role_enum = db.execute(text("SELECT 1 FROM pg_type WHERE typname = 'userrole'")).fetchone()
+    if role_enum:
+        db.execute(text("ALTER TABLE users ALTER COLUMN role DROP DEFAULT"))
+        db.execute(text("ALTER TABLE users ALTER COLUMN role TYPE VARCHAR(20) USING role::text"))
+        db.execute(text("ALTER TABLE users ALTER COLUMN role SET DEFAULT 'customer'"))
+        db.execute(text("DROP TYPE IF EXISTS userrole"))
+        db.commit()
+        print("Converted users.role from enum to VARCHAR(20)")
+
+    # Step 6: Add warehouse_id and delivery_partner_id to orders (quick-commerce wiring)
+    order_columns = [col["name"] for col in inspector.get_columns("orders")]
+    if "warehouse_id" not in order_columns:
+        db.execute(text("ALTER TABLE orders ADD COLUMN warehouse_id VARCHAR(36)"))
+        db.commit()
+        print("Added warehouse_id column to orders table")
+    if "delivery_partner_id" not in order_columns:
+        db.execute(text("ALTER TABLE orders ADD COLUMN delivery_partner_id VARCHAR(36)"))
+        db.commit()
+        print("Added delivery_partner_id column to orders table")
 
     print("Database migrations completed.")
 
@@ -93,6 +117,11 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"Seed error: {e}")
         db.rollback()
+    try:
+        ensure_operational_data(db)
+    except Exception as e:
+        print(f"Operational data setup error: {e}")
+        db.rollback()
     finally:
         db.close()
 
@@ -126,6 +155,7 @@ app.include_router(dashboard.router, prefix="/api")
 app.include_router(webhooks.router, prefix="/api")
 app.include_router(cancellation_requests.router, prefix="/api")
 app.include_router(return_requests.router, prefix="/api")
+app.include_router(warehouses.router, prefix="/api")
 
 
 @app.get("/")

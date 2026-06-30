@@ -22,6 +22,8 @@ class Order(Base):
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
+    warehouse_id = Column(String(36), ForeignKey("warehouses.id"), nullable=True)
+    delivery_partner_id = Column(String(36), ForeignKey("users.id"), nullable=True)
     address_snapshot = Column(JSON, nullable=True)
     total = Column(Numeric(10, 2), nullable=False)
     status = Column(String(20), default="confirmed", nullable=False)
@@ -30,7 +32,9 @@ class Order(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
-    user = relationship("User", back_populates="orders")
+    user = relationship("User", back_populates="orders", foreign_keys=[user_id])
+    delivery_partner = relationship("User", back_populates="deliveries", foreign_keys=[delivery_partner_id])
+    warehouse = relationship("Warehouse", back_populates="orders")
     items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
     payment_events = relationship("PaymentEvent", back_populates="order", cascade="all, delete-orphan", order_by="PaymentEvent.created_at")
     status_history = relationship("OrderStatusHistory", back_populates="order", cascade="all, delete-orphan", order_by="OrderStatusHistory.created_at")

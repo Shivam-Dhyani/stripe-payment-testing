@@ -71,3 +71,23 @@ def get_admin_user(current_user: User = Depends(get_current_user)) -> User:
             detail="Admin access required",
         )
     return current_user
+
+
+def get_delivery_partner(current_user: User = Depends(get_current_user)) -> User:
+    """Verify that the current user is a delivery partner."""
+    if current_user.role != UserRole.delivery_partner:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Delivery partner access required",
+        )
+    return current_user
+
+
+def get_warehouse_operator(current_user: User = Depends(get_current_user)) -> User:
+    """Verify that the current user is a warehouse operator."""
+    if current_user.role != UserRole.warehouse_operator:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Warehouse operator access required",
+        )
+    return current_user

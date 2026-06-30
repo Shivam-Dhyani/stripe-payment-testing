@@ -59,6 +59,8 @@ class OrderStatusHistoryResponse(BaseModel):
 class OrderResponse(BaseModel):
     id: str
     user_id: str
+    warehouse_id: Optional[str] = None
+    delivery_partner_id: Optional[str] = None
     address_snapshot: Optional[Any] = None
     total: float
     status: str

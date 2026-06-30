@@ -1,5 +1,6 @@
-from app.schemas.user import UserCreate, UserLogin, UserResponse, UserUpdate
+from app.schemas.user import UserCreate, UserLogin, UserResponse, UserUpdate, StaffCreate
 from app.schemas.address import AddressCreate, AddressUpdate, AddressResponse
+from app.schemas.warehouse import WarehouseCreate, WarehouseUpdate, WarehouseResponse
 from app.schemas.category import CategoryCreate, CategoryUpdate, CategoryResponse
 from app.schemas.subcategory import SubCategoryCreate, SubCategoryUpdate, SubCategoryResponse
 from app.schemas.product import ProductCreate, ProductUpdate, ProductResponse
