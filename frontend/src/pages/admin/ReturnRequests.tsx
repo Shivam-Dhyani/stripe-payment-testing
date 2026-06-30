@@ -18,11 +18,6 @@ const statusColors: Record<string, string> = {
 
 type ActionType = 'approved' | 'rejected' | 'pickup_scheduled' | 'received' | 'refunded';
 
-interface ActionModal {
-  request: ReturnRequest;
-  action: ActionType;
-}
-
 const getActionTitle = (action: ActionType): string => {
   switch (action) {
     case 'approved': return 'Approve Return';
@@ -30,16 +25,6 @@ const getActionTitle = (action: ActionType): string => {
     case 'pickup_scheduled': return 'Schedule Pickup';
     case 'received': return 'Mark as Received';
     case 'refunded': return 'Process Refund';
-  }
-};
-
-const getActionIcon = (action: ActionType) => {
-  switch (action) {
-    case 'approved': return <CheckCircle className="w-5 h-5 text-green-500" />;
-    case 'rejected': return <XCircle className="w-5 h-5 text-red-500" />;
-    case 'pickup_scheduled': return <Truck className="w-5 h-5 text-purple-500" />;
-    case 'received': return <Package className="w-5 h-5 text-cyan-500" />;
-    case 'refunded': return <RefreshCw className="w-5 h-5 text-green-500" />;
   }
 };
 
@@ -76,7 +61,6 @@ const ReturnRequests = () => {
   const perPage = 10;
 
   const [selectedRequest, setSelectedRequest] = useState<ReturnRequest | null>(null);
-  const [actionModal, setActionModal] = useState<ActionModal | null>(null);
   const [adminNotes, setAdminNotes] = useState('');
   const [pickupDate, setPickupDate] = useState('');
   const [pickupAddress, setPickupAddress] = useState('');
@@ -105,45 +89,47 @@ const ReturnRequests = () => {
     setCurrentPage(1);
   }, [statusFilter, search]);
 
-  const openActionModal = (request: ReturnRequest, action: ActionType) => {
-    setActionModal({ request, action });
-    setAdminNotes('');
-    setPickupDate('');
-    setPickupAddress('');
+  const nextActionsFor = (status: string): ActionType[] => {
+    switch (status) {
+      case 'requested': return ['rejected', 'approved'];
+      case 'approved': return ['pickup_scheduled'];
+      case 'pickup_scheduled': return ['received'];
+      case 'received': return ['refunded'];
+      default: return [];
+    }
   };
 
-  const closeActionModal = () => {
-    setActionModal(null);
-    setAdminNotes('');
-    setPickupDate('');
-    setPickupAddress('');
-  };
-
-  const handleResolve = async () => {
-    if (!actionModal) return;
-    if (actionModal.action === 'pickup_scheduled' && (!pickupDate || !pickupAddress.trim())) return;
+  const handleResolve = async (action: ActionType) => {
+    if (!selectedRequest) return;
+    if (action === 'pickup_scheduled' && (!pickupDate || !pickupAddress.trim())) return;
 
     await dispatch(
       resolveReturnRequest({
-        id: actionModal.request.id,
+        id: selectedRequest.id,
         data: {
-          status: actionModal.action,
+          status: action,
           admin_notes: adminNotes || undefined,
-          pickup_date: actionModal.action === 'pickup_scheduled' ? pickupDate : undefined,
-          pickup_address: actionModal.action === 'pickup_scheduled' ? pickupAddress : undefined,
+          pickup_date: action === 'pickup_scheduled' ? pickupDate : undefined,
+          pickup_address: action === 'pickup_scheduled' ? pickupAddress : undefined,
         },
       })
     );
-    closeActionModal();
+    closeDetail();
     dispatch(fetchReturnRequests());
   };
 
   const viewRequest = (request: ReturnRequest) => {
     setSelectedRequest(request);
+    setAdminNotes('');
+    setPickupDate('');
+    setPickupAddress('');
   };
 
   const closeDetail = () => {
     setSelectedRequest(null);
+    setAdminNotes('');
+    setPickupDate('');
+    setPickupAddress('');
   };
 
   const getPageNumbers = () => {
@@ -286,65 +272,23 @@ const ReturnRequests = () => {
                     </td>
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-2">
-                        {request.status === 'requested' && (
-                          <>
+                        {(() => {
+                          const isActionable = nextActionsFor(request.status).length > 0;
+                          return (
                             <button
-                              onClick={() => openActionModal(request, 'approved')}
-                              disabled={submitting}
-                              className="text-xs px-3 py-1.5 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50 font-medium"
-                              title="Approve"
+                              onClick={() => viewRequest(request)}
+                              className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors font-medium ${
+                                isActionable
+                                  ? 'bg-brand-500 text-white hover:bg-brand-600'
+                                  : 'text-brand-500 hover:bg-gray-100'
+                              }`}
+                              title="View details"
                             >
-                              Approve
+                              <Eye className="w-4 h-4" />
+                              {isActionable ? 'Review' : 'View'}
                             </button>
-                            <button
-                              onClick={() => openActionModal(request, 'rejected')}
-                              disabled={submitting}
-                              className="text-xs px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50 font-medium"
-                              title="Reject"
-                            >
-                              Reject
-                            </button>
-                          </>
-                        )}
-                        {request.status === 'approved' && (
-                          <button
-                            onClick={() => openActionModal(request, 'pickup_scheduled')}
-                            disabled={submitting}
-                            className="text-xs px-3 py-1.5 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors disabled:opacity-50 font-medium"
-                            title="Schedule Pickup"
-                          >
-                            Schedule Pickup
-                          </button>
-                        )}
-                        {request.status === 'pickup_scheduled' && (
-                          <button
-                            onClick={() => openActionModal(request, 'received')}
-                            disabled={submitting}
-                            className="text-xs px-3 py-1.5 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors disabled:opacity-50 font-medium"
-                            title="Mark Received"
-                          >
-                            Mark Received
-                          </button>
-                        )}
-                        {request.status === 'received' && (
-                          <button
-                            onClick={() => openActionModal(request, 'refunded')}
-                            disabled={submitting}
-                            className="text-xs px-3 py-1.5 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50 font-medium"
-                            title="Process Refund"
-                          >
-                            Process Refund
-                          </button>
-                        )}
-                        {(request.status === 'rejected' || request.status === 'refunded') && (
-                          <button
-                            onClick={() => viewRequest(request)}
-                            className="p-1.5 text-brand-500 hover:bg-gray-100 rounded-lg transition-colors"
-                            title="View details"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                        )}
+                          );
+                        })()}
                       </div>
                     </td>
                   </tr>
@@ -394,108 +338,6 @@ const ReturnRequests = () => {
           </div>
         )}
       </div>
-
-      {/* Action Modal */}
-      {actionModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-2xl shadow-theme-lg w-full max-w-md mx-4 p-6 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-2">
-                {getActionIcon(actionModal.action)}
-                <h2 className="text-lg font-semibold text-gray-800">
-                  {getActionTitle(actionModal.action)}
-                </h2>
-              </div>
-              <button onClick={closeActionModal} className="text-gray-400 hover:text-gray-600">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <p className="text-sm text-gray-500 mb-4">
-              Order <span className="font-mono">#{actionModal.request.order_id.substring(0, 8)}</span>
-              {actionModal.request.refund_amount != null && (
-                <> &middot; Refund: <span className="font-medium text-gray-700">${Number(actionModal.request.refund_amount).toFixed(2)}</span></>
-              )}
-            </p>
-
-            {/* Return Items List */}
-            <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-              <h4 className="text-sm font-medium text-gray-700 mb-2">Return Items</h4>
-              <div className="space-y-2">
-                {actionModal.request.items.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between text-sm">
-                    <div>
-                      <span className="text-gray-800">{item.product_name || 'Unknown Product'}</span>
-                      <span className="text-gray-400 ml-2">x{item.quantity}</span>
-                    </div>
-                    <span className="text-gray-600">${Number(item.product_price || 0).toFixed(2)}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              {/* Pickup fields for Schedule Pickup action */}
-              {actionModal.action === 'pickup_scheduled' && (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      <Calendar className="w-3.5 h-3.5 inline mr-1" />
-                      Pickup Date <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="date"
-                      value={pickupDate}
-                      onChange={(e) => setPickupDate(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-hidden focus:ring-3 focus:border-brand-300 focus:ring-brand-500/20"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      <MapPin className="w-3.5 h-3.5 inline mr-1" />
-                      Pickup Address <span className="text-red-500">*</span>
-                    </label>
-                    <textarea
-                      value={pickupAddress}
-                      onChange={(e) => setPickupAddress(e.target.value)}
-                      placeholder="Enter the pickup address..."
-                      rows={3}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-hidden focus:ring-3 focus:border-brand-300 focus:ring-brand-500/20 resize-none"
-                    />
-                  </div>
-                </>
-              )}
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Admin Notes (optional)</label>
-                <textarea
-                  value={adminNotes}
-                  onChange={(e) => setAdminNotes(e.target.value)}
-                  placeholder="Add notes about this action..."
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-hidden focus:ring-3 focus:border-brand-300 focus:ring-brand-500/20 resize-none"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 mt-6">
-              <button
-                onClick={closeActionModal}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium text-sm"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleResolve}
-                disabled={submitting || (actionModal.action === 'pickup_scheduled' && (!pickupDate || !pickupAddress.trim()))}
-                className={`px-4 py-2 text-white rounded-lg transition font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed ${getConfirmButtonStyle(actionModal.action)}`}
-              >
-                {submitting ? <ButtonSpinner /> : `Confirm ${getActionTitle(actionModal.action)}`}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Detail Modal */}
       {selectedRequest && (
@@ -626,14 +468,81 @@ const ReturnRequests = () => {
               </div>
             )}
 
-            <div className="flex justify-end">
-              <button
-                onClick={closeDetail}
-                className="px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition font-medium"
-              >
-                Close
-              </button>
-            </div>
+            {/* Workflow Actions */}
+            {nextActionsFor(selectedRequest.status).length > 0 ? (
+              <div className="border-t border-gray-200 pt-5">
+                {/* Pickup scheduling fields (only when scheduling pickup) */}
+                {selectedRequest.status === 'approved' && (
+                  <div className="space-y-4 mb-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <Calendar className="w-3.5 h-3.5 inline mr-1" />
+                        Pickup Date <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="date"
+                        value={pickupDate}
+                        onChange={(e) => setPickupDate(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-hidden focus:ring-3 focus:border-brand-300 focus:ring-brand-500/20"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <MapPin className="w-3.5 h-3.5 inline mr-1" />
+                        Pickup Address <span className="text-red-500">*</span>
+                      </label>
+                      <textarea
+                        value={pickupAddress}
+                        onChange={(e) => setPickupAddress(e.target.value)}
+                        placeholder="Enter the pickup address..."
+                        rows={3}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-hidden focus:ring-3 focus:border-brand-300 focus:ring-brand-500/20 resize-none"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Admin Notes (optional)</label>
+                  <textarea
+                    value={adminNotes}
+                    onChange={(e) => setAdminNotes(e.target.value)}
+                    placeholder="Add notes about this action..."
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-hidden focus:ring-3 focus:border-brand-300 focus:ring-brand-500/20 resize-none"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-3 mt-5">
+                  <button
+                    onClick={closeDetail}
+                    disabled={submitting}
+                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium text-sm disabled:opacity-50"
+                  >
+                    Close
+                  </button>
+                  {nextActionsFor(selectedRequest.status).map((action) => (
+                    <button
+                      key={action}
+                      onClick={() => handleResolve(action)}
+                      disabled={submitting || (action === 'pickup_scheduled' && (!pickupDate || !pickupAddress.trim()))}
+                      className={`inline-flex items-center gap-2 px-4 py-2 text-white rounded-lg transition font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed ${getConfirmButtonStyle(action)}`}
+                    >
+                      {submitting ? <ButtonSpinner /> : getActionTitle(action)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="flex justify-end">
+                <button
+                  onClick={closeDetail}
+                  className="px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition font-medium"
+                >
+                  Close
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

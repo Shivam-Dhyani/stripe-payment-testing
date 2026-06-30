@@ -23,7 +23,6 @@ const CancellationRequests = () => {
   const perPage = 10;
 
   const [selectedRequest, setSelectedRequest] = useState<CancellationRequest | null>(null);
-  const [resolveModal, setResolveModal] = useState<{ request: CancellationRequest; action: 'approved' | 'rejected' } | null>(null);
   const [resolveNotes, setResolveNotes] = useState('');
 
   useEffect(() => {
@@ -48,37 +47,29 @@ const CancellationRequests = () => {
     setCurrentPage(1);
   }, [statusFilter, search]);
 
-  const openResolveModal = (request: CancellationRequest, action: 'approved' | 'rejected') => {
-    setResolveModal({ request, action });
-    setResolveNotes('');
-  };
-
-  const closeResolveModal = () => {
-    setResolveModal(null);
-    setResolveNotes('');
-  };
-
-  const handleResolve = async () => {
-    if (!resolveModal) return;
+  const handleResolve = async (action: 'approved' | 'rejected') => {
+    if (!selectedRequest) return;
     await dispatch(
       resolveCancellationRequest({
-        id: resolveModal.request.id,
+        id: selectedRequest.id,
         data: {
-          status: resolveModal.action,
+          status: action,
           admin_notes: resolveNotes || undefined,
         },
       })
     );
-    closeResolveModal();
+    closeDetail();
     dispatch(fetchCancellationRequests());
   };
 
   const viewRequest = (request: CancellationRequest) => {
     setSelectedRequest(request);
+    setResolveNotes('');
   };
 
   const closeDetail = () => {
     setSelectedRequest(null);
+    setResolveNotes('');
   };
 
   const truncateText = (text: string, maxLength: number) => {
@@ -194,34 +185,18 @@ const CancellationRequests = () => {
                     </td>
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-2">
-                        {request.status === 'pending' ? (
-                          <>
-                            <button
-                              onClick={() => openResolveModal(request, 'approved')}
-                              disabled={submitting}
-                              className="text-xs px-3 py-1.5 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50 font-medium"
-                              title="Approve"
-                            >
-                              Approve
-                            </button>
-                            <button
-                              onClick={() => openResolveModal(request, 'rejected')}
-                              disabled={submitting}
-                              className="text-xs px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50 font-medium"
-                              title="Reject"
-                            >
-                              Reject
-                            </button>
-                          </>
-                        ) : (
-                          <button
-                            onClick={() => viewRequest(request)}
-                            className="p-1.5 text-brand-500 hover:bg-gray-100 rounded-lg transition-colors"
-                            title="View details"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                        )}
+                        <button
+                          onClick={() => viewRequest(request)}
+                          className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors font-medium ${
+                            request.status === 'pending'
+                              ? 'bg-brand-500 text-white hover:bg-brand-600'
+                              : 'text-brand-500 hover:bg-gray-100'
+                          }`}
+                          title="View details"
+                        >
+                          <Eye className="w-4 h-4" />
+                          {request.status === 'pending' ? 'Review' : 'View'}
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -271,64 +246,6 @@ const CancellationRequests = () => {
           </div>
         )}
       </div>
-
-      {/* Resolve Modal (Approve / Reject) */}
-      {resolveModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-2xl shadow-theme-lg w-full max-w-md mx-4 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-2">
-                {resolveModal.action === 'approved' ? (
-                  <CheckCircle className="w-5 h-5 text-green-500" />
-                ) : (
-                  <XCircle className="w-5 h-5 text-red-500" />
-                )}
-                <h2 className="text-lg font-semibold text-gray-800">
-                  {resolveModal.action === 'approved' ? 'Approve Cancellation' : 'Reject Cancellation'}
-                </h2>
-              </div>
-              <button onClick={closeResolveModal} className="text-gray-400 hover:text-gray-600">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <p className="text-sm text-gray-500 mb-4">
-              {resolveModal.action === 'approved'
-                ? 'Are you sure you want to approve the cancellation for order '
-                : 'Are you sure you want to reject the cancellation for order '}
-              <span className="font-mono">#{resolveModal.request.order_id.substring(0, 8)}</span>?
-            </p>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Admin Notes (optional)</label>
-              <textarea
-                value={resolveNotes}
-                onChange={(e) => setResolveNotes(e.target.value)}
-                placeholder="Add notes about this decision..."
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-hidden focus:ring-3 focus:border-brand-300 focus:ring-brand-500/20 resize-none"
-              />
-            </div>
-            <div className="flex justify-end gap-3 mt-6">
-              <button
-                onClick={closeResolveModal}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium text-sm"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleResolve}
-                disabled={submitting}
-                className={`px-4 py-2 text-white rounded-lg transition font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed ${
-                  resolveModal.action === 'approved'
-                    ? 'bg-green-500 hover:bg-green-600'
-                    : 'bg-red-500 hover:bg-red-600'
-                }`}
-              >
-                {submitting ? <ButtonSpinner /> : resolveModal.action === 'approved' ? 'Confirm Approval' : 'Confirm Rejection'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Detail Modal */}
       {selectedRequest && (
@@ -388,14 +305,52 @@ const CancellationRequests = () => {
               </div>
             )}
 
-            <div className="flex justify-end">
-              <button
-                onClick={closeDetail}
-                className="px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition font-medium"
-              >
-                Close
-              </button>
-            </div>
+            {selectedRequest.status === 'pending' ? (
+              <div className="border-t border-gray-200 pt-5">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Admin Notes (optional)</label>
+                <textarea
+                  value={resolveNotes}
+                  onChange={(e) => setResolveNotes(e.target.value)}
+                  placeholder="Add notes about this decision..."
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-hidden focus:ring-3 focus:border-brand-300 focus:ring-brand-500/20 resize-none"
+                />
+                <div className="flex justify-end gap-3 mt-5">
+                  <button
+                    onClick={closeDetail}
+                    disabled={submitting}
+                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium text-sm disabled:opacity-50"
+                  >
+                    Close
+                  </button>
+                  <button
+                    onClick={() => handleResolve('rejected')}
+                    disabled={submitting}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {submitting ? <ButtonSpinner /> : <XCircle className="w-4 h-4" />}
+                    Reject
+                  </button>
+                  <button
+                    onClick={() => handleResolve('approved')}
+                    disabled={submitting}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {submitting ? <ButtonSpinner /> : <CheckCircle className="w-4 h-4" />}
+                    Approve
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex justify-end">
+                <button
+                  onClick={closeDetail}
+                  className="px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition font-medium"
+                >
+                  Close
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
