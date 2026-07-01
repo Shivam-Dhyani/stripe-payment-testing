@@ -39,6 +39,18 @@ def _order_query(db: Session):
     )
 
 
+def _default_warehouse_id(db: Session):
+    """The warehouse an order is routed to. Single dark-store today; this is where
+    address-based serviceability/nearest-store selection would plug in later."""
+    warehouse = (
+        db.query(Warehouse)
+        .filter(Warehouse.is_active == True)
+        .order_by(Warehouse.created_at)
+        .first()
+    )
+    return warehouse.id if warehouse else None
+
+
 @router.post("/checkout", response_model=dict)
 def checkout(
     data: CheckoutRequest,
@@ -108,6 +120,7 @@ def checkout(
 
     order = Order(
         user_id=current_user.id,
+        warehouse_id=_default_warehouse_id(db),
         address_snapshot=address_snapshot,
         total=total,
         status="placed",
