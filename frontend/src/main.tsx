@@ -12,3 +12,12 @@ createRoot(document.getElementById('root')!).render(
     </Provider>
   </StrictMode>,
 );
+
+// Register the service worker for PWA / installability.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {
+      /* ignore registration errors (e.g. unsupported context) */
+    });
+  });
+}
