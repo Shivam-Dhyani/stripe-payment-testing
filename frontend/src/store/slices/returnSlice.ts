@@ -79,16 +79,16 @@ export const schedulePickup = createAsyncThunk(
   }
 );
 
-export const confirmHandover = createAsyncThunk(
-  'returns/confirmHandover',
-  async (id: string, { rejectWithValue }) => {
+export const assignReturnRider = createAsyncThunk(
+  'returns/assignRider',
+  async ({ id, deliveryPartnerId }: { id: string; deliveryPartnerId: string }, { rejectWithValue }) => {
     try {
-      const result = await returnService.confirmHandover(id);
-      toast.success('Hand-over confirmed');
+      const result = await returnService.assignRider(id, deliveryPartnerId);
+      toast.success('Rider assigned');
       return result;
     } catch (error: any) {
       const detail = error.response?.data?.detail;
-      toast.error(typeof detail === 'string' ? detail : 'Failed to confirm hand-over');
+      toast.error(typeof detail === 'string' ? detail : 'Failed to assign rider');
       return rejectWithValue(detail || 'Failed');
     }
   }
@@ -147,9 +147,9 @@ const returnSlice = createSlice({
       .addCase(schedulePickup.pending, (state) => { state.submitting = true; })
       .addCase(schedulePickup.fulfilled, (state, action) => { state.submitting = false; upsertRequest(state, action.payload); })
       .addCase(schedulePickup.rejected, (state) => { state.submitting = false; })
-      .addCase(confirmHandover.pending, (state) => { state.submitting = true; })
-      .addCase(confirmHandover.fulfilled, (state, action) => { state.submitting = false; upsertRequest(state, action.payload); })
-      .addCase(confirmHandover.rejected, (state) => { state.submitting = false; })
+      .addCase(assignReturnRider.pending, (state) => { state.submitting = true; })
+      .addCase(assignReturnRider.fulfilled, (state, action) => { state.submitting = false; upsertRequest(state, action.payload); })
+      .addCase(assignReturnRider.rejected, (state) => { state.submitting = false; })
       .addCase(withdrawReturn.pending, (state) => { state.submitting = true; })
       .addCase(withdrawReturn.fulfilled, (state, action) => { state.submitting = false; upsertRequest(state, action.payload); })
       .addCase(withdrawReturn.rejected, (state) => { state.submitting = false; });

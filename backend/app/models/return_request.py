@@ -23,12 +23,14 @@ class ReturnRequest(Base):
     pickup_date = Column(DateTime, nullable=True)
     pickup_address = Column(Text, nullable=True)  # JSON string or plain text of address
     refund_amount = Column(Numeric(10, 2), nullable=True)
+    delivery_partner_id = Column(String(36), ForeignKey("users.id"), nullable=True)
     resolved_by = Column(String(36), ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     order = relationship("Order", back_populates="return_requests")
     user = relationship("User", foreign_keys=[user_id])
+    delivery_partner = relationship("User", foreign_keys=[delivery_partner_id])
     resolver = relationship("User", foreign_keys=[resolved_by])
     items = relationship("ReturnRequestItem", back_populates="return_request", cascade="all, delete-orphan")
 

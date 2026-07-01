@@ -42,13 +42,34 @@ export const returnService = {
     return response.data;
   },
 
-  confirmHandover: async (id: string): Promise<ReturnRequest> => {
-    const response = await api.post(`/return-requests/${id}/confirm-handover`);
+  withdraw: async (id: string): Promise<ReturnRequest> => {
+    const response = await api.post(`/return-requests/${id}/withdraw`);
     return response.data;
   },
 
-  withdraw: async (id: string): Promise<ReturnRequest> => {
-    const response = await api.post(`/return-requests/${id}/withdraw`);
+  // Admin: assign a rider to collect the return
+  assignRider: async (id: string, deliveryPartnerId: string): Promise<ReturnRequest> => {
+    const response = await api.put(`/return-requests/${id}/assign-rider`, { delivery_partner_id: deliveryPartnerId });
+    return response.data;
+  },
+
+  // Rider: assigned return pickups + confirm collection
+  getPickups: async (): Promise<ReturnRequest[]> => {
+    const response = await api.get('/return-requests/pickups');
+    return response.data;
+  },
+  markPickedUp: async (id: string): Promise<ReturnRequest> => {
+    const response = await api.post(`/return-requests/${id}/mark-picked-up`);
+    return response.data;
+  },
+
+  // Warehouse: inbound returns + confirm receipt
+  getInbound: async (): Promise<ReturnRequest[]> => {
+    const response = await api.get('/return-requests/inbound');
+    return response.data;
+  },
+  markReceived: async (id: string): Promise<ReturnRequest> => {
+    const response = await api.post(`/return-requests/${id}/mark-received`);
     return response.data;
   },
 };

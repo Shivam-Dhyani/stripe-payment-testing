@@ -12,7 +12,7 @@ from app.models.return_request import ReturnRequest, ReturnRequestItem
 from app.models.payment_event import PaymentEvent, PaymentEventType
 from app.schemas.return_request import (
     ReturnRequestCreate, ReturnRequestResolve, ReturnRequestResponse, ReturnRequestItemResponse,
-    SchedulePickupRequest,
+    SchedulePickupRequest, ReturnAssignRider,
 )
 from app.middleware.auth import get_current_user, get_admin_user
 from app.services.stripe_service import create_refund
@@ -56,12 +56,15 @@ def _build_response(req, db: Session) -> ReturnRequestResponse:
     order = db.query(Order).filter(Order.id == req.order_id).first()
     resolver = db.query(User).filter(User.id == req.resolved_by).first() if req.resolved_by else None
 
+    rider = db.query(User).filter(User.id == req.delivery_partner_id).first() if req.delivery_partner_id else None
+
     resp = ReturnRequestResponse.model_validate(req)
     resp.customer_name = f"{user.first_name} {user.last_name}" if user else None
     resp.customer_email = user.email if user else None
     resp.order_total = float(order.total) if order else None
     resp.order_status = order.status if order else None
     resp.resolver_name = f"{resolver.first_name} {resolver.last_name}" if resolver else None
+    resp.delivery_partner_name = f"{rider.first_name} {rider.last_name}" if rider else None
 
     for item_resp in resp.items:
         order_item = db.query(OrderItem).filter(OrderItem.id == item_resp.order_item_id).first()
@@ -82,6 +85,41 @@ def get_pending_count(
         ReturnRequest.status.in_(["requested", "approved", "pickup_scheduled", "handed_over", "received"])
     ).scalar()
     return {"count": count}
+
+
+@router.get("/pickups", response_model=List[ReturnRequestResponse])
+def rider_pickups(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Return pickups assigned to the current delivery partner."""
+    if current_user.role not in (UserRole.admin, UserRole.delivery_partner):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Delivery partner access required")
+    query = db.query(ReturnRequest).options(joinedload(ReturnRequest.items)).filter(
+        ReturnRequest.status.in_(["approved", "pickup_scheduled", "handed_over"])
+    )
+    if current_user.role == UserRole.delivery_partner:
+        query = query.filter(ReturnRequest.delivery_partner_id == current_user.id)
+    requests = query.order_by(ReturnRequest.created_at.desc()).all()
+    return [_build_response(r, db) for r in requests]
+
+
+@router.get("/inbound", response_model=List[ReturnRequestResponse])
+def warehouse_inbound(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Returns in transit to the warehouse, awaiting receipt."""
+    if current_user.role not in (UserRole.admin, UserRole.warehouse_operator):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Warehouse access required")
+    requests = (
+        db.query(ReturnRequest)
+        .options(joinedload(ReturnRequest.items))
+        .filter(ReturnRequest.status == "handed_over")
+        .order_by(ReturnRequest.created_at.desc())
+        .all()
+    )
+    return [_build_response(r, db) for r in requests]
 
 
 @router.post("", response_model=ReturnRequestResponse)
@@ -347,27 +385,6 @@ def schedule_pickup(
     return _build_response(req, db)
 
 
-@router.post("/{request_id}/confirm-handover", response_model=ReturnRequestResponse)
-def confirm_handover(
-    request_id: str,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    """Customer confirms the item has been handed over to the courier."""
-    req = _get_own_return(request_id, current_user, db)
-
-    if req.status != "pickup_scheduled":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Hand-over can only be confirmed after a pickup is scheduled (current status: '{req.status}')",
-        )
-
-    req.status = "handed_over"
-    db.commit()
-    db.refresh(req)
-    return _build_response(req, db)
-
-
 @router.post("/{request_id}/withdraw", response_model=ReturnRequestResponse)
 def withdraw_return(
     request_id: str,
@@ -384,6 +401,88 @@ def withdraw_return(
         )
 
     req.status = "withdrawn"
+    db.commit()
+    db.refresh(req)
+    return _build_response(req, db)
+
+
+def _get_return_or_404(request_id: str, db: Session) -> ReturnRequest:
+    req = (
+        db.query(ReturnRequest)
+        .options(joinedload(ReturnRequest.items))
+        .filter(ReturnRequest.id == request_id)
+        .first()
+    )
+    if not req:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Return request not found")
+    return req
+
+
+@router.put("/{request_id}/assign-rider", response_model=ReturnRequestResponse)
+def assign_return_rider(
+    request_id: str,
+    data: ReturnAssignRider,
+    admin: User = Depends(get_admin_user),
+    db: Session = Depends(get_db),
+):
+    """Admin assigns a delivery partner to collect the returned item."""
+    req = _get_return_or_404(request_id, db)
+    if req.status not in {"approved", "pickup_scheduled", "handed_over"}:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A rider can only be assigned before the item is received",
+        )
+    rider = db.query(User).filter(User.id == data.delivery_partner_id).first()
+    if not rider or rider.role != UserRole.delivery_partner:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="delivery_partner_id must reference a delivery partner",
+        )
+    req.delivery_partner_id = data.delivery_partner_id
+    db.commit()
+    db.refresh(req)
+    return _build_response(req, db)
+
+
+@router.post("/{request_id}/mark-picked-up", response_model=ReturnRequestResponse)
+def mark_picked_up(
+    request_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Delivery partner confirms collecting the returned item from the customer."""
+    if current_user.role not in (UserRole.admin, UserRole.delivery_partner):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Delivery partner access required")
+    req = _get_return_or_404(request_id, db)
+    if current_user.role == UserRole.delivery_partner and req.delivery_partner_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="This return is not assigned to you")
+    if req.status != "pickup_scheduled":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Pickup can only be confirmed once scheduled (current status: '{req.status}')",
+        )
+    req.status = "handed_over"
+    db.commit()
+    db.refresh(req)
+    return _build_response(req, db)
+
+
+@router.post("/{request_id}/mark-received", response_model=ReturnRequestResponse)
+def mark_received(
+    request_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Warehouse operator confirms the returned item arrived at the warehouse."""
+    if current_user.role not in (UserRole.admin, UserRole.warehouse_operator):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Warehouse access required")
+    req = _get_return_or_404(request_id, db)
+    if req.status != "handed_over":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Only in-transit returns can be received (current status: '{req.status}')",
+        )
+    req.status = "received"
     db.commit()
     db.refresh(req)
     return _build_response(req, db)

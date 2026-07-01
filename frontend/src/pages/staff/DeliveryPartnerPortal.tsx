@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Package, Truck, CheckCircle, RefreshCw, MapPin } from 'lucide-react';
+import { Package, Truck, CheckCircle, RefreshCw, MapPin, RotateCcw, Warehouse } from 'lucide-react';
 import { orderService } from '../../services/orderService';
-import { Order } from '../../types';
+import { returnService } from '../../services/returnService';
+import { Order, ReturnRequest } from '../../types';
 import StaffHeader from '../../components/layout/StaffHeader';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ButtonSpinner from '../../components/common/ButtonSpinner';
@@ -33,18 +34,24 @@ const TABS = [
   { key: 'pickup', label: 'To Pick Up' },
   { key: 'out_for_delivery', label: 'Out for Delivery' },
   { key: 'delivered', label: 'Delivered' },
+  { key: 'returns', label: 'Return Pickups' },
 ];
 
 const DeliveryPartnerPortal = () => {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [returns, setReturns] = useState<ReturnRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [tab, setTab] = useState('pickup');
 
   const load = useCallback(async () => {
     try {
-      const data = await orderService.getMyDeliveries();
-      setOrders(data);
+      const [deliveries, pickups] = await Promise.all([
+        orderService.getMyDeliveries(),
+        returnService.getPickups(),
+      ]);
+      setOrders(deliveries);
+      setReturns(pickups);
     } catch {
       toast.error('Failed to load your deliveries');
     } finally {
@@ -69,11 +76,25 @@ const DeliveryPartnerPortal = () => {
     }
   };
 
+  const collectReturn = async (returnId: string) => {
+    setUpdatingId(returnId);
+    try {
+      await returnService.markPickedUp(returnId);
+      toast.success('Return collected — deliver it to the warehouse');
+      await load();
+    } catch (e: any) {
+      toast.error(e?.response?.data?.detail || 'Failed to update return');
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
   const visible = orders.filter((o) => (tab === 'pickup' ? o.status === 'packed' : o.status === tab));
 
   const counts = {
     pickup: orders.filter((o) => o.status === 'packed').length,
     out: orders.filter((o) => o.status === 'out_for_delivery').length,
+    returns: returns.filter((r) => r.status === 'pickup_scheduled').length,
   };
 
   return (
@@ -85,7 +106,7 @@ const DeliveryPartnerPortal = () => {
           <div>
             <h1 className="text-title-sm font-bold text-gray-800">My Deliveries</h1>
             <p className="text-sm text-gray-500 mt-1">
-              {counts.pickup} to pick up &middot; {counts.out} out for delivery
+              {counts.pickup} to pick up &middot; {counts.out} out for delivery &middot; {counts.returns} return pickups
             </p>
           </div>
           <button
@@ -113,6 +134,70 @@ const DeliveryPartnerPortal = () => {
 
         {loading ? (
           <LoadingSpinner />
+        ) : tab === 'returns' ? (
+          returns.length === 0 ? (
+            <div className="text-center py-16 bg-white rounded-2xl border border-gray-200">
+              <RotateCcw className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-500 font-medium">No return pickups assigned</p>
+              <p className="text-sm text-gray-400 mt-1">Returns you're assigned to collect will show here.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {returns.map((r) => (
+                <div key={r.id} className="bg-white rounded-2xl border border-gray-200 p-5">
+                  <div className="flex items-center gap-3 flex-wrap mb-3">
+                    <span className="font-mono text-sm text-gray-500">Order #{r.order_id.substring(0, 8)}</span>
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize ${
+                      r.status === 'handed_over' ? 'bg-indigo-100 text-indigo-700' : 'bg-purple-100 text-purple-700'
+                    }`}>
+                      {formatStatus(r.status)}
+                    </span>
+                  </div>
+
+                  {r.pickup_address && (
+                    <div className="flex items-start gap-2 p-3 bg-gray-50 rounded-lg mb-3">
+                      <MapPin className="w-4 h-4 text-brand-500 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-sm text-gray-700">{r.pickup_address}</p>
+                        {r.pickup_date && <p className="text-xs text-gray-400 mt-0.5">Pickup: {formatDateTime(r.pickup_date)}</p>}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-1 mb-4">
+                    {r.items?.map((item) => (
+                      <div key={item.id} className="flex items-center gap-2 text-sm text-gray-700">
+                        <span className="w-6 h-6 rounded bg-gray-100 flex items-center justify-center text-[11px] font-semibold text-gray-500">
+                          {item.quantity}
+                        </span>
+                        <span>{item.product_name || 'Item'}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-500">Reason: {r.reason}</span>
+                    {r.status === 'pickup_scheduled' ? (
+                      <button
+                        onClick={() => collectReturn(r.id)}
+                        disabled={updatingId === r.id}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition font-medium text-sm disabled:opacity-50"
+                      >
+                        {updatingId === r.id ? <ButtonSpinner /> : <RotateCcw className="w-4 h-4" />}
+                        Mark Picked Up
+                      </button>
+                    ) : r.status === 'handed_over' ? (
+                      <span className="inline-flex items-center gap-1.5 text-xs text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg">
+                        <Warehouse className="w-3.5 h-3.5" /> Drop at warehouse
+                      </span>
+                    ) : (
+                      <span className="text-xs text-gray-400">Awaiting customer to schedule</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
         ) : visible.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-2xl border border-gray-200">
             <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />

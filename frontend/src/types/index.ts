@@ -238,6 +238,8 @@ export interface ReturnRequest {
   pickup_date: string | null;
   pickup_address: string | null;
   refund_amount: number | null;
+  delivery_partner_id: string | null;
+  delivery_partner_name: string | null;
   resolved_by: string | null;
   resolver_name: string | null;
   customer_name: string | null;

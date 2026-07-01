@@ -26,6 +26,10 @@ class SchedulePickupRequest(BaseModel):
     pickup_address: Optional[str] = None  # defaults to the order's delivery address
 
 
+class ReturnAssignRider(BaseModel):
+    delivery_partner_id: str
+
+
 class ReturnRequestItemResponse(BaseModel):
     id: str
     order_item_id: str
@@ -46,6 +50,8 @@ class ReturnRequestResponse(BaseModel):
     pickup_date: Optional[datetime] = None
     pickup_address: Optional[str] = None
     refund_amount: Optional[float] = None
+    delivery_partner_id: Optional[str] = None
+    delivery_partner_name: Optional[str] = None
     resolved_by: Optional[str] = None
     resolver_name: Optional[str] = None
     customer_name: Optional[str] = None

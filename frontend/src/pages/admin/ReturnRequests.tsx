@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { Eye, X, CheckCircle, XCircle, Clock, Search, Truck, Package, RefreshCw, ChevronLeft, ChevronRight, Calendar, MapPin } from 'lucide-react';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
-import { fetchReturnRequests, resolveReturnRequest } from '../../store/slices/returnSlice';
-import { ReturnRequest } from '../../types';
+import { fetchReturnRequests, resolveReturnRequest, assignReturnRider } from '../../store/slices/returnSlice';
+import { staffService } from '../../services/warehouseService';
+import { ReturnRequest, User } from '../../types';
 import ButtonSpinner from '../../components/common/ButtonSpinner';
 import { formatDateTime } from '../../utils/date';
 
@@ -65,10 +66,21 @@ const ReturnRequests = () => {
 
   const [selectedRequest, setSelectedRequest] = useState<ReturnRequest | null>(null);
   const [adminNotes, setAdminNotes] = useState('');
+  const [deliveryPartners, setDeliveryPartners] = useState<User[]>([]);
+  const [selectedRider, setSelectedRider] = useState('');
 
   useEffect(() => {
     dispatch(fetchReturnRequests());
+    staffService.getByRole('delivery_partner').then(setDeliveryPartners).catch(() => {});
   }, [dispatch]);
+
+  const handleAssignRider = async () => {
+    if (!selectedRequest || !selectedRider) return;
+    const result = await dispatch(assignReturnRider({ id: selectedRequest.id, deliveryPartnerId: selectedRider }));
+    if (assignReturnRider.fulfilled.match(result)) {
+      setSelectedRequest(result.payload);
+    }
+  };
 
   const activeCount = requests.filter(
     (r) => ['requested', 'approved', 'pickup_scheduled', 'handed_over', 'received'].includes(r.status)
@@ -100,10 +112,10 @@ const ReturnRequests = () => {
     }
   };
 
-  // Statuses where the admin is waiting on the customer's next move.
+  // Statuses where the admin is waiting on the customer or rider's next move.
   const waitingOnCustomer = (status: string): string | null => {
     if (status === 'approved') return 'Waiting for the customer to schedule a pickup.';
-    if (status === 'pickup_scheduled') return 'Waiting for the customer to hand the item to the courier.';
+    if (status === 'pickup_scheduled') return 'Waiting for the assigned rider to collect the item.';
     return null;
   };
 
@@ -125,6 +137,7 @@ const ReturnRequests = () => {
   const viewRequest = (request: ReturnRequest) => {
     setSelectedRequest(request);
     setAdminNotes('');
+    setSelectedRider(request.delivery_partner_id || '');
   };
 
   const closeDetail = () => {
@@ -471,6 +484,38 @@ const ReturnRequests = () => {
                     </div>
                   )}
                 </div>
+              </div>
+            )}
+
+            {/* Return Pickup Rider */}
+            {['approved', 'pickup_scheduled', 'handed_over'].includes(selectedRequest.status) && (
+              <div className="mb-6 rounded-lg border border-gray-200 p-4">
+                <h3 className="font-semibold text-gray-800 mb-3">Return Pickup Rider</h3>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <select
+                    value={selectedRider}
+                    onChange={(e) => setSelectedRider(e.target.value)}
+                    className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-hidden focus:ring-3 focus:border-brand-300 focus:ring-brand-500/20"
+                  >
+                    <option value="">— Select rider —</option>
+                    {deliveryPartners.map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {`${r.first_name || ''} ${r.last_name || ''}`.trim() || r.email}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={handleAssignRider}
+                    disabled={submitting || !selectedRider}
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition font-medium text-sm disabled:opacity-50"
+                  >
+                    {submitting && <ButtonSpinner />}
+                    Assign Rider
+                  </button>
+                </div>
+                {selectedRequest.delivery_partner_name && (
+                  <p className="text-xs text-gray-400 mt-2">Currently assigned: {selectedRequest.delivery_partner_name}</p>
+                )}
               </div>
             )}
 

@@ -104,6 +104,14 @@ def run_migrations(db):
         db.commit()
         print("Added payment tracking columns to orders table")
 
+    # Step 9: Add delivery partner (rider) to return requests for pickup
+    if "return_requests" in inspector.get_table_names():
+        rr_columns = [col["name"] for col in inspector.get_columns("return_requests")]
+        if "delivery_partner_id" not in rr_columns:
+            db.execute(text("ALTER TABLE return_requests ADD COLUMN delivery_partner_id VARCHAR(36)"))
+            db.commit()
+            print("Added delivery_partner_id column to return_requests table")
+
     print("Database migrations completed.")
 
 

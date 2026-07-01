@@ -55,8 +55,8 @@ const RETURN_FLOW: { key: string; label: string }[] = [
   { key: 'requested', label: 'Return Requested' },
   { key: 'approved', label: 'Approved' },
   { key: 'pickup_scheduled', label: 'Pickup Scheduled' },
-  { key: 'handed_over', label: 'Handed to Courier' },
-  { key: 'received', label: 'Item Received' },
+  { key: 'handed_over', label: 'Picked Up by Courier' },
+  { key: 'received', label: 'Received at Warehouse' },
   { key: 'refunded', label: 'Refunded' },
 ];
 

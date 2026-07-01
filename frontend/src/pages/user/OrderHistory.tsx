@@ -3,7 +3,7 @@ import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { fetchOrders, fetchOrderById } from '../../store/slices/orderSlice';
 import { createCancellationRequest, fetchCancellationRequests } from '../../store/slices/cancellationSlice';
-import { createReturnRequest, fetchReturnRequests, schedulePickup, confirmHandover, withdrawReturn } from '../../store/slices/returnSlice';
+import { createReturnRequest, fetchReturnRequests, schedulePickup, withdrawReturn } from '../../store/slices/returnSlice';
 import { Package, ChevronDown, ChevronUp, Calendar, Hash, Check, X, XCircle, CreditCard, Ban, RotateCcw, Truck, MapPin } from 'lucide-react';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ButtonSpinner from '../../components/common/ButtonSpinner';
@@ -71,8 +71,8 @@ const RETURN_FLOW: { key: string; label: string }[] = [
   { key: 'requested', label: 'Return Requested' },
   { key: 'approved', label: 'Approved' },
   { key: 'pickup_scheduled', label: 'Pickup Scheduled' },
-  { key: 'handed_over', label: 'Handed to Courier' },
-  { key: 'received', label: 'Item Received' },
+  { key: 'handed_over', label: 'Picked Up by Courier' },
+  { key: 'received', label: 'Received at Warehouse' },
   { key: 'refunded', label: 'Refunded' },
 ];
 
@@ -297,11 +297,6 @@ const OrderHistory = () => {
     if (!pickupModal || !pickupDate) return;
     await dispatch(schedulePickup({ id: pickupModal.returnId, data: { pickup_date: pickupDate } }));
     setPickupModal(null);
-    dispatch(fetchReturnRequests());
-  };
-
-  const handleConfirmHandover = async (returnId: string) => {
-    await dispatch(confirmHandover(returnId));
     dispatch(fetchReturnRequests());
   };
 
@@ -616,14 +611,10 @@ const OrderHistory = () => {
                             </button>
                           )}
                           {r.status === 'pickup_scheduled' && (
-                            <button
-                              onClick={(e) => { e.stopPropagation(); handleConfirmHandover(r.id); }}
-                              disabled={returnSubmitting}
-                              className="flex items-center space-x-2 px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition font-medium text-sm disabled:opacity-50"
-                            >
-                              {returnSubmitting ? <ButtonSpinner /> : <Check className="w-4 h-4" />}
-                              <span>Confirm Hand-over</span>
-                            </button>
+                            <span className="flex items-center space-x-2 px-4 py-2 text-indigo-600 bg-indigo-50 rounded-lg font-medium text-sm">
+                              <Truck className="w-4 h-4" />
+                              <span>Awaiting courier pickup</span>
+                            </span>
                           )}
                           {['requested', 'approved', 'pickup_scheduled'].includes(r.status) && (
                             <button
