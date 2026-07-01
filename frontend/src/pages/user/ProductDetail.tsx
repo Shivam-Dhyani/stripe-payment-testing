@@ -68,10 +68,14 @@ const ProductDetail = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16">
         {/* Product Image */}
-        <div className="bg-gray-100 rounded-2xl h-96 lg:h-[520px] flex items-center justify-center">
-          <span className="text-8xl lg:text-9xl font-semibold text-gray-200 select-none tracking-wider">
-            {product.name.substring(0, 2).toUpperCase()}
-          </span>
+        <div className="bg-gray-100 rounded-2xl h-96 lg:h-[520px] flex items-center justify-center overflow-hidden">
+          {product.image_url ? (
+            <img src={product.image_url} alt={product.name} className="w-full h-full object-contain" />
+          ) : (
+            <span className="text-8xl lg:text-9xl font-semibold text-gray-200 select-none tracking-wider">
+              {product.name.substring(0, 2).toUpperCase()}
+            </span>
+          )}
         </div>
 
         {/* Product Info */}

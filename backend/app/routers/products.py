@@ -1,14 +1,45 @@
+import random
+from urllib.parse import quote
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
 from app.database import get_db
 from app.models.product import Product
 from app.models.subcategory import SubCategory
-from app.schemas.product import ProductCreate, ProductUpdate, ProductResponse
+from app.schemas.product import ProductCreate, ProductUpdate, ProductResponse, GenerateImageRequest
 from app.middleware.auth import get_admin_user
 from app.models.user import User
 
 router = APIRouter(prefix="/products", tags=["Products"], redirect_slashes=False)
+
+
+@router.post("/generate-image", response_model=dict)
+def generate_product_image(
+    data: GenerateImageRequest,
+    admin: User = Depends(get_admin_user),
+):
+    """Generate a quick-commerce style product image URL from the product name.
+
+    Uses a keyless AI image service (Pollinations) so it works out of the box.
+    Swap the URL builder for OpenAI/Stability + object storage for production.
+    """
+    name = (data.name or "").strip()
+    if not name:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Enter a product name first")
+
+    descriptor = name if not data.category else f"{name}, {data.category}"
+    prompt = (
+        f"professional product packshot photo of {descriptor}, "
+        "single item centered on a clean white seamless background, soft studio lighting, "
+        "sharp focus, high detail, e-commerce grocery product listing, no text, no watermark"
+    )
+    seed = random.randint(1, 9_999_999)
+    url = (
+        "https://image.pollinations.ai/prompt/"
+        f"{quote(prompt, safe='')}"
+        f"?width=600&height=600&nologo=true&model=flux&seed={seed}"
+    )
+    return {"image_url": url, "prompt": prompt}
 
 
 @router.get("")

@@ -25,4 +25,9 @@ export const productService = {
   delete: async (id: string): Promise<void> => {
     await api.delete(`/products/${id}`);
   },
+
+  generateImage: async (name: string, category?: string): Promise<{ image_url: string }> => {
+    const response = await api.post('/products/generate-image', { name, category });
+    return response.data;
+  },
 };

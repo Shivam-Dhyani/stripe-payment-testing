@@ -112,6 +112,14 @@ def run_migrations(db):
             db.commit()
             print("Added delivery_partner_id column to return_requests table")
 
+    # Step 10: Widen products.image_url to TEXT (holds long generated-image URLs)
+    if "products" in inspector.get_table_names():
+        img_col = next((c for c in inspector.get_columns("products") if c["name"] == "image_url"), None)
+        if img_col is not None and "VARCHAR" in str(img_col["type"]).upper():
+            db.execute(text("ALTER TABLE products ALTER COLUMN image_url TYPE TEXT"))
+            db.commit()
+            print("Widened products.image_url to TEXT")
+
     print("Database migrations completed.")
 
 

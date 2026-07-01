@@ -14,7 +14,7 @@ class Product(Base):
     description = Column(Text, nullable=True)
     price = Column(Numeric(10, 2), nullable=False)
     stock = Column(Integer, default=0, nullable=False)
-    image_url = Column(String(500), nullable=True)
+    image_url = Column(Text, nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
     is_returnable = Column(Boolean, default=False, nullable=False)
     return_window_days = Column(Integer, nullable=True)

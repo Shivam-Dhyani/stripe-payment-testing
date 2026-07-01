@@ -34,9 +34,13 @@ const ProductCard = ({ product }: { product: Product }) => {
     <div className="qc-card p-2.5 flex flex-col">
       <Link to={`/products/${product.id}`} className="block flex-1">
         <div className="relative rounded-xl bg-gray-50 aspect-square flex items-center justify-center mb-2 overflow-hidden">
-          <span className="text-4xl font-bold text-gray-200 select-none">
-            {product.name.substring(0, 2).toUpperCase()}
-          </span>
+          {product.image_url ? (
+            <img src={product.image_url} alt={product.name} loading="lazy" className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-4xl font-bold text-gray-200 select-none">
+              {product.name.substring(0, 2).toUpperCase()}
+            </span>
+          )}
           <span className="absolute top-1.5 left-1.5 inline-flex items-center gap-0.5 rounded-md bg-white/90 px-1.5 py-0.5 text-[10px] font-semibold text-gray-600 shadow-sm">
             <Clock className="w-3 h-3 text-brand-500" /> 10 min
           </span>

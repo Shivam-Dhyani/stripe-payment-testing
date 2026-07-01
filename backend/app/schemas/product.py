@@ -4,6 +4,11 @@ from datetime import datetime
 from decimal import Decimal
 
 
+class GenerateImageRequest(BaseModel):
+    name: str
+    category: Optional[str] = None
+
+
 class ProductCreate(BaseModel):
     sub_category_id: str
     name: str

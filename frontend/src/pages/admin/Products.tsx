@@ -2,13 +2,15 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Pencil, Trash2, X, ToggleLeft, ToggleRight, Search, Package, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, ToggleLeft, ToggleRight, Search, Package, ChevronLeft, ChevronRight, Sparkles, Image as ImageIcon } from 'lucide-react';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { fetchProducts, createProduct, updateProduct, deleteProduct } from '../../store/slices/productSlice';
 import { fetchCategories, fetchSubCategories } from '../../store/slices/categorySlice';
+import { productService } from '../../services/productService';
 import { Product } from '../../types';
 import ButtonSpinner from '../../components/common/ButtonSpinner';
+import toast from 'react-hot-toast';
 
 const productSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -39,10 +41,38 @@ const Products = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const perPage = 10;
 
+  const [generatingImage, setGeneratingImage] = useState(false);
+
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
     defaultValues: { name: '', description: '', price: 0, stock: 0, sub_category_id: '', image_url: '', is_active: true, is_returnable: false, return_window_days: null },
   });
+
+  const handleGenerateImage = async () => {
+    const name = form.getValues('name')?.trim();
+    if (!name) {
+      toast.error('Enter a product name first');
+      return;
+    }
+    const categoryName = categories.find((c) => c.id === selectedCategoryInForm)?.name;
+    setGeneratingImage(true);
+    try {
+      const { image_url } = await productService.generateImage(name, categoryName);
+      // Preload so "Generating…" stays until the real image is ready (gen can take ~10-30s).
+      await new Promise<void>((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve();
+        img.onerror = () => resolve();
+        img.src = image_url;
+      });
+      form.setValue('image_url', image_url);
+      toast.success('Image generated');
+    } catch (e: any) {
+      toast.error(e?.response?.data?.detail || 'Failed to generate image');
+    } finally {
+      setGeneratingImage(false);
+    }
+  };
 
   useEffect(() => {
     dispatch(fetchCategories(true));
@@ -413,8 +443,33 @@ const Products = () => {
                 {form.formState.errors.sub_category_id && <p className="mt-1 text-sm text-red-600">{form.formState.errors.sub_category_id.message}</p>}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Image URL (optional)</label>
-                <input {...form.register('image_url')} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-3 focus:ring-brand-500/20 focus:border-brand-300 focus:outline-hidden transition" />
+                <label className="block text-sm font-medium text-gray-700 mb-1">Product Image</label>
+                <div className="flex gap-3">
+                  <div className="w-20 h-20 rounded-xl border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden flex-shrink-0">
+                    {form.watch('image_url') ? (
+                      <img src={form.watch('image_url')} alt="preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <ImageIcon className="w-6 h-6 text-gray-300" />
+                    )}
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <input
+                      {...form.register('image_url')}
+                      placeholder="Paste an image URL, or generate one"
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-3 focus:ring-brand-500/20 focus:border-brand-300 focus:outline-hidden transition text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleGenerateImage}
+                      disabled={generatingImage}
+                      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-brand-50 text-brand-700 border border-brand-200 hover:bg-brand-100 text-sm font-medium disabled:opacity-50 transition-colors"
+                    >
+                      {generatingImage ? <ButtonSpinner /> : <Sparkles className="w-4 h-4" />}
+                      {generatingImage ? 'Generating…' : 'Generate from name'}
+                    </button>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-400 mt-1.5">AI-generates a product photo from the name. Regenerate for a different result.</p>
               </div>
               <label className="flex items-center space-x-2">
                 <input type="checkbox" {...form.register('is_active')} className="rounded border-gray-300 text-brand-500 focus:ring-brand-500" />
