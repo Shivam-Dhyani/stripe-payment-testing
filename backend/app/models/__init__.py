@@ -7,6 +7,7 @@ from app.models.product import Product
 from app.models.cart import CartItem
 from app.models.order import Order, OrderItem, OrderStatusHistory, VALID_ORDER_STATUSES, VALID_TRANSITIONS
 from app.models.payment_event import PaymentEvent, PaymentEventType
+from app.models.webhook_event import WebhookEvent
 from app.models.cancellation_request import CancellationRequest, VALID_CANCELLATION_STATUSES
 from app.models.return_request import ReturnRequest, ReturnRequestItem, VALID_RETURN_STATUSES
 
@@ -27,6 +28,7 @@ __all__ = [
     "VALID_TRANSITIONS",
     "PaymentEvent",
     "PaymentEventType",
+    "WebhookEvent",
     "CancellationRequest",
     "VALID_CANCELLATION_STATUSES",
     "ReturnRequest",

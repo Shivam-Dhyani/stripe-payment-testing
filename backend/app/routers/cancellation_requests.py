@@ -5,9 +5,10 @@ from typing import List
 from datetime import datetime
 from app.database import get_db
 from app.models.user import User, UserRole
-from app.models.order import Order, OrderStatusHistory
+from app.models.order import Order, OrderStatusHistory, recompute_payment_status
 from app.models.cancellation_request import CancellationRequest
 from app.models.payment_event import PaymentEvent, PaymentEventType
+from app.services.stripe_service import create_refund
 from app.schemas.cancellation_request import (
     CancellationRequestCreate, CancellationRequestResolve, CancellationRequestResponse
 )
@@ -176,9 +177,20 @@ def resolve_cancellation_request(
         )
         db.add(history)
 
-        if order.stripe_payment_intent_id:
+        if order.stripe_payment_intent_id and order.payment_status == "paid":
             try:
-                stripe.Refund.create(payment_intent=order.stripe_payment_intent_id)
+                create_refund(
+                    order.stripe_payment_intent_id,
+                    idempotency_key=f"refund_cancel_{order.id}",
+                )
+                order.refunded_amount = order.total
+                recompute_payment_status(order)
+                db.add(PaymentEvent(
+                    order_id=order.id,
+                    event_type=PaymentEventType.refunded,
+                    message="Full refund issued for cancelled order",
+                    event_data={"refund_amount": float(order.total)},
+                ))
             except stripe.StripeError:
                 pass
 

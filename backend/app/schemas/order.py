@@ -64,6 +64,9 @@ class OrderResponse(BaseModel):
     address_snapshot: Optional[Any] = None
     total: float
     status: str
+    payment_status: str = "pending"
+    refunded_amount: float = 0
+    receipt_url: Optional[str] = None
     stripe_payment_intent_id: Optional[str] = None
     cancellation_reason: Optional[str] = None
     created_at: datetime

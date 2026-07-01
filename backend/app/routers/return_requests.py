@@ -6,7 +6,7 @@ from datetime import datetime
 from decimal import Decimal
 from app.database import get_db
 from app.models.user import User, UserRole
-from app.models.order import Order, OrderItem, OrderStatusHistory
+from app.models.order import Order, OrderItem, OrderStatusHistory, recompute_payment_status
 from app.models.product import Product
 from app.models.return_request import ReturnRequest, ReturnRequestItem
 from app.models.payment_event import PaymentEvent, PaymentEventType
@@ -15,6 +15,7 @@ from app.schemas.return_request import (
     SchedulePickupRequest,
 )
 from app.middleware.auth import get_current_user, get_admin_user
+from app.services.stripe_service import create_refund
 from app.config import settings
 import stripe
 
@@ -267,23 +268,32 @@ def resolve_return_request(
 
     if data.status == "refunded":
         order = db.query(Order).filter(Order.id == req.order_id).first()
-        if order and order.stripe_payment_intent_id:
+        refund_amount = req.refund_amount or Decimal("0")
+
+        # Never refund more than the order total across all refunds.
+        already = order.refunded_amount or Decimal("0") if order else Decimal("0")
+        remaining = (order.total - already) if order else Decimal("0")
+        if order and refund_amount > remaining:
+            refund_amount = max(remaining, Decimal("0"))
+
+        if order and order.stripe_payment_intent_id and refund_amount > 0:
             try:
-                refund_amount_cents = int(req.refund_amount * 100)
-                stripe.Refund.create(
-                    payment_intent=order.stripe_payment_intent_id,
-                    amount=refund_amount_cents,
+                create_refund(
+                    order.stripe_payment_intent_id,
+                    amount_cents=int(refund_amount * 100),
+                    idempotency_key=f"refund_return_{req.id}",
                 )
+                order.refunded_amount = already + refund_amount
+                recompute_payment_status(order)
             except stripe.StripeError:
                 pass
 
-        payment_event = PaymentEvent(
+        db.add(PaymentEvent(
             order_id=req.order_id,
             event_type=PaymentEventType.refunded,
             message=f"Refund issued for return request: {req.reason}",
-            event_data={"refund_amount": float(req.refund_amount)},
-        )
-        db.add(payment_event)
+            event_data={"refund_amount": float(refund_amount)},
+        ))
 
     req.status = data.status
     if data.admin_notes:

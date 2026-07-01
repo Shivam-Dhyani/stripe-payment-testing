@@ -8,7 +8,8 @@ from app.models.user import User, UserRole
 from app.models.cart import CartItem
 from app.models.product import Product
 from app.models.order import (
-    Order, OrderItem, OrderStatusHistory, VALID_ORDER_STATUSES, VALID_TRANSITIONS, CANCELLABLE_STATUSES
+    Order, OrderItem, OrderStatusHistory, VALID_ORDER_STATUSES, VALID_TRANSITIONS, CANCELLABLE_STATUSES,
+    recompute_payment_status
 )
 from app.models.address import Address
 from app.models.warehouse import Warehouse
@@ -18,7 +19,7 @@ from app.schemas.order import (
     OrderStatusHistoryResponse, OrderAssignmentRequest
 )
 from app.middleware.auth import get_current_user, get_admin_user
-from app.services.stripe_service import create_payment_intent
+from app.services.stripe_service import create_payment_intent, create_refund
 from app.config import settings
 import stripe
 
@@ -168,6 +169,7 @@ def confirm_payment(
     if not order:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
     order.status = "placed"
+    order.payment_status = "paid"
     payment_event = PaymentEvent(
         order_id=order.id,
         event_type=PaymentEventType.succeeded,
@@ -199,6 +201,7 @@ def confirm_payment_by_order(
     if not order:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
     order.status = "placed"
+    order.payment_status = "paid"
     payment_event = PaymentEvent(
         order_id=order.id,
         event_type=PaymentEventType.succeeded,
@@ -425,9 +428,21 @@ def update_order_status(
         )
         db.add(event)
 
-        if order.stripe_payment_intent_id:
+        # Full refund on cancellation (idempotent so a retry won't double-refund).
+        if order.stripe_payment_intent_id and order.payment_status == "paid":
             try:
-                stripe.Refund.create(payment_intent=order.stripe_payment_intent_id)
+                create_refund(
+                    order.stripe_payment_intent_id,
+                    idempotency_key=f"refund_cancel_{order.id}",
+                )
+                order.refunded_amount = order.total
+                recompute_payment_status(order)
+                db.add(PaymentEvent(
+                    order_id=order.id,
+                    event_type=PaymentEventType.refunded,
+                    message="Full refund issued for cancelled order",
+                    event_data={"refund_amount": float(order.total)},
+                ))
             except stripe.StripeError:
                 pass
 

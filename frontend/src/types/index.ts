@@ -114,6 +114,9 @@ export interface Order {
   address_snapshot: Record<string, string>;
   total: number | string;
   status: OrderStatus;
+  payment_status?: 'pending' | 'paid' | 'failed' | 'refunded' | 'partially_refunded';
+  refunded_amount?: number;
+  receipt_url?: string | null;
   stripe_payment_intent_id: string | null;
   cancellation_reason?: string | null;
   created_at: string;

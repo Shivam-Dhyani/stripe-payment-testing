@@ -24,6 +24,14 @@ const statusColors: Record<string, string> = {
   refunded: 'bg-gray-100 text-gray-700',
 };
 
+const paymentStatusColors: Record<string, string> = {
+  pending: 'bg-amber-100 text-amber-700',
+  paid: 'bg-green-100 text-green-700',
+  failed: 'bg-red-100 text-red-700',
+  refunded: 'bg-gray-100 text-gray-700',
+  partially_refunded: 'bg-orange-100 text-orange-700',
+};
+
 const formatStatus = (s: string): string => s.replace(/_/g, ' ');
 
 const returnStatusColors: Record<string, string> = {
@@ -686,10 +694,22 @@ const Orders = () => {
               </div>
               <div>
                 <p className="text-sm text-gray-500">Payment</p>
-                <div className="flex items-center space-x-1.5">
-                  <CreditCard className="w-4 h-4 text-gray-400" />
-                  <span className="text-sm font-medium text-gray-800">Paid via Stripe</span>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-800">
+                    <CreditCard className="w-4 h-4 text-gray-400" /> Stripe
+                  </span>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium capitalize ${paymentStatusColors[detailOrder.payment_status || 'pending'] || 'bg-gray-100 text-gray-700'}`}>
+                    {formatStatus(detailOrder.payment_status || 'pending')}
+                  </span>
                 </div>
+                {Number(detailOrder.refunded_amount) > 0 && (
+                  <p className="text-xs text-amber-600 mt-0.5">Refunded: ${Number(detailOrder.refunded_amount).toFixed(2)}</p>
+                )}
+                {detailOrder.receipt_url && (
+                  <a href={detailOrder.receipt_url} target="_blank" rel="noopener noreferrer" className="text-xs text-brand-500 hover:underline mt-0.5 inline-block">
+                    View receipt
+                  </a>
+                )}
                 {detailOrder.stripe_payment_intent_id && (
                   <p className="font-mono text-xs text-gray-400 mt-0.5 break-all">{detailOrder.stripe_payment_intent_id}</p>
                 )}

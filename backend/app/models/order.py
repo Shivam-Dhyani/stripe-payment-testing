@@ -1,8 +1,21 @@
 import uuid
 from datetime import datetime
+from decimal import Decimal
 from sqlalchemy import Column, String, DateTime, ForeignKey, Integer, Numeric, JSON, Text
 from sqlalchemy.orm import relationship
 from app.database import Base
+
+
+VALID_PAYMENT_STATUSES = {"pending", "paid", "failed", "refunded", "partially_refunded"}
+
+
+def recompute_payment_status(order) -> None:
+    """Derive payment_status from how much of the order total has been refunded."""
+    refunded = order.refunded_amount or Decimal("0")
+    total = order.total or Decimal("0")
+    if refunded <= 0:
+        return
+    order.payment_status = "refunded" if refunded >= total else "partially_refunded"
 
 
 # Quick-commerce order lifecycle:
@@ -37,7 +50,11 @@ class Order(Base):
     delivery_partner_id = Column(String(36), ForeignKey("users.id"), nullable=True)
     address_snapshot = Column(JSON, nullable=True)
     total = Column(Numeric(10, 2), nullable=False)
-    status = Column(String(20), default="confirmed", nullable=False)
+    status = Column(String(20), default="placed", nullable=False)
+    # Payment lifecycle, tracked independently of fulfillment status.
+    payment_status = Column(String(20), default="pending", nullable=False)
+    refunded_amount = Column(Numeric(10, 2), default=0, nullable=False)
+    receipt_url = Column(String(500), nullable=True)
     stripe_payment_intent_id = Column(String(255), nullable=True)
     cancellation_reason = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)

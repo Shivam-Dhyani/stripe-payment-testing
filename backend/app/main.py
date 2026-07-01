@@ -89,6 +89,21 @@ def run_migrations(db):
     if remapped:
         print("Remapped legacy order statuses to quick-commerce lifecycle")
 
+    # Step 8: Add payment tracking columns to orders
+    order_columns = [col["name"] for col in inspector.get_columns("orders")]
+    if "payment_status" not in order_columns:
+        db.execute(text("ALTER TABLE orders ADD COLUMN payment_status VARCHAR(20) DEFAULT 'pending' NOT NULL"))
+        db.execute(text("ALTER TABLE orders ADD COLUMN refunded_amount NUMERIC(10, 2) DEFAULT 0 NOT NULL"))
+        db.execute(text("ALTER TABLE orders ADD COLUMN receipt_url VARCHAR(500)"))
+        # Existing orders with a payment intent are considered paid.
+        db.execute(text(
+            "UPDATE orders SET payment_status = 'paid' "
+            "WHERE stripe_payment_intent_id IS NOT NULL AND status NOT IN ('cancelled', 'refunded')"
+        ))
+        db.execute(text("UPDATE orders SET payment_status = 'refunded' WHERE status = 'refunded'"))
+        db.commit()
+        print("Added payment tracking columns to orders table")
+
     print("Database migrations completed.")
 
 
