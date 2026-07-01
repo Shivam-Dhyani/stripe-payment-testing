@@ -6,18 +6,25 @@ import { useAppSelector } from '../../hooks/useAppSelector';
 import { fetchAllOrders, updateOrderStatus } from '../../store/slices/orderSlice';
 import { fetchReturnRequests } from '../../store/slices/returnSlice';
 import { fetchCancellationRequests } from '../../store/slices/cancellationSlice';
-import { Order, PaymentEvent, OrderStatusHistory, CancellationRequest, ReturnRequest } from '../../types';
+import { orderService } from '../../services/orderService';
+import { warehouseService, staffService } from '../../services/warehouseService';
+import { Order, PaymentEvent, OrderStatusHistory, CancellationRequest, ReturnRequest, Warehouse, User } from '../../types';
 import ButtonSpinner from '../../components/common/ButtonSpinner';
 import { formatDate, formatDateTime } from '../../utils/date';
+import toast from 'react-hot-toast';
 
 const statusColors: Record<string, string> = {
-  confirmed: 'bg-blue-100 text-blue-700',
-  processing: 'bg-amber-100 text-amber-700',
-  shipped: 'bg-purple-100 text-purple-700',
+  placed: 'bg-blue-100 text-blue-700',
+  accepted: 'bg-indigo-100 text-indigo-700',
+  picking: 'bg-amber-100 text-amber-700',
+  packed: 'bg-orange-100 text-orange-700',
+  out_for_delivery: 'bg-purple-100 text-purple-700',
   delivered: 'bg-green-100 text-green-700',
   cancelled: 'bg-red-100 text-red-700',
   refunded: 'bg-gray-100 text-gray-700',
 };
+
+const formatStatus = (s: string): string => s.replace(/_/g, ' ');
 
 const returnStatusColors: Record<string, string> = {
   requested: 'bg-amber-100 text-amber-700',
@@ -124,9 +131,11 @@ const renderRequestTimeline = (steps: TimelineStep[]) => (
 );
 
 const validTransitions: Record<string, string[]> = {
-  confirmed: ['processing', 'cancelled'],
-  processing: ['shipped', 'cancelled'],
-  shipped: ['delivered'],
+  placed: ['accepted', 'cancelled'],
+  accepted: ['picking', 'cancelled'],
+  picking: ['packed', 'cancelled'],
+  packed: ['out_for_delivery', 'cancelled'],
+  out_for_delivery: ['delivered'],
 };
 
 const CANCEL_REASONS = [
@@ -158,11 +167,44 @@ const Orders = () => {
   // Payment events accordion state
   const [paymentEventsOpen, setPaymentEventsOpen] = useState(false);
 
+  // Fulfillment assignment state
+  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+  const [deliveryPartners, setDeliveryPartners] = useState<User[]>([]);
+  const [selectedWarehouse, setSelectedWarehouse] = useState('');
+  const [selectedRider, setSelectedRider] = useState('');
+  const [assigning, setAssigning] = useState(false);
+
   useEffect(() => {
     dispatch(fetchAllOrders());
     dispatch(fetchReturnRequests());
     dispatch(fetchCancellationRequests());
+    warehouseService.getAll(true).then(setWarehouses).catch(() => {});
+    staffService.getByRole('delivery_partner').then(setDeliveryPartners).catch(() => {});
   }, [dispatch]);
+
+  const riderName = (id?: string | null) => {
+    if (!id) return null;
+    const r = deliveryPartners.find((p) => p.id === id);
+    return r ? `${r.first_name || ''} ${r.last_name || ''}`.trim() || r.email : id.substring(0, 8);
+  };
+
+  const handleAssign = async () => {
+    if (!detailOrder) return;
+    setAssigning(true);
+    try {
+      const updated = await orderService.assignOrder(detailOrder.id, {
+        warehouse_id: selectedWarehouse || undefined,
+        delivery_partner_id: selectedRider || undefined,
+      });
+      setDetailOrder(updated);
+      dispatch(fetchAllOrders());
+      toast.success('Assignment updated');
+    } catch (e: any) {
+      toast.error(e?.response?.data?.detail || 'Failed to update assignment');
+    } finally {
+      setAssigning(false);
+    }
+  };
 
   // Return requests for a given order (most recent first, as returned by the API).
   const getOrderReturns = (orderId: string) =>
@@ -200,6 +242,8 @@ const Orders = () => {
     if (order) {
       setDetailOrder(order);
       setPaymentEventsOpen(false);
+      setSelectedWarehouse(order.warehouse_id || '');
+      setSelectedRider(order.delivery_partner_id || '');
     }
   };
 
@@ -255,8 +299,10 @@ const Orders = () => {
 
   const getActionLabel = (nextStatus: string): string => {
     switch (nextStatus) {
-      case 'processing': return 'Mark Processing';
-      case 'shipped': return 'Mark Shipped';
+      case 'accepted': return 'Accept Order';
+      case 'picking': return 'Start Picking';
+      case 'packed': return 'Mark Packed';
+      case 'out_for_delivery': return 'Out for Delivery';
       case 'delivered': return 'Mark Delivered';
       default: return `Mark ${nextStatus.charAt(0).toUpperCase() + nextStatus.slice(1)}`;
     }
@@ -277,7 +323,7 @@ const Orders = () => {
     setCurrentPage(1);
   }, [statusFilter, search]);
 
-  const actionableCount = orders.filter(o => o.status === 'confirmed' || o.status === 'processing').length;
+  const actionableCount = orders.filter(o => ['placed', 'accepted', 'picking', 'packed'].includes(o.status)).length;
 
   const getPageNumbers = () => {
     const pages: (number | string)[] = [];
@@ -297,9 +343,11 @@ const Orders = () => {
 
   const getTimelineIcon = (toStatus: string) => {
     switch (toStatus) {
-      case 'confirmed': return <Check className="w-3.5 h-3.5" />;
-      case 'processing': return <Package className="w-3.5 h-3.5" />;
-      case 'shipped': return <Truck className="w-3.5 h-3.5" />;
+      case 'placed': return <Check className="w-3.5 h-3.5" />;
+      case 'accepted': return <CheckCircle className="w-3.5 h-3.5" />;
+      case 'picking': return <Package className="w-3.5 h-3.5" />;
+      case 'packed': return <Package className="w-3.5 h-3.5" />;
+      case 'out_for_delivery': return <Truck className="w-3.5 h-3.5" />;
       case 'delivered': return <CheckCircle className="w-3.5 h-3.5" />;
       case 'cancelled': return <XCircle className="w-3.5 h-3.5" />;
       case 'refunded': return <RefreshCw className="w-3.5 h-3.5" />;
@@ -309,9 +357,11 @@ const Orders = () => {
 
   const getTimelineColor = (toStatus: string) => {
     switch (toStatus) {
-      case 'confirmed': return { color: 'text-blue-600', bg: 'bg-blue-100' };
-      case 'processing': return { color: 'text-amber-600', bg: 'bg-amber-100' };
-      case 'shipped': return { color: 'text-purple-600', bg: 'bg-purple-100' };
+      case 'placed': return { color: 'text-blue-600', bg: 'bg-blue-100' };
+      case 'accepted': return { color: 'text-indigo-600', bg: 'bg-indigo-100' };
+      case 'picking': return { color: 'text-amber-600', bg: 'bg-amber-100' };
+      case 'packed': return { color: 'text-orange-600', bg: 'bg-orange-100' };
+      case 'out_for_delivery': return { color: 'text-purple-600', bg: 'bg-purple-100' };
       case 'delivered': return { color: 'text-green-600', bg: 'bg-green-100' };
       case 'cancelled': return { color: 'text-red-600', bg: 'bg-red-100' };
       case 'refunded': return { color: 'text-gray-600', bg: 'bg-gray-100' };
@@ -349,9 +399,11 @@ const Orders = () => {
           className="px-4 py-2 h-10 border border-gray-200 rounded-lg text-sm bg-white focus:outline-hidden focus:ring-3 focus:border-brand-300 focus:ring-brand-500/20"
         >
           <option value="">All Statuses</option>
-          <option value="confirmed">Confirmed</option>
-          <option value="processing">Processing</option>
-          <option value="shipped">Shipped</option>
+          <option value="placed">Placed</option>
+          <option value="accepted">Accepted</option>
+          <option value="picking">Picking</option>
+          <option value="packed">Packed</option>
+          <option value="out_for_delivery">Out for Delivery</option>
           <option value="delivered">Delivered</option>
           <option value="cancelled">Cancelled</option>
           <option value="refunded">Refunded</option>
@@ -413,7 +465,7 @@ const Orders = () => {
                       <td className="px-5 py-4">
                         <div className="flex flex-col items-start gap-1">
                           <span className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize ${statusColors[order.status] || 'bg-gray-100 text-gray-700'}`}>
-                            {order.status}
+                            {formatStatus(order.status)}
                           </span>
                           {getOrderCancellations(order.id).map((c) => (
                             <span
@@ -621,7 +673,7 @@ const Orders = () => {
               <div>
                 <p className="text-sm text-gray-500">Status</p>
                 <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-medium capitalize ${statusColors[detailOrder.status] || 'bg-gray-100 text-gray-700'}`}>
-                  {detailOrder.status}
+                  {formatStatus(detailOrder.status)}
                 </span>
               </div>
               <div>
@@ -643,6 +695,58 @@ const Orders = () => {
                 )}
               </div>
             </div>
+
+            {/* Fulfillment Assignment */}
+            {!['delivered', 'cancelled', 'refunded'].includes(detailOrder.status) && (
+              <div className="mb-6 rounded-lg border border-gray-200 p-4">
+                <h3 className="font-semibold text-gray-800 mb-3">Fulfillment Assignment</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Warehouse / Dark Store</label>
+                    <select
+                      value={selectedWarehouse}
+                      onChange={(e) => setSelectedWarehouse(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-hidden focus:ring-3 focus:border-brand-300 focus:ring-brand-500/20"
+                    >
+                      <option value="">— Select warehouse —</option>
+                      {warehouses.map((w) => (
+                        <option key={w.id} value={w.id}>{w.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Delivery Partner</label>
+                    <select
+                      value={selectedRider}
+                      onChange={(e) => setSelectedRider(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-hidden focus:ring-3 focus:border-brand-300 focus:ring-brand-500/20"
+                    >
+                      <option value="">— Unassigned —</option>
+                      {deliveryPartners.map((r) => (
+                        <option key={r.id} value={r.id}>
+                          {`${r.first_name || ''} ${r.last_name || ''}`.trim() || r.email}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between mt-3">
+                  <p className="text-xs text-gray-400">
+                    {detailOrder.delivery_partner_id
+                      ? `Assigned rider: ${riderName(detailOrder.delivery_partner_id)}`
+                      : 'A delivery partner is required before dispatching (Out for Delivery).'}
+                  </p>
+                  <button
+                    onClick={handleAssign}
+                    disabled={assigning}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition font-medium text-sm disabled:opacity-50"
+                  >
+                    {assigning && <ButtonSpinner />}
+                    Save Assignment
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Cancellation Reason Alert */}
             {detailOrder.status === 'cancelled' && detailOrder.cancellation_reason && (
@@ -672,9 +776,9 @@ const Orders = () => {
                           <div className="flex items-center space-x-2">
                             <span className={`text-sm font-semibold capitalize ${color}`}>
                               {entry.from_status ? (
-                                <>{entry.from_status} <ArrowRight className="w-3 h-3 inline mx-0.5" /> {entry.to_status}</>
+                                <>{formatStatus(entry.from_status)} <ArrowRight className="w-3 h-3 inline mx-0.5" /> {formatStatus(entry.to_status)}</>
                               ) : (
-                                entry.to_status
+                                formatStatus(entry.to_status)
                               )}
                             </span>
                           </div>

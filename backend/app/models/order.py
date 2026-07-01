@@ -5,16 +5,27 @@ from sqlalchemy.orm import relationship
 from app.database import Base
 
 
-VALID_ORDER_STATUSES = {"confirmed", "processing", "shipped", "delivered", "cancelled", "refunded"}
+# Quick-commerce order lifecycle:
+#   placed (paid) -> accepted -> picking -> packed -> out_for_delivery -> delivered
+# with cancellation allowed until the order leaves the store.
+VALID_ORDER_STATUSES = {
+    "placed", "accepted", "picking", "packed", "out_for_delivery",
+    "delivered", "cancelled", "refunded",
+}
 
 VALID_TRANSITIONS = {
-    "confirmed": {"processing", "cancelled"},
-    "processing": {"shipped", "cancelled"},
-    "shipped": {"delivered"},
+    "placed": {"accepted", "cancelled"},
+    "accepted": {"picking", "cancelled"},
+    "picking": {"packed", "cancelled"},
+    "packed": {"out_for_delivery", "cancelled"},
+    "out_for_delivery": {"delivered"},
     "delivered": set(),
     "cancelled": set(),
     "refunded": set(),
 }
+
+# Orders can be cancelled while still inside the store (before dispatch).
+CANCELLABLE_STATUSES = {"placed", "accepted", "picking", "packed"}
 
 
 class Order(Base):

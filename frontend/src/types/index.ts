@@ -79,12 +79,41 @@ export interface OrderStatusHistory {
   created_at: string;
 }
 
+export interface Warehouse {
+  id: string;
+  name: string;
+  code?: string | null;
+  street?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zip_code?: string | null;
+  country?: string | null;
+  phone?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export type OrderStatus =
+  | 'placed'
+  | 'accepted'
+  | 'picking'
+  | 'packed'
+  | 'out_for_delivery'
+  | 'delivered'
+  | 'cancelled'
+  | 'refunded';
+
 export interface Order {
   id: string;
   user_id: string;
+  warehouse_id?: string | null;
+  delivery_partner_id?: string | null;
   address_snapshot: Record<string, string>;
   total: number | string;
-  status: 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'refunded';
+  status: OrderStatus;
   stripe_payment_intent_id: string | null;
   cancellation_reason?: string | null;
   created_at: string;

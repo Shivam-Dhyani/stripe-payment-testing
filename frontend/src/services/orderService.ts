@@ -38,6 +38,11 @@ export const orderService = {
     return response.data;
   },
 
+  assignOrder: async (id: string, data: { warehouse_id?: string; delivery_partner_id?: string }): Promise<Order> => {
+    const response = await api.put(`/orders/${id}/assign`, data);
+    return response.data;
+  },
+
   reportPaymentFailure: async (data: {
     order_id: string;
     error_code?: string;

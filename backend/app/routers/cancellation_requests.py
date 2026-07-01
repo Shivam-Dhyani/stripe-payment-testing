@@ -19,8 +19,8 @@ stripe.api_key = settings.STRIPE_SECRET_KEY
 
 router = APIRouter(prefix="/cancellation-requests", tags=["Cancellation Requests"], redirect_slashes=False)
 
-# Orders in these (pre-delivery) statuses may be cancelled via a cancellation request.
-CANCELLABLE_ORDER_STATUSES = {"confirmed", "processing", "shipped"}
+# Orders that are still inside the store (pre-dispatch) may be cancelled.
+from app.models.order import CANCELLABLE_STATUSES as CANCELLABLE_ORDER_STATUSES
 
 
 def _build_response(req, db: Session) -> CancellationRequestResponse:

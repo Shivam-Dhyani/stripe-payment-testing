@@ -11,23 +11,28 @@ import { Order, OrderItem, OrderStatusHistory, CancellationRequest, ReturnReques
 import { formatDate, formatShortDateTime, formatDateTime } from '../../utils/date';
 
 const statusColors: Record<string, string> = {
-  confirmed: 'bg-blue-100 text-blue-700',
-  processing: 'bg-amber-100 text-amber-700',
-  shipped: 'bg-purple-100 text-purple-700',
+  placed: 'bg-blue-100 text-blue-700',
+  accepted: 'bg-indigo-100 text-indigo-700',
+  picking: 'bg-amber-100 text-amber-700',
+  packed: 'bg-orange-100 text-orange-700',
+  out_for_delivery: 'bg-purple-100 text-purple-700',
   delivered: 'bg-green-100 text-green-700',
   cancelled: 'bg-red-100 text-red-700',
   refunded: 'bg-gray-100 text-gray-700',
 };
 
+const formatStatus = (s: string): string => s.replace(/_/g, ' ');
+
 const STEP_DEFINITIONS = [
-  { key: 'order_placed', label: 'Order Placed' },
-  { key: 'confirmed', label: 'Confirmed' },
-  { key: 'processing', label: 'Processing' },
-  { key: 'shipped', label: 'Shipped' },
+  { key: 'placed', label: 'Placed' },
+  { key: 'accepted', label: 'Accepted' },
+  { key: 'picking', label: 'Picking' },
+  { key: 'packed', label: 'Packed' },
+  { key: 'out_for_delivery', label: 'Out for Delivery' },
   { key: 'delivered', label: 'Delivered' },
 ];
 
-const STATUS_ORDER = ['confirmed', 'processing', 'shipped', 'delivered'];
+const STATUS_ORDER = ['placed', 'accepted', 'picking', 'packed', 'out_for_delivery', 'delivered'];
 
 const CANCEL_REASONS = [
   'Changed my mind',
@@ -160,40 +165,25 @@ const getStepData = (order: Order) => {
       dateMap[entry.to_status] = entry.created_at;
     }
   });
-  dateMap['order_placed'] = order.created_at;
+  // The order being created is the "placed" milestone.
+  if (!dateMap['placed']) dateMap['placed'] = order.created_at;
+
+  let cancelledFromIndex = -1;
+  if (isCancelled) {
+    const cancelEntry = history.find((e: OrderStatusHistory) => e.to_status === 'cancelled');
+    cancelledFromIndex = cancelEntry?.from_status ? STATUS_ORDER.indexOf(cancelEntry.from_status) : -1;
+  }
 
   return STEP_DEFINITIONS.map((step, index) => {
-    const stepStatusIndex = index - 1;
-
-    if (step.key === 'order_placed') {
-      return {
-        ...step,
-        completed: true,
-        active: false,
-        cancelled: false,
-        date: formatShortDateTime(order.created_at),
-      };
-    }
-
-    const isCompleted = currentStatusIndex >= stepStatusIndex && !isCancelled;
-    const wasReachedBeforeCancel = isCancelled && dateMap[step.key];
+    const isCompleted = !isCancelled && currentStatusIndex >= index;
+    const wasReachedBeforeCancel = isCancelled && !!dateMap[step.key];
     const isActive = !isCancelled && order.status === step.key;
-
-    let showCancelled = false;
-    if (isCancelled) {
-      const cancelEntry = history.find((e: OrderStatusHistory) => e.to_status === 'cancelled');
-      const cancelledFrom = cancelEntry?.from_status;
-      const cancelledFromIndex = cancelledFrom ? STATUS_ORDER.indexOf(cancelledFrom) : -1;
-      if (stepStatusIndex === cancelledFromIndex + 1) {
-        showCancelled = true;
-      }
-    }
-
+    const showCancelled = isCancelled && index === cancelledFromIndex + 1;
     const stepDate = dateMap[step.key];
 
     return {
       ...step,
-      completed: isCompleted || !!wasReachedBeforeCancel,
+      completed: isCompleted || wasReachedBeforeCancel,
       active: isActive,
       cancelled: showCancelled,
       date: stepDate ? formatShortDateTime(stepDate) : undefined,
@@ -239,7 +229,7 @@ const OrderHistory = () => {
   };
 
   const canRequestCancel = (order: Order): boolean => {
-    if (!['confirmed', 'processing', 'shipped'].includes(order.status)) return false;
+    if (!['placed', 'accepted', 'picking', 'packed'].includes(order.status)) return false;
     return !cancelRequests.some(r => r.order_id === order.id && r.status === 'pending');
   };
 
@@ -363,7 +353,7 @@ const OrderHistory = () => {
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <span className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${statusColors[order.status] || 'bg-gray-100 text-gray-700'}`}>
-                      {order.status}
+                      {formatStatus(order.status)}
                     </span>
                     {(() => {
                       const c = getExistingCancelRequest(order.id);

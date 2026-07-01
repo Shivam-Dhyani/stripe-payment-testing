@@ -308,7 +308,7 @@ def seed_database(db: Session):
     db.flush()
 
     # --- Create Sample Orders for Dashboard Data ---
-    statuses = ["processing", "shipped", "delivered"]
+    statuses = ["picking", "packed", "out_for_delivery", "delivered", "delivered"]
     now = datetime.utcnow()
 
     for day_offset in range(30):

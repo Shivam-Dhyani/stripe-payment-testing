@@ -25,7 +25,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     dispatch(fetchReturnPendingCount());
   }, [dispatch]);
 
-  const orderPendingCount = orders.filter(o => o.status === 'confirmed' || o.status === 'processing').length;
+  const orderPendingCount = orders.filter(o => ['placed', 'accepted', 'picking', 'packed'].includes(o.status)).length;
 
   const menuItems = [
     { path: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard, badge: 0 },

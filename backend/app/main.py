@@ -75,6 +75,20 @@ def run_migrations(db):
         db.commit()
         print("Added delivery_partner_id column to orders table")
 
+    # Step 7: Remap legacy order statuses to the quick-commerce lifecycle
+    status_map = {"confirmed": "placed", "processing": "picking", "shipped": "out_for_delivery"}
+    remapped = False
+    for old, new in status_map.items():
+        r1 = db.execute(text("UPDATE orders SET status = :new WHERE status = :old"), {"new": new, "old": old})
+        db.execute(text("UPDATE order_status_history SET to_status = :new WHERE to_status = :old"), {"new": new, "old": old})
+        db.execute(text("UPDATE order_status_history SET from_status = :new WHERE from_status = :old"), {"new": new, "old": old})
+        if r1.rowcount:
+            remapped = True
+    db.execute(text("ALTER TABLE orders ALTER COLUMN status SET DEFAULT 'placed'"))
+    db.commit()
+    if remapped:
+        print("Remapped legacy order statuses to quick-commerce lifecycle")
+
     print("Database migrations completed.")
 
 

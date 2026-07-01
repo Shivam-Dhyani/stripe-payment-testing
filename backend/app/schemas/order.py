@@ -87,6 +87,11 @@ class OrderStatusUpdate(BaseModel):
         return self
 
 
+class OrderAssignmentRequest(BaseModel):
+    warehouse_id: Optional[str] = None
+    delivery_partner_id: Optional[str] = None
+
+
 class CheckoutRequest(BaseModel):
     address_id: str
 

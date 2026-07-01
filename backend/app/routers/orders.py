@@ -7,10 +7,16 @@ from app.database import get_db
 from app.models.user import User, UserRole
 from app.models.cart import CartItem
 from app.models.product import Product
-from app.models.order import Order, OrderItem, OrderStatusHistory, VALID_ORDER_STATUSES, VALID_TRANSITIONS
+from app.models.order import (
+    Order, OrderItem, OrderStatusHistory, VALID_ORDER_STATUSES, VALID_TRANSITIONS, CANCELLABLE_STATUSES
+)
 from app.models.address import Address
+from app.models.warehouse import Warehouse
 from app.models.payment_event import PaymentEvent, PaymentEventType
-from app.schemas.order import OrderResponse, OrderStatusUpdate, CheckoutRequest, ConfirmPaymentRequest, PaymentFailureReport, OrderStatusHistoryResponse
+from app.schemas.order import (
+    OrderResponse, OrderStatusUpdate, CheckoutRequest, ConfirmPaymentRequest, PaymentFailureReport,
+    OrderStatusHistoryResponse, OrderAssignmentRequest
+)
 from app.middleware.auth import get_current_user, get_admin_user
 from app.services.stripe_service import create_payment_intent
 from app.config import settings
@@ -103,7 +109,7 @@ def checkout(
         user_id=current_user.id,
         address_snapshot=address_snapshot,
         total=total,
-        status="confirmed",
+        status="placed",
         stripe_payment_intent_id=payment_intent["id"],
     )
     db.add(order)
@@ -126,7 +132,7 @@ def checkout(
     history_entry = OrderStatusHistory(
         order_id=order.id,
         from_status=None,
-        to_status="confirmed",
+        to_status="placed",
         changed_by=current_user.id,
         notes="Order placed",
     )
@@ -161,7 +167,7 @@ def confirm_payment(
     )
     if not order:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
-    order.status = "confirmed"
+    order.status = "placed"
     payment_event = PaymentEvent(
         order_id=order.id,
         event_type=PaymentEventType.succeeded,
@@ -192,7 +198,7 @@ def confirm_payment_by_order(
     )
     if not order:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
-    order.status = "confirmed"
+    order.status = "placed"
     payment_event = PaymentEvent(
         order_id=order.id,
         event_type=PaymentEventType.succeeded,
@@ -303,15 +309,31 @@ def get_order_timeline(
     return result
 
 
+# Which roles may drive the order into a given status.
+STAGE_ROLES = {
+    "accepted": {UserRole.admin, UserRole.warehouse_operator},
+    "picking": {UserRole.admin, UserRole.warehouse_operator},
+    "packed": {UserRole.admin, UserRole.warehouse_operator},
+    "out_for_delivery": {UserRole.admin, UserRole.delivery_partner},
+    "delivered": {UserRole.admin, UserRole.delivery_partner},
+    "cancelled": {UserRole.admin},
+}
+
+
 @router.patch("/{order_id}/status", response_model=OrderResponse)
 @router.put("/{order_id}/status", response_model=OrderResponse)
 def update_order_status(
     order_id: str,
     data: OrderStatusUpdate,
-    admin: User = Depends(get_admin_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Update order status (admin only) with forward-only validation."""
+    """Advance an order through the fulfillment lifecycle.
+
+    Admins can drive any stage; warehouse operators handle the in-store stages
+    (accepted/picking/packed) and delivery partners handle dispatch/delivery of
+    orders assigned to them.
+    """
     order = _order_query(db).filter(Order.id == order_id).first()
     if not order:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
@@ -334,6 +356,28 @@ def update_order_status(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Cannot change status from '{current_status}' to '{new_status}'. Allowed: {sorted(allowed)}",
+        )
+
+    # Role permission for this stage.
+    allowed_roles = STAGE_ROLES.get(new_status, {UserRole.admin})
+    if current_user.role not in allowed_roles:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Your role cannot move an order to '{new_status}'",
+        )
+
+    # Delivery partners may only act on orders assigned to them.
+    if current_user.role == UserRole.delivery_partner and order.delivery_partner_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This order is not assigned to you",
+        )
+
+    # An order can't go out for delivery until a rider is assigned.
+    if new_status == "out_for_delivery" and not order.delivery_partner_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Assign a delivery partner before dispatching this order",
         )
 
     old_status = order.status
@@ -359,10 +403,42 @@ def update_order_status(
         order_id=order.id,
         from_status=old_status,
         to_status=new_status,
-        changed_by=admin.id,
+        changed_by=current_user.id,
         notes=data.cancellation_reason if new_status == "cancelled" else data.notes,
     )
     db.add(history)
+
+    db.commit()
+    db.refresh(order)
+    return order
+
+
+@router.put("/{order_id}/assign", response_model=OrderResponse)
+def assign_order(
+    order_id: str,
+    data: OrderAssignmentRequest,
+    admin: User = Depends(get_admin_user),
+    db: Session = Depends(get_db),
+):
+    """Admin assigns a warehouse and/or a delivery partner to an order."""
+    order = _order_query(db).filter(Order.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
+
+    if data.warehouse_id is not None:
+        warehouse = db.query(Warehouse).filter(Warehouse.id == data.warehouse_id).first()
+        if not warehouse:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Warehouse not found")
+        order.warehouse_id = data.warehouse_id
+
+    if data.delivery_partner_id is not None:
+        rider = db.query(User).filter(User.id == data.delivery_partner_id).first()
+        if not rider or rider.role != UserRole.delivery_partner:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="delivery_partner_id must reference a delivery partner",
+            )
+        order.delivery_partner_id = data.delivery_partner_id
 
     db.commit()
     db.refresh(order)
