@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ShoppingCart, Minus, Plus, RotateCcw } from 'lucide-react';
+import { ShoppingCart, Minus, Plus, RotateCcw, Clock } from 'lucide-react';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { fetchProductById, clearSelectedProduct } from '../../store/slices/productSlice';
@@ -89,8 +89,13 @@ const ProductDetail = () => {
           {/* Name */}
           <h1 className="text-2xl font-bold text-gray-900 mb-4">{product.name}</h1>
 
-          {/* Price */}
-          <p className="text-3xl font-bold text-gray-900 mb-4">${Number(product.price).toFixed(2)}</p>
+          {/* Price + delivery */}
+          <div className="flex items-center gap-3 mb-4">
+            <p className="text-3xl font-bold text-gray-900">${Number(product.price).toFixed(2)}</p>
+            <span className="inline-flex items-center gap-1 rounded-md bg-brand-50 px-2 py-1 text-xs font-bold text-brand-700">
+              <Clock className="w-3.5 h-3.5" /> 10 min delivery
+            </span>
+          </div>
 
           {/* Stock */}
           <p className={`text-sm mb-6 ${
