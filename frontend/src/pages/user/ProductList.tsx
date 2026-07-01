@@ -1,24 +1,20 @@
 import { useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
-import { Search, ShoppingCart, Filter, X, Package } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import { Search, Filter, X, Package } from 'lucide-react';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { fetchProducts } from '../../store/slices/productSlice';
 import { fetchCategories, fetchSubCategories } from '../../store/slices/categorySlice';
-import { addToCart } from '../../store/slices/cartSlice';
 import { CardSkeleton } from '../../components/common/Skeleton';
-import ButtonSpinner from '../../components/common/ButtonSpinner';
+import ProductCard from '../../components/product/ProductCard';
 
 const ProductList = () => {
   const dispatch = useAppDispatch();
   const [searchParams, setSearchParams] = useSearchParams();
   const { products = [], loading, pagination } = useAppSelector((state) => state.products);
   const { categories = [], subcategories = [] } = useAppSelector((state) => state.categories);
-  const { user } = useAppSelector((state) => state.auth);
-  const { submitting } = useAppSelector((state) => state.cart);
   const [search, setSearch] = useState(searchParams.get('search') || '');
   const [showFilters, setShowFilters] = useState(false);
-  const [addingProductId, setAddingProductId] = useState<string | null>(null);
 
   const categoryId = searchParams.get('category') || undefined;
   const subCategoryId = searchParams.get('subcategory') || undefined;
@@ -66,16 +62,6 @@ const ProductList = () => {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     updateParams({ search: search || undefined });
-  };
-
-  const handleAddToCart = async (e: React.MouseEvent, productId: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (user && user.role === 'customer') {
-      setAddingProductId(productId);
-      await dispatch(addToCart({ productId, quantity: 1 }));
-      setAddingProductId(null);
-    }
   };
 
   const hasActiveFilters = categoryId || subCategoryId || searchParams.get('search');
@@ -131,6 +117,31 @@ const ProductList = () => {
           </select>
         </div>
       </div>
+
+      {/* Category pill rail — quick-commerce category switcher */}
+      {categories.filter((c) => c.is_active).length > 0 && (
+        <div className="qc-rail mb-6">
+          <button
+            onClick={() => updateParams({ category: undefined, subcategory: undefined })}
+            className={`shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+              !categoryId ? 'bg-brand-500 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+            }`}
+          >
+            All
+          </button>
+          {categories.filter((c) => c.is_active).map((cat) => (
+            <button
+              key={cat.id}
+              onClick={() => updateParams({ category: cat.id, subcategory: undefined })}
+              className={`shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                categoryId === cat.id ? 'bg-brand-500 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+              }`}
+            >
+              {cat.name}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="flex gap-8">
         {/* Mobile Filter Backdrop */}
@@ -257,51 +268,9 @@ const ProductList = () => {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
                 {products.map((product) => (
-                  <Link
-                    key={product.id}
-                    to={`/products/${product.id}`}
-                    className="group rounded-2xl border border-gray-200 hover:border-brand-200 transition-all duration-300 overflow-hidden bg-white"
-                  >
-                    <div className="h-48 bg-gray-100 flex items-center justify-center relative">
-                      <span className="text-5xl font-semibold text-gray-300 select-none">
-                        {product.name.substring(0, 2).toUpperCase()}
-                      </span>
-                      {user?.role === 'customer' && product.stock > 0 && (
-                        <button
-                          onClick={(e) => handleAddToCart(e, product.id)}
-                          disabled={addingProductId === product.id}
-                          className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/5"
-                        >
-                          <span className="px-4 py-2 bg-white rounded-full text-sm font-medium text-gray-800 shadow-sm flex items-center gap-1.5 hover:bg-brand-50 transition-colors">
-                            {addingProductId === product.id ? (
-                              <ButtonSpinner />
-                            ) : (
-                              <>
-                                <ShoppingCart className="w-3.5 h-3.5" /> Quick Add
-                              </>
-                            )}
-                          </span>
-                        </button>
-                      )}
-                    </div>
-                    <div className="p-4">
-                      <p className="text-xs text-gray-400 mb-1">
-                        {product.sub_category?.category?.name || 'Category'} / {product.sub_category?.name || 'Sub'}
-                      </p>
-                      <h3 className="font-medium text-gray-800 group-hover:text-brand-500 transition-colors truncate">
-                        {product.name}
-                      </h3>
-                      <p className="text-sm text-gray-500 mt-1 line-clamp-1">{product.description}</p>
-                      <div className="flex items-center justify-between mt-3">
-                        <span className="text-base font-semibold text-gray-900">${Number(product.price).toFixed(2)}</span>
-                        <span className={`text-xs font-medium ${product.stock > 0 ? 'text-emerald-600' : 'text-red-500'}`}>
-                          {product.stock > 0 ? `${product.stock} left` : 'Out of Stock'}
-                        </span>
-                      </div>
-                    </div>
-                  </Link>
+                  <ProductCard key={product.id} product={product} />
                 ))}
               </div>
 
