@@ -43,6 +43,16 @@ export const orderService = {
     return response.data;
   },
 
+  getQueue: async (): Promise<Order[]> => {
+    const response = await api.get('/orders/queue');
+    return response.data;
+  },
+
+  getMyDeliveries: async (): Promise<Order[]> => {
+    const response = await api.get('/orders/deliveries');
+    return response.data;
+  },
+
   reportPaymentFailure: async (data: {
     order_id: string;
     error_code?: string;

@@ -5,9 +5,10 @@ import LoadingSpinner from './LoadingSpinner';
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requireAdmin?: boolean;
+  requireRole?: string | string[];
 }
 
-const ProtectedRoute = ({ children, requireAdmin = false }: ProtectedRouteProps) => {
+const ProtectedRoute = ({ children, requireAdmin = false, requireRole }: ProtectedRouteProps) => {
   const { user, token, loading } = useAppSelector((state) => state.auth);
   const location = useLocation();
 
@@ -25,6 +26,13 @@ const ProtectedRoute = ({ children, requireAdmin = false }: ProtectedRouteProps)
 
   if (requireAdmin && user.role !== 'admin') {
     return <Navigate to="/" replace />;
+  }
+
+  if (requireRole) {
+    const allowed = Array.isArray(requireRole) ? requireRole : [requireRole];
+    if (!allowed.includes(user.role)) {
+      return <Navigate to="/" replace />;
+    }
   }
 
   return <>{children}</>;

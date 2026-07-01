@@ -34,6 +34,9 @@ import Carts from './pages/admin/Carts';
 import CancellationRequests from './pages/admin/CancellationRequests';
 import ReturnRequests from './pages/admin/ReturnRequests';
 
+// Staff Portals
+import WarehousePortal from './pages/staff/WarehousePortal';
+
 const AppContent = () => {
   const dispatch = useAppDispatch();
   const { token, user } = useAppSelector((state) => state.auth);
@@ -96,6 +99,16 @@ const AppContent = () => {
           }
         />
       </Route>
+
+      {/* Staff Portals — standalone, role-gated */}
+      <Route
+        path="/warehouse"
+        element={
+          <ProtectedRoute requireRole="warehouse_operator">
+            <WarehousePortal />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Admin Layout Routes */}
       <Route

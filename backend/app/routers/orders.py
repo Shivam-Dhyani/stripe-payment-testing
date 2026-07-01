@@ -251,6 +251,38 @@ def list_all_orders(
     )
 
 
+@router.get("/queue", response_model=List[OrderResponse])
+def warehouse_queue(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """In-store fulfillment queue for warehouse operators (and admins)."""
+    if current_user.role not in (UserRole.admin, UserRole.warehouse_operator):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Warehouse access required")
+    return (
+        _order_query(db)
+        .filter(Order.status.in_(["placed", "accepted", "picking", "packed"]))
+        .order_by(Order.created_at)
+        .all()
+    )
+
+
+@router.get("/deliveries", response_model=List[OrderResponse])
+def my_deliveries(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Orders assigned to the current delivery partner for pickup/delivery."""
+    if current_user.role not in (UserRole.admin, UserRole.delivery_partner):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Delivery partner access required")
+    query = _order_query(db).filter(
+        Order.status.in_(["packed", "out_for_delivery", "delivered"])
+    )
+    if current_user.role == UserRole.delivery_partner:
+        query = query.filter(Order.delivery_partner_id == current_user.id)
+    return query.order_by(Order.created_at.desc()).all()
+
+
 @router.get("", response_model=List[OrderResponse])
 def list_orders(
     current_user: User = Depends(get_current_user),
