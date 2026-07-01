@@ -36,6 +36,7 @@ import ReturnRequests from './pages/admin/ReturnRequests';
 
 // Staff Portals
 import WarehousePortal from './pages/staff/WarehousePortal';
+import DeliveryPartnerPortal from './pages/staff/DeliveryPartnerPortal';
 
 const AppContent = () => {
   const dispatch = useAppDispatch();
@@ -106,6 +107,14 @@ const AppContent = () => {
         element={
           <ProtectedRoute requireRole="warehouse_operator">
             <WarehousePortal />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/rider"
+        element={
+          <ProtectedRoute requireRole="delivery_partner">
+            <DeliveryPartnerPortal />
           </ProtectedRoute>
         }
       />
