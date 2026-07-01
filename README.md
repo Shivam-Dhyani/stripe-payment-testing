@@ -163,13 +163,20 @@ Once the backend is running, interactive API docs are available at:
 
 ## Demo Accounts
 
-Seeded automatically on first run:
+Seeded automatically on first successful startup. Every password is `password123`
+except the admin (`admin123`). After login each role lands on its own home:
+admin → `/admin/dashboard`, warehouse → `/warehouse`, rider → `/rider`, customer → `/`.
 
 | Role | Email | Password |
 |------|-------|----------|
 | Admin | `admin@ecommerce.com` | `admin123` |
-| Customer | `customer1@example.com` | `password123` |
-| Customer | `customer2@example.com` | `password123` |
+| Warehouse operator | `warehouse@ecommerce.com` | `password123` |
+| Delivery partner (rider) | `rider@ecommerce.com` | `password123` |
+| Customer | `john@example.com` | `password123` |
+| Customer | `jane@example.com` | `password123` |
+| Customer | `bob@example.com` | `password123` |
+| Customer | `alice@example.com` | `password123` |
+| Customer | `charlie@example.com` | `password123` |
 
 ## Features
 
