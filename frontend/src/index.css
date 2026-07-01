@@ -3,19 +3,36 @@
 @theme {
   --font-outfit: "Outfit", sans-serif;
 
-  /* Brand / Primary — Modern Purple */
-  --color-brand-25: #faf5ff;
-  --color-brand-50: #f5f3ff;
-  --color-brand-100: #ede9fe;
-  --color-brand-200: #ddd6fe;
-  --color-brand-300: #c4b5fd;
-  --color-brand-400: #a78bfa;
-  --color-brand-500: #8b5cf6;
-  --color-brand-600: #7c3aed;
-  --color-brand-700: #6d28d9;
-  --color-brand-800: #5b21b6;
-  --color-brand-900: #4c1d95;
-  --color-brand-950: #2e1065;
+  /* Brand / Primary — Quick-commerce Green (Blinkit-style action green) */
+  --color-brand-25: #f2fdf5;
+  --color-brand-50: #e3f9ec;
+  --color-brand-100: #c1f0d3;
+  --color-brand-200: #93e3b3;
+  --color-brand-300: #5fd18f;
+  --color-brand-400: #2fb96e;
+  --color-brand-500: #0c9f4f;
+  --color-brand-600: #0a8a44;
+  --color-brand-700: #097539;
+  --color-brand-800: #0a5c2f;
+  --color-brand-900: #094c28;
+  --color-brand-950: #032b16;
+
+  /* Accent — Warm Quick-commerce Yellow (top bars, promos, highlights) */
+  --color-accent-25: #fffdf2;
+  --color-accent-50: #fff9e0;
+  --color-accent-100: #fff0b8;
+  --color-accent-200: #ffe485;
+  --color-accent-300: #ffd952;
+  --color-accent-400: #f8cb46;
+  --color-accent-500: #f4b400;
+  --color-accent-600: #d99400;
+  --color-accent-700: #a66f00;
+  --color-accent-800: #7a5200;
+  --color-accent-900: #5c3d00;
+
+  /* Dark ink used by Blinkit-style banners */
+  --color-ink-800: #1c1c28;
+  --color-ink-900: #0f0f18;
 
   /* Success */
   --color-success-50: #ecfdf3;
@@ -58,7 +75,11 @@
   --shadow-theme-sm: 0px 1px 3px 0px rgba(16, 24, 40, 0.1), 0px 1px 2px 0px rgba(16, 24, 40, 0.06);
   --shadow-theme-md: 0px 4px 8px -2px rgba(16, 24, 40, 0.1), 0px 2px 4px -2px rgba(16, 24, 40, 0.06);
   --shadow-theme-lg: 0px 12px 16px -4px rgba(16, 24, 40, 0.08), 0px 4px 6px -2px rgba(16, 24, 40, 0.03);
-  --shadow-focus-ring: 0px 0px 0px 4px rgba(139, 92, 246, 0.12);
+  --shadow-focus-ring: 0px 0px 0px 4px rgba(12, 159, 79, 0.12);
+
+  /* Quick-commerce card + pill shadows */
+  --shadow-qc-card: 0px 2px 8px rgba(16, 24, 40, 0.06);
+  --shadow-qc-pop: 0px 8px 24px rgba(16, 24, 40, 0.12);
 }
 
 @layer base {
@@ -92,4 +113,42 @@
 }
 .menu-item-icon-inactive {
   @apply text-gray-500 group-hover:text-gray-700;
+}
+
+/* ===== Quick-commerce UI primitives ===== */
+
+/* Blinkit-style "ADD" button on product cards */
+.qc-add-btn {
+  @apply inline-flex items-center justify-center gap-1 rounded-lg border border-brand-500 bg-brand-50 px-4 py-1.5 text-xs font-bold uppercase tracking-wide text-brand-600 transition-colors hover:bg-brand-100;
+}
+
+/* Quantity stepper (compact, on cards) */
+.qc-stepper {
+  @apply inline-flex items-center rounded-lg bg-brand-500 text-white overflow-hidden;
+}
+.qc-stepper button {
+  @apply flex items-center justify-center w-7 h-7 hover:bg-brand-600 transition-colors;
+}
+
+/* Small info chip */
+.qc-chip {
+  @apply inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-medium text-gray-600;
+}
+
+/* Horizontal scroll rail */
+.qc-rail {
+  @apply flex gap-3 overflow-x-auto pb-1 -mx-1 px-1;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.qc-rail::-webkit-scrollbar {
+  display: none;
+}
+
+/* Card lift on hover */
+.qc-card {
+  @apply rounded-2xl border border-gray-200 bg-white transition-shadow;
+}
+.qc-card:hover {
+  box-shadow: var(--shadow-qc-card);
 }

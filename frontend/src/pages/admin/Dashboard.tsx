@@ -9,7 +9,7 @@ import { DashboardStats, RevenueData, TopProduct, CategoryDistribution, OrderTre
 import { KpiSkeleton, ChartSkeleton, TableRowSkeleton } from '../../components/common/Skeleton';
 import { formatDate } from '../../utils/date';
 
-const COLORS = ['#8b5cf6', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e'];
+const COLORS = ['#0c9f4f', '#2fb96e', '#f8cb46', '#f4b400', '#5fd18f', '#0a8a44'];
 
 const Dashboard = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -114,7 +114,7 @@ const Dashboard = () => {
                     <XAxis dataKey="date" tick={{ fontSize: 12 }} stroke="#94a3b8" />
                     <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" />
                     <Tooltip />
-                    <Area type="monotone" dataKey="revenue" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.1} />
+                    <Area type="monotone" dataKey="revenue" stroke="#0c9f4f" fill="#0c9f4f" fillOpacity={0.1} />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
@@ -131,7 +131,7 @@ const Dashboard = () => {
                     <XAxis dataKey="date" tick={{ fontSize: 12 }} stroke="#94a3b8" />
                     <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" />
                     <Tooltip />
-                    <Line type="monotone" dataKey="orders" stroke="#8b5cf6" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="orders" stroke="#0c9f4f" strokeWidth={2} dot={false} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -161,7 +161,7 @@ const Dashboard = () => {
                     <XAxis type="number" tick={{ fontSize: 12 }} stroke="#94a3b8" />
                     <YAxis dataKey="name" type="category" tick={{ fontSize: 12 }} stroke="#94a3b8" width={120} />
                     <Tooltip />
-                    <Bar dataKey="total_sold" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
+                    <Bar dataKey="total_sold" fill="#0c9f4f" radius={[0, 4, 4, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>

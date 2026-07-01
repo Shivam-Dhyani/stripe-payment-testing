@@ -52,16 +52,16 @@ const Login = () => {
     <div className="relative flex flex-col-reverse w-full min-h-screen lg:flex-row bg-white">
       {/* Branding Panel — Left */}
       <div className="hidden lg:grid w-full lg:w-1/2 h-screen items-center sticky top-0 overflow-hidden"
-        style={{ background: 'linear-gradient(135deg, #ede9fe 0%, #ddd6fe 30%, #c4b5fd 60%, #d4c8fc 100%)' }}
+        style={{ background: 'linear-gradient(135deg, #e3f9ec 0%, #c1f0d3 30%, #93e3b3 55%, #ffe485 100%)' }}
       >
         <div className="absolute inset-0 opacity-[0.4]"
           style={{
-            backgroundImage: 'radial-gradient(circle at 20% 80%, rgba(139,92,246,0.25) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(124,58,237,0.20) 0%, transparent 50%), radial-gradient(circle at 50% 50%, rgba(167,139,250,0.15) 0%, transparent 70%)',
+            backgroundImage: 'radial-gradient(circle at 20% 80%, rgba(12,159,79,0.22) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(244,180,0,0.20) 0%, transparent 50%), radial-gradient(circle at 50% 50%, rgba(47,185,110,0.16) 0%, transparent 70%)',
           }}
         />
         <div className="absolute inset-0 opacity-[0.05]"
           style={{
-            backgroundImage: 'radial-gradient(circle, rgba(109,40,217,0.8) 1px, transparent 1px)',
+            backgroundImage: 'radial-gradient(circle, rgba(12,159,79,0.7) 1px, transparent 1px)',
             backgroundSize: '28px 28px',
           }}
         />
