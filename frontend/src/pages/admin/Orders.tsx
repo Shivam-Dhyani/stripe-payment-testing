@@ -11,7 +11,6 @@ import { warehouseService, staffService } from '../../services/warehouseService'
 import { Order, PaymentEvent, OrderStatusHistory, CancellationRequest, ReturnRequest, Warehouse, User } from '../../types';
 import ButtonSpinner from '../../components/common/ButtonSpinner';
 import { formatDate, formatDateTime } from '../../utils/date';
-import { useConfirm } from '../../components/common/ConfirmDialog';
 import toast from 'react-hot-toast';
 
 const statusColors: Record<string, string> = {
@@ -158,7 +157,6 @@ const CANCEL_REASONS = [
 const Orders = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const confirm = useConfirm();
   const { orders, loading } = useAppSelector((state) => state.orders);
   const { requests: returnRequests } = useAppSelector((state) => state.returns);
   const { requests: cancelRequests } = useAppSelector((state) => state.cancellations);
@@ -261,21 +259,6 @@ const Orders = () => {
     setDetailOrder(null);
   };
 
-  const handleAdvanceStatus = async (orderId: string, newStatus: string) => {
-    if (newStatus === 'delivered') {
-      const ok = await confirm({
-        title: 'Mark order as delivered?',
-        message: 'This completes the order and starts the return window. It cannot be undone.',
-        confirmLabel: 'Mark Delivered',
-      });
-      if (!ok) return;
-    }
-    setUpdatingOrderId(orderId);
-    await dispatch(updateOrderStatus({ id: orderId, status: newStatus }));
-    dispatch(fetchAllOrders());
-    setUpdatingOrderId(null);
-  };
-
   const openCancelModal = (orderId: string) => {
     setCancelModal({ orderId });
     setCancelReason('Out of stock');
@@ -304,26 +287,9 @@ const Orders = () => {
     closeCancelModal();
   };
 
-  const getNextAction = (status: string): string | null => {
-    const transitions = validTransitions[status];
-    if (!transitions) return null;
-    return transitions.find(t => t !== 'cancelled') || null;
-  };
-
   const canCancel = (status: string): boolean => {
     const transitions = validTransitions[status];
     return transitions ? transitions.includes('cancelled') : false;
-  };
-
-  const getActionLabel = (nextStatus: string): string => {
-    switch (nextStatus) {
-      case 'accepted': return 'Accept Order';
-      case 'picking': return 'Start Picking';
-      case 'packed': return 'Mark Packed';
-      case 'out_for_delivery': return 'Out for Delivery';
-      case 'delivered': return 'Mark Delivered';
-      default: return `Mark ${nextStatus.charAt(0).toUpperCase() + nextStatus.slice(1)}`;
-    }
   };
 
   const filteredOrders = orders.filter((o) => {
@@ -465,7 +431,6 @@ const Orders = () => {
                 </tr>
               ) : (
                 paginatedOrders.map((order) => {
-                  const nextAction = getNextAction(order.status);
                   const showCancel = canCancel(order.status);
                   const activeCancel = getActiveCancel(order.id);
                   const activeReturn = getActiveReturn(order.id);
@@ -538,30 +503,18 @@ const Orders = () => {
                                 </button>
                               )}
                             </>
+                          ) : showCancel ? (
+                            <button
+                              onClick={() => openCancelModal(order.id)}
+                              disabled={updatingOrderId === order.id}
+                              className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50 font-medium"
+                              title="Cancel order"
+                            >
+                              <XCircle className="w-3.5 h-3.5" />
+                              Cancel
+                            </button>
                           ) : (
-                            <>
-                              {nextAction ? (
-                                <button
-                                  onClick={() => handleAdvanceStatus(order.id, nextAction)}
-                                  disabled={updatingOrderId === order.id}
-                                  className="text-xs px-3 py-1.5 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition-colors disabled:opacity-50 font-medium"
-                                >
-                                  {updatingOrderId === order.id ? <ButtonSpinner /> : getActionLabel(nextAction)}
-                                </button>
-                              ) : !showCancel ? (
-                                <span className="text-xs text-gray-400">&mdash;</span>
-                              ) : null}
-                              {showCancel && (
-                                <button
-                                  onClick={() => openCancelModal(order.id)}
-                                  disabled={updatingOrderId === order.id}
-                                  className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                                  title="Cancel order"
-                                >
-                                  <XCircle className="w-4 h-4" />
-                                </button>
-                              )}
-                            </>
+                            <span className="text-xs text-gray-400">&mdash;</span>
                           )}
                         </div>
                       </td>

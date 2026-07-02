@@ -358,12 +358,14 @@ def get_order_timeline(
 
 
 # Which roles may drive the order into a given status.
+# Strict quick-commerce ownership: the warehouse handles in-store stages, the
+# rider handles dispatch/delivery, and the admin only cancels (+ assigns/monitors).
 STAGE_ROLES = {
-    "accepted": {UserRole.admin, UserRole.warehouse_operator},
-    "picking": {UserRole.admin, UserRole.warehouse_operator},
-    "packed": {UserRole.admin, UserRole.warehouse_operator},
-    "out_for_delivery": {UserRole.admin, UserRole.delivery_partner},
-    "delivered": {UserRole.admin, UserRole.delivery_partner},
+    "accepted": {UserRole.warehouse_operator},
+    "picking": {UserRole.warehouse_operator},
+    "packed": {UserRole.warehouse_operator},
+    "out_for_delivery": {UserRole.delivery_partner},
+    "delivered": {UserRole.delivery_partner},
     "cancelled": {UserRole.admin},
 }
 
