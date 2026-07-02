@@ -205,10 +205,18 @@ const DeliveryPartnerPortal = () => {
                     </span>
                   </div>
 
+                  {r.customer_name && (
+                    <div className="flex items-center gap-1.5 text-sm text-gray-600 mb-3">
+                      <User className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                      <span className="font-medium text-gray-800">{r.customer_name}</span>
+                    </div>
+                  )}
+
                   {r.pickup_address && (
                     <div className="flex items-start gap-2 p-3 bg-gray-50 rounded-lg mb-3">
                       <MapPin className="w-4 h-4 text-brand-500 flex-shrink-0 mt-0.5" />
-                      <div>
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Pickup from</p>
                         <p className="text-sm text-gray-700">{r.pickup_address}</p>
                         {r.pickup_date && <p className="text-xs text-gray-400 mt-0.5">Pickup: {formatDateTime(r.pickup_date)}</p>}
                       </div>
@@ -272,7 +280,10 @@ const DeliveryPartnerPortal = () => {
                   {/* Delivery address */}
                   <div className="flex items-start gap-2 p-3 bg-gray-50 rounded-lg mb-3">
                     <MapPin className="w-4 h-4 text-brand-500 flex-shrink-0 mt-0.5" />
-                    <p className="text-sm text-gray-700">{formatAddress(order.address_snapshot) || 'No address on file'}</p>
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Deliver to</p>
+                      <p className="text-sm text-gray-700">{formatAddress(order.address_snapshot) || 'No address on file'}</p>
+                    </div>
                   </div>
 
                   {/* Items */}
