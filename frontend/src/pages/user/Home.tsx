@@ -7,6 +7,7 @@ import { fetchCategories } from '../../store/slices/categorySlice';
 import { fetchProducts } from '../../store/slices/productSlice';
 import Skeleton, { CardSkeleton } from '../../components/common/Skeleton';
 import ProductCard from '../../components/product/ProductCard';
+import Landing from './Landing';
 import { APP_NAME, DELIVERY_PROMISE } from '../../config/brand';
 
 const categoryTints = [
@@ -23,14 +24,21 @@ const categoryTints = [
 const Home = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const { user } = useAppSelector((state) => state.auth);
   const { categories = [], loading: categoriesLoading } = useAppSelector((state) => state.categories);
   const { products = [], loading: productsLoading } = useAppSelector((state) => state.products);
   const [search, setSearch] = useState('');
+  const isGuest = !user;
 
   useEffect(() => {
+    if (isGuest) return;
     dispatch(fetchCategories());
     dispatch(fetchProducts({ size: 12 }));
-  }, [dispatch]);
+  }, [dispatch, isGuest]);
+
+  // Guests see the marketing landing page (features + how it works);
+  // signed-in shoppers drop straight into the storefront.
+  if (isGuest) return <Landing />;
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
