@@ -127,8 +127,11 @@ const Categories = () => {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-title-sm font-bold text-gray-800">Categories</h1>
+      <div className="flex items-start justify-between mb-6">
+        <div>
+          <h1 className="text-title-sm font-bold text-gray-800">Categories</h1>
+          <p className="text-sm text-gray-500 mt-1">Organise your catalog into shopper-friendly aisles.</p>
+        </div>
         <button
           onClick={() => {
             setEditingCategory(null);

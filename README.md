@@ -1,12 +1,16 @@
-# E-Commerce Application (React + FastAPI + Stripe)
+# Zippy — Quick-Commerce App (React + FastAPI + Stripe)
 
-A full-stack e-commerce application with admin dashboard, inventory management, cart/checkout with Stripe payments, and order tracking.
+**Zippy** is a full-stack quick-commerce app (Blinkit / Instamart style) for
+groceries & daily essentials delivered in ~10 minutes. It includes a customer
+storefront, an admin dashboard, and dedicated operational portals for
+**warehouse operators** and **delivery partners (riders)**, with Stripe
+payments, refunds, and a full order + return lifecycle.
 
 ## Tech Stack
 
 **Backend:** Python, FastAPI, SQLAlchemy ORM, PostgreSQL, Stripe SDK, JWT Auth, Pydantic v2
 
-**Frontend:** React 18, TypeScript, Vite, Redux Toolkit, Tailwind CSS v4, AG Grid, React Hook Form + Zod, Recharts, Stripe Elements
+**Frontend:** React 19, TypeScript, Vite, Redux Toolkit, Tailwind CSS v4, React Hook Form + Zod, Recharts, Stripe Elements, PWA (installable)
 
 ## Prerequisites
 
@@ -90,7 +94,20 @@ Start the backend:
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-The server starts at `http://localhost:8000`. On first run it automatically creates tables and seeds demo data.
+The server starts at `http://localhost:8000`. On first run it automatically
+creates tables and seeds the quick-commerce grocery catalog + demo data.
+
+**Already have an old (e-commerce) catalog seeded?** Convert an existing
+database to the Zippy grocery catalog with:
+
+```bash
+cd backend
+python -m app.reseed
+```
+
+This wipes catalog + order/return history and reseeds groceries and demo
+orders. Users, addresses, warehouses and staff accounts are preserved.
+(Destructive for order history — intended for demo/test data.)
 
 ### 3. Frontend
 
@@ -180,17 +197,26 @@ admin → `/admin/dashboard`, warehouse → `/warehouse`, rider → `/rider`, cu
 
 ## Features
 
-**Customer Portal:**
-- Browse products with category/subcategory filters
-- Product detail pages
+**Customer Storefront:**
+- Quick-commerce browse with pack-size units (e.g. "500 g", "1 L", "6 pcs")
+- Blinkit-style product cards with ADD → quantity stepper
+- Product detail pages, "Delivery in 10 minutes" motif
 - Shopping cart with quantity management
 - Multi-step checkout (Address > Review > Stripe Payment)
-- Order history with expandable details
-- Profile and address management
+- Order history with fulfillment + refund timelines
+- Returns & cancellations with confirmation dialogs
 
 **Admin Dashboard:**
-- KPI cards (revenue, orders, products, customers)
+- KPI cards (revenue net of refunds, orders, products, customers)
 - Revenue chart, order trends, category distribution (Recharts)
-- Top-selling products
-- Full CRUD for categories, subcategories, and products (AG Grid)
-- Order management with status updates
+- Full CRUD for categories, subcategories, and products
+- Order management, manual rider/warehouse assignment (pre-dispatch)
+- Cancellation & return review/approval workflows
+
+**Warehouse Operator portal** (`/warehouse`): pick/pack queue + inbound returns.
+
+**Delivery Partner (rider) portal** (`/rider`): deliveries + return pickups.
+
+**Quick-commerce lifecycle:**
+- Order: `placed → accepted → picking → packed → out_for_delivery → delivered`
+- Return: `requested → approved → pickup_scheduled → handed_over → received → refunded`

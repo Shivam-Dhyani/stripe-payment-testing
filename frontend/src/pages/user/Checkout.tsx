@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import { Check, MapPin, CreditCard, Package } from 'lucide-react';
+import { Check, MapPin, CreditCard, Package, Clock } from 'lucide-react';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { checkout, confirmPayment, clearCheckoutData } from '../../store/slices/orderSlice';
@@ -10,6 +10,7 @@ import { fetchCart, clearCart } from '../../store/slices/cartSlice';
 import { authService } from '../../services/authService';
 import { orderService } from '../../services/orderService';
 import { Address } from '../../types';
+import { DELIVERY_PROMISE } from '../../config/brand';
 import toast from 'react-hot-toast';
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PK || 'pk_test_placeholder');
@@ -143,7 +144,18 @@ const Checkout = () => {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-title-sm font-bold text-gray-800 mb-8">Checkout</h1>
+      <h1 className="text-title-sm font-bold text-gray-800 mb-6">Checkout</h1>
+
+      {/* Delivery ETA banner */}
+      <div className="flex items-center gap-3 rounded-2xl bg-brand-50 border border-brand-100 px-4 py-3 mb-8">
+        <div className="w-9 h-9 rounded-xl bg-brand-500 text-white flex items-center justify-center shrink-0">
+          <Clock className="w-5 h-5" />
+        </div>
+        <div>
+          <p className="text-sm font-bold text-gray-800">{DELIVERY_PROMISE}</p>
+          <p className="text-xs text-gray-500">Fast, contactless delivery from your nearest store</p>
+        </div>
+      </div>
 
       {/* Progress Steps */}
       <div className="flex items-center justify-center mb-12">
@@ -233,7 +245,9 @@ const Checkout = () => {
                     </div>
                     <div>
                       <p className="font-medium text-gray-800">{item.product?.name}</p>
-                      <p className="text-sm text-gray-500">Qty: {item.quantity}</p>
+                      <p className="text-sm text-gray-500">
+                        {item.product?.unit ? `${item.product.unit} · ` : ''}Qty: {item.quantity}
+                      </p>
                     </div>
                   </div>
                   <p className="font-semibold">${(Number(item.product?.price || 0) * item.quantity).toFixed(2)}</p>

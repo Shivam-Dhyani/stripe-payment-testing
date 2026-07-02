@@ -72,7 +72,10 @@ const Cart = () => {
                 <Link to={`/products/${item.product_id}`} className="font-semibold text-gray-800 hover:text-brand-500 truncate block">
                   {item.product?.name || 'Product'}
                 </Link>
-                <p className="text-brand-500 font-medium">${Number(item.product?.price || 0).toFixed(2)}</p>
+                {item.product?.unit && (
+                  <p className="text-xs text-gray-400 mt-0.5">{item.product.unit}</p>
+                )}
+                <p className="text-brand-500 font-medium mt-0.5">${Number(item.product?.price || 0).toFixed(2)}</p>
               </div>
               <div className="qc-stepper">
                 <button onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)} disabled={submitting} aria-label="decrease">

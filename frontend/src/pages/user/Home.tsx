@@ -1,12 +1,13 @@
-import { useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowRight, Zap, Clock, ShieldCheck, RotateCcw } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ArrowRight, Zap, Clock, ShieldCheck, RotateCcw, Search, MapPin } from 'lucide-react';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { fetchCategories } from '../../store/slices/categorySlice';
 import { fetchProducts } from '../../store/slices/productSlice';
 import Skeleton, { CardSkeleton } from '../../components/common/Skeleton';
 import ProductCard from '../../components/product/ProductCard';
+import { APP_NAME, DELIVERY_PROMISE } from '../../config/brand';
 
 const categoryTints = [
   'bg-brand-50 text-brand-500',
@@ -21,39 +22,65 @@ const categoryTints = [
 
 const Home = () => {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const { categories = [], loading: categoriesLoading } = useAppSelector((state) => state.categories);
   const { products = [], loading: productsLoading } = useAppSelector((state) => state.products);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     dispatch(fetchCategories());
     dispatch(fetchProducts({ size: 12 }));
   }, [dispatch]);
 
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = search.trim();
+    navigate(q ? `/products?search=${encodeURIComponent(q)}` : '/products');
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-10">
-      {/* Hero promo banner */}
-      <section
-        className="relative overflow-hidden rounded-3xl px-6 sm:px-10 py-10 sm:py-14"
-        style={{ background: 'linear-gradient(120deg, #f8cb46 0%, #ffd952 45%, #0c9f4f 100%)' }}
-      >
-        <div className="absolute inset-0 opacity-20"
-          style={{ backgroundImage: 'radial-gradient(circle at 85% 20%, rgba(255,255,255,0.6) 0%, transparent 45%)' }} />
-        <div className="relative max-w-lg">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-brand-700">
-            <Zap className="w-3.5 h-3.5" fill="currentColor" /> DELIVERY IN 10 MINUTES
-          </span>
-          <h1 className="mt-4 text-3xl sm:text-5xl font-extrabold text-ink-900 leading-tight tracking-tight">
-            Groceries & essentials, at your door in minutes
+      {/* Hero — yellow identity strip: delivery promise + location + search */}
+      <section className="relative overflow-hidden rounded-3xl bg-accent-400 px-6 sm:px-10 py-8 sm:py-12">
+        <div className="absolute inset-0 opacity-25"
+          style={{ backgroundImage: 'radial-gradient(circle at 88% 15%, rgba(255,255,255,0.7) 0%, transparent 42%)' }} />
+        <div className="relative">
+          {/* Top row: delivery promise + location */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-ink-900 px-3 py-1 text-xs font-bold text-white">
+              <Zap className="w-3.5 h-3.5" fill="currentColor" /> {DELIVERY_PROMISE.toUpperCase()}
+            </span>
+            <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink-900/80">
+              <MapPin className="w-4 h-4" /> Delivering to your doorstep
+            </span>
+          </div>
+
+          <h1 className="mt-5 max-w-xl text-3xl sm:text-5xl font-extrabold text-ink-900 leading-tight tracking-tight">
+            {APP_NAME} — groceries & essentials at your door in minutes
           </h1>
-          <p className="mt-3 text-ink-800/80 text-base sm:text-lg font-medium">
+          <p className="mt-3 max-w-xl text-ink-800/80 text-base sm:text-lg font-medium">
             Fresh picks, everyday needs, and more — delivered fast.
           </p>
-          <Link
-            to="/products"
-            className="mt-6 inline-flex items-center gap-2 px-6 py-3 bg-ink-900 text-white rounded-xl font-semibold hover:bg-black transition-colors"
-          >
-            Start shopping <ArrowRight className="w-4 h-4" />
-          </Link>
+
+          {/* Search bar */}
+          <form onSubmit={handleSearch} className="mt-6 flex max-w-xl items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder='Search for "milk", "bananas", "chips"...'
+                className="w-full h-12 rounded-xl bg-white pl-11 pr-4 text-sm text-ink-900 shadow-qc-card placeholder:text-gray-400 focus:outline-hidden focus:ring-3 focus:ring-brand-500/25"
+              />
+            </div>
+            <button
+              type="submit"
+              className="h-12 shrink-0 inline-flex items-center gap-2 px-5 bg-brand-500 text-white rounded-xl font-semibold hover:bg-brand-600 transition-colors"
+            >
+              Search <ArrowRight className="w-4 h-4" />
+            </button>
+          </form>
         </div>
       </section>
 

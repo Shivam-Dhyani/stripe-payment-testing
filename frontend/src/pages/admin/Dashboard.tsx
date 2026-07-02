@@ -58,17 +58,19 @@ const Dashboard = () => {
     refunded: 'bg-gray-100 text-gray-700',
   };
 
-  const kpiCards = [
-    { title: 'Total Revenue', value: `$${(stats?.total_revenue || 0).toLocaleString()}`, icon: DollarSign, color: 'bg-green-100 text-green-600' },
-    { title: 'Total Orders', value: stats?.total_orders || 0, icon: ShoppingBag, color: 'bg-blue-100 text-blue-600' },
-    { title: 'Total Products', value: stats?.total_products || 0, icon: Package, color: 'bg-purple-100 text-purple-600' },
-    { title: 'Total Customers', value: stats?.total_customers || 0, icon: Users, color: 'bg-orange-100 text-orange-600' },
+  const kpiCards: { title: string; value: string | number; icon: typeof DollarSign; sub: string; hero?: boolean; tile?: string }[] = [
+    { title: 'Total Revenue', value: `$${(stats?.total_revenue || 0).toLocaleString()}`, icon: DollarSign, sub: 'Across all dark stores', hero: true },
+    { title: 'Total Orders', value: stats?.total_orders || 0, icon: ShoppingBag, sub: 'All time', tile: 'bg-brand-50 text-brand-600' },
+    { title: 'Products Live', value: stats?.total_products || 0, icon: Package, sub: 'In catalog', tile: 'bg-blue-50 text-blue-600' },
+    { title: 'Customers', value: stats?.total_customers || 0, icon: Users, sub: 'Registered shoppers', tile: 'bg-purple-50 text-purple-600' },
   ];
 
   return (
     <div>
-      <h1 className="text-title-sm font-bold text-gray-800 mb-1">Dashboard</h1>
-      <p className="text-sm text-gray-500 mb-6">Welcome back! Here's what's happening with your store.</p>
+      <div className="mb-6">
+        <h1 className="text-title-sm font-bold text-gray-800">Dashboard</h1>
+        <p className="text-sm text-gray-500 mt-1">Here's how your dark stores are performing today.</p>
+      </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6">
@@ -77,15 +79,29 @@ const Dashboard = () => {
         ) : (
           kpiCards.map((card) => {
             const Icon = card.icon;
+            if (card.hero) {
+              return (
+                <div key={card.title} className="rounded-2xl bg-accent-400 p-5 md:p-6 shadow-qc-card">
+                  <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-ink-900/10 text-ink-900">
+                    <Icon className="size-6" />
+                  </div>
+                  <div className="mt-5">
+                    <span className="text-sm font-medium text-ink-900/70">{card.title}</span>
+                    <h4 className="mt-1 font-bold text-ink-900 text-title-sm">{card.value}</h4>
+                    <p className="text-xs text-ink-900/60 mt-1">{card.sub}</p>
+                  </div>
+                </div>
+              );
+            }
             return (
               <div key={card.title} className="rounded-2xl border border-gray-200 bg-white p-5 md:p-6">
-                <div className={`flex items-center justify-center w-12 h-12 rounded-xl ${card.color}`}>
+                <div className={`flex items-center justify-center w-12 h-12 rounded-xl ${card.tile}`}>
                   <Icon className="size-6" />
                 </div>
                 <div className="mt-5">
                   <span className="text-sm text-gray-500">{card.title}</span>
                   <h4 className="mt-1 font-bold text-gray-800 text-title-sm">{card.value}</h4>
-                  <p className="text-xs text-gray-400 mt-1">All time</p>
+                  <p className="text-xs text-gray-400 mt-1">{card.sub}</p>
                 </div>
               </div>
             );

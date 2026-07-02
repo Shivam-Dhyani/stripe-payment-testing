@@ -90,12 +90,24 @@ const ProductDetail = () => {
             </span>
           </div>
 
-          {/* Name */}
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">{product.name}</h1>
+          {/* Name + pack size */}
+          <div className="mb-4">
+            <h1 className="text-2xl font-bold text-gray-900">{product.name}</h1>
+            {product.unit && (
+              <span className="mt-1.5 inline-flex items-center rounded-md bg-gray-100 px-2.5 py-1 text-sm font-semibold text-gray-600">
+                {product.unit}
+              </span>
+            )}
+          </div>
 
           {/* Price + delivery */}
-          <div className="flex items-center gap-3 mb-4">
-            <p className="text-3xl font-bold text-gray-900">${Number(product.price).toFixed(2)}</p>
+          <div className="flex flex-wrap items-center gap-3 mb-4">
+            <p className="text-3xl font-bold text-gray-900">
+              ${Number(product.price).toFixed(2)}
+              {product.unit && (
+                <span className="ml-2 text-sm font-medium text-gray-400">/ {product.unit}</span>
+              )}
+            </p>
             <span className="inline-flex items-center gap-1 rounded-md bg-brand-50 px-2 py-1 text-xs font-bold text-brand-700">
               <Clock className="w-3.5 h-3.5" /> 10 min delivery
             </span>

@@ -33,7 +33,10 @@ const Carts = () => {
   if (loading) {
     return (
       <div>
-        <h1 className="text-title-sm font-bold text-gray-800 mb-6">User Carts</h1>
+        <div className="mb-6">
+          <h1 className="text-title-sm font-bold text-gray-800">User Carts</h1>
+          <p className="text-sm text-gray-500 mt-1">Live baskets across your shoppers — spot demand and abandoned carts.</p>
+        </div>
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
             <div key={i} className="bg-white rounded-2xl border border-gray-200 p-6 animate-pulse">
@@ -53,14 +56,17 @@ const Carts = () => {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-3">
-          <h1 className="text-title-sm font-bold text-gray-800">User Carts</h1>
-          {carts.length > 0 && (
-            <span className="bg-brand-100 text-brand-700 text-xs font-bold px-2.5 py-1 rounded-full">
-              {carts.length} active
-            </span>
-          )}
+      <div className="flex items-start justify-between mb-6">
+        <div>
+          <div className="flex items-center space-x-3">
+            <h1 className="text-title-sm font-bold text-gray-800">User Carts</h1>
+            {carts.length > 0 && (
+              <span className="bg-brand-100 text-brand-700 text-xs font-bold px-2.5 py-1 rounded-full">
+                {carts.length} active
+              </span>
+            )}
+          </div>
+          <p className="text-sm text-gray-500 mt-1">Live baskets across your shoppers — spot demand and abandoned carts.</p>
         </div>
       </div>
 
@@ -100,14 +106,14 @@ const Carts = () => {
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-2xl border border-gray-200 p-4">
+        <div className="bg-accent-400 rounded-2xl p-4 shadow-qc-card">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-amber-100 rounded-lg">
-              <ShoppingCart className="w-5 h-5 text-amber-600" />
+            <div className="p-2 bg-ink-900/10 rounded-lg">
+              <ShoppingCart className="w-5 h-5 text-ink-900" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Total Cart Value</p>
-              <p className="text-2xl font-bold text-gray-800">${totalCartValue.toFixed(2)}</p>
+              <p className="text-sm font-medium text-ink-900/70">Total Cart Value</p>
+              <p className="text-2xl font-bold text-ink-900">${totalCartValue.toFixed(2)}</p>
             </div>
           </div>
         </div>

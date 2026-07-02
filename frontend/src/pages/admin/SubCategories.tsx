@@ -138,8 +138,11 @@ const SubCategories = () => {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-title-sm font-bold text-gray-800">Sub Categories</h1>
+      <div className="flex items-start justify-between mb-6">
+        <div>
+          <h1 className="text-title-sm font-bold text-gray-800">Sub Categories</h1>
+          <p className="text-sm text-gray-500 mt-1">Fine-tune the aisles shoppers browse within each category.</p>
+        </div>
         <button
           onClick={() => {
             setEditingSub(null);

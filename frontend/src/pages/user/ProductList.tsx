@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Search, Filter, X, Package } from 'lucide-react';
+import { Search, Filter, X, Package, Zap } from 'lucide-react';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { fetchProducts } from '../../store/slices/productSlice';
 import { fetchCategories, fetchSubCategories } from '../../store/slices/categorySlice';
 import { CardSkeleton } from '../../components/common/Skeleton';
 import ProductCard from '../../components/product/ProductCard';
+import { DELIVERY_PROMISE } from '../../config/brand';
 
 const ProductList = () => {
   const dispatch = useAppDispatch();
@@ -73,6 +74,13 @@ const ProductList = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      {/* Slim yellow delivery strip */}
+      <div className="flex items-center gap-2 rounded-xl bg-accent-400 px-4 py-2 mb-6 text-ink-900">
+        <Zap className="w-4 h-4 shrink-0" fill="currentColor" />
+        <span className="text-sm font-bold">{DELIVERY_PROMISE}</span>
+        <span className="hidden sm:inline text-sm font-medium text-ink-800/70">· Free delivery on every order</span>
+      </div>
+
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
         <div>

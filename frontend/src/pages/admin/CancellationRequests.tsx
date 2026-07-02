@@ -112,14 +112,17 @@ const CancellationRequests = () => {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-3">
-          <h1 className="text-title-sm font-bold text-gray-800">Cancellation Requests</h1>
-          {pendingCount > 0 && (
-            <span className="bg-amber-500 text-white text-xs font-bold px-2.5 py-1 rounded-full animate-pulse">
-              {pendingCount} pending
-            </span>
-          )}
+      <div className="flex items-start justify-between mb-6">
+        <div>
+          <div className="flex items-center space-x-3">
+            <h1 className="text-title-sm font-bold text-gray-800">Cancellation Requests</h1>
+            {pendingCount > 0 && (
+              <span className="bg-amber-500 text-white text-xs font-bold px-2.5 py-1 rounded-full animate-pulse">
+                {pendingCount} pending
+              </span>
+            )}
+          </div>
+          <p className="text-sm text-gray-500 mt-1">Review and resolve customer cancellations before orders are picked and packed.</p>
         </div>
       </div>
 

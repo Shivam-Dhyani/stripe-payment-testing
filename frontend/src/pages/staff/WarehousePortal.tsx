@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Package, ClipboardList, CheckCircle, Truck, RefreshCw, Boxes, RotateCcw } from 'lucide-react';
+import { Package, ClipboardList, CheckCircle, Truck, RefreshCw, Boxes, RotateCcw, Zap } from 'lucide-react';
 import { orderService } from '../../services/orderService';
 import { returnService } from '../../services/returnService';
 import { Order, ReturnRequest } from '../../types';
@@ -7,6 +7,7 @@ import StaffHeader from '../../components/layout/StaffHeader';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ButtonSpinner from '../../components/common/ButtonSpinner';
 import { formatDateTime } from '../../utils/date';
+import { DELIVERY_PROMISE } from '../../config/brand';
 import toast from 'react-hot-toast';
 
 const statusColors: Record<string, string> = {
@@ -100,46 +101,87 @@ const WarehousePortal = () => {
     returns: inbound.length,
   };
 
+  // Per-tab counts for the fast-scan badges on each tab.
+  const tabCounts: Record<string, number> = {
+    active: counts.active,
+    placed: orders.filter((o) => o.status === 'placed' || o.status === 'accepted').length,
+    picking: orders.filter((o) => o.status === 'picking').length,
+    packed: counts.packed,
+    returns: counts.returns,
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <StaffHeader title="Warehouse Console" subtitle="Dark-store operator" />
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-title-sm font-bold text-gray-800">Fulfillment Queue</h1>
-            <p className="text-sm text-gray-500 mt-1">
-              {counts.active} to prepare &middot; {counts.packed} packed &middot; {counts.returns} returns inbound
-            </p>
+        {/* Console header with yellow identity strip */}
+        <div className="mb-6 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-qc-card">
+          <div className="h-1.5 bg-accent-400" />
+          <div className="flex items-start justify-between gap-4 p-5">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <h1 className="text-title-sm font-bold text-gray-900">Fulfillment Queue</h1>
+                <span className="inline-flex items-center gap-1 rounded-full bg-accent-100 px-2.5 py-1 text-[11px] font-semibold text-ink-900">
+                  <Zap className="w-3 h-3" /> {DELIVERY_PROMISE}
+                </span>
+              </div>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <span className="qc-chip">
+                  <ClipboardList className="w-3.5 h-3.5" /> {counts.active} to prepare
+                </span>
+                <span className="qc-chip">
+                  <Boxes className="w-3.5 h-3.5" /> {counts.packed} packed
+                </span>
+                <span className="qc-chip">
+                  <RotateCcw className="w-3.5 h-3.5" /> {counts.returns} returns inbound
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={load}
+              className="flex flex-shrink-0 items-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              <RefreshCw className="w-4 h-4" /> <span className="hidden sm:inline">Refresh</span>
+            </button>
           </div>
-          <button
-            onClick={load}
-            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            <RefreshCw className="w-4 h-4" /> Refresh
-          </button>
         </div>
 
         {/* Tabs */}
         <div className="flex flex-wrap gap-2 mb-5">
-          {TABS.map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                tab === t.key ? 'bg-brand-500 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100'
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
+          {TABS.map((t) => {
+            const active = tab === t.key;
+            const n = tabCounts[t.key] ?? 0;
+            return (
+              <button
+                key={t.key}
+                onClick={() => setTab(t.key)}
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  active
+                    ? 'bg-accent-400 text-ink-900 shadow-qc-card'
+                    : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100'
+                }`}
+              >
+                {t.label}
+                {n > 0 && (
+                  <span
+                    className={`inline-flex min-w-[1.25rem] justify-center rounded-full px-1.5 text-[11px] font-semibold ${
+                      active ? 'bg-ink-900/10 text-ink-900' : 'bg-gray-100 text-gray-500'
+                    }`}
+                  >
+                    {n}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
 
         {loading ? (
           <LoadingSpinner />
         ) : tab === 'returns' ? (
           inbound.length === 0 ? (
-            <div className="text-center py-16 bg-white rounded-2xl border border-gray-200">
+            <div className="text-center py-16 qc-card shadow-qc-card">
               <RotateCcw className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <p className="text-gray-500 font-medium">No returns in transit</p>
               <p className="text-sm text-gray-400 mt-1">Returns collected by riders will appear here to receive.</p>
@@ -147,7 +189,7 @@ const WarehousePortal = () => {
           ) : (
             <div className="space-y-4">
               {inbound.map((r) => (
-                <div key={r.id} className="bg-white rounded-2xl border border-gray-200 p-5">
+                <div key={r.id} className="qc-card shadow-qc-card p-5">
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
                       <div className="flex items-center gap-3 flex-wrap">
@@ -160,7 +202,7 @@ const WarehousePortal = () => {
                       <div className="mt-3 space-y-1">
                         {r.items?.map((item) => (
                           <div key={item.id} className="flex items-center gap-2 text-sm text-gray-700">
-                            <span className="w-6 h-6 rounded bg-gray-100 flex items-center justify-center text-[11px] font-semibold text-gray-500">
+                            <span className="w-6 h-6 rounded-md bg-brand-50 flex items-center justify-center text-[11px] font-semibold text-brand-700">
                               {item.quantity}
                             </span>
                             <span>{item.product_name || 'Item'}</span>
@@ -172,7 +214,7 @@ const WarehousePortal = () => {
                     <button
                       onClick={() => receiveReturn(r.id)}
                       disabled={updatingId === r.id}
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition font-medium text-sm disabled:opacity-50 flex-shrink-0"
+                      className="inline-flex items-center gap-2 px-4 py-2.5 bg-brand-500 text-white rounded-xl hover:bg-brand-600 transition font-semibold text-sm shadow-qc-card disabled:opacity-50 flex-shrink-0"
                     >
                       {updatingId === r.id ? <ButtonSpinner /> : <CheckCircle className="w-4 h-4" />}
                       Mark Received
@@ -183,7 +225,7 @@ const WarehousePortal = () => {
             </div>
           )
         ) : visible.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-2xl border border-gray-200">
+          <div className="text-center py-16 qc-card shadow-qc-card">
             <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-500 font-medium">Nothing here right now</p>
             <p className="text-sm text-gray-400 mt-1">New orders will appear as customers place them.</p>
@@ -193,7 +235,7 @@ const WarehousePortal = () => {
             {visible.map((order) => {
               const action = nextAction(order.status);
               return (
-                <div key={order.id} className="bg-white rounded-2xl border border-gray-200 p-5">
+                <div key={order.id} className="qc-card shadow-qc-card p-5">
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
                       <div className="flex items-center gap-3 flex-wrap">
@@ -206,7 +248,7 @@ const WarehousePortal = () => {
                       <div className="mt-3 space-y-1">
                         {order.items?.map((item) => (
                           <div key={item.id} className="flex items-center gap-2 text-sm text-gray-700">
-                            <span className="w-6 h-6 rounded bg-gray-100 flex items-center justify-center text-[11px] font-semibold text-gray-500">
+                            <span className="w-6 h-6 rounded-md bg-brand-50 flex items-center justify-center text-[11px] font-semibold text-brand-700">
                               {item.quantity}
                             </span>
                             <span>{item.product_name}</span>
@@ -220,7 +262,7 @@ const WarehousePortal = () => {
                         <button
                           onClick={() => advance(order, action.to)}
                           disabled={updatingId === order.id}
-                          className="inline-flex items-center gap-2 px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition font-medium text-sm disabled:opacity-50"
+                          className="inline-flex items-center gap-2 px-4 py-2.5 bg-brand-500 text-white rounded-xl hover:bg-brand-600 transition font-semibold text-sm shadow-qc-card disabled:opacity-50"
                         >
                           {updatingId === order.id ? <ButtonSpinner /> : action.icon}
                           {action.label}
