@@ -172,6 +172,11 @@ const Orders = () => {
   const [cancelReason, setCancelReason] = useState('Out of stock');
   const [cancelNotes, setCancelNotes] = useState('');
 
+  // Assign-rider modal state (from the list)
+  const [assignModal, setAssignModal] = useState<{ order: Order } | null>(null);
+  const [assignRiderId, setAssignRiderId] = useState('');
+  const [assigningRider, setAssigningRider] = useState(false);
+
   // Payment events accordion state
   const [paymentEventsOpen, setPaymentEventsOpen] = useState(false);
 
@@ -290,6 +295,30 @@ const Orders = () => {
   const canCancel = (status: string): boolean => {
     const transitions = validTransitions[status];
     return transitions ? transitions.includes('cancelled') : false;
+  };
+
+  // Rider can be assigned any time the order is still in the store (pre-dispatch).
+  const isPreDispatch = (status: string): boolean =>
+    ['placed', 'accepted', 'picking', 'packed'].includes(status);
+
+  const openAssignModal = (order: Order) => {
+    setAssignModal({ order });
+    setAssignRiderId(order.delivery_partner_id || '');
+  };
+
+  const submitAssignRider = async () => {
+    if (!assignModal || !assignRiderId) return;
+    setAssigningRider(true);
+    try {
+      await orderService.assignOrder(assignModal.order.id, { delivery_partner_id: assignRiderId });
+      dispatch(fetchAllOrders());
+      toast.success('Rider assigned');
+      setAssignModal(null);
+    } catch (e: any) {
+      toast.error(e?.response?.data?.detail || 'Failed to assign rider');
+    } finally {
+      setAssigningRider(false);
+    }
   };
 
   const filteredOrders = orders.filter((o) => {
@@ -503,18 +532,48 @@ const Orders = () => {
                                 </button>
                               )}
                             </>
-                          ) : showCancel ? (
-                            <button
-                              onClick={() => openCancelModal(order.id)}
-                              disabled={updatingOrderId === order.id}
-                              className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50 font-medium"
-                              title="Cancel order"
-                            >
-                              <XCircle className="w-3.5 h-3.5" />
-                              Cancel
-                            </button>
                           ) : (
-                            <span className="text-xs text-gray-400">&mdash;</span>
+                            <>
+                              {isPreDispatch(order.status) && (
+                                order.delivery_partner_id ? (
+                                  <button
+                                    onClick={() => openAssignModal(order)}
+                                    className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                                    title="Reassign rider"
+                                  >
+                                    <Truck className="w-3.5 h-3.5 text-brand-500" />
+                                    {riderName(order.delivery_partner_id)}
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={() => openAssignModal(order)}
+                                    className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors font-medium ${
+                                      order.status === 'packed'
+                                        ? 'bg-amber-500 text-white hover:bg-amber-600'
+                                        : 'border border-brand-300 text-brand-600 hover:bg-brand-50'
+                                    }`}
+                                    title={order.status === 'packed' ? 'Packed — assign a rider to dispatch' : 'Assign a rider'}
+                                  >
+                                    <Truck className="w-3.5 h-3.5" />
+                                    Assign Rider
+                                  </button>
+                                )
+                              )}
+                              {showCancel && (
+                                <button
+                                  onClick={() => openCancelModal(order.id)}
+                                  disabled={updatingOrderId === order.id}
+                                  className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50 font-medium"
+                                  title="Cancel order"
+                                >
+                                  <XCircle className="w-3.5 h-3.5" />
+                                  Cancel
+                                </button>
+                              )}
+                              {!isPreDispatch(order.status) && !showCancel && (
+                                <span className="text-xs text-gray-400">&mdash;</span>
+                              )}
+                            </>
                           )}
                         </div>
                       </td>
@@ -622,6 +681,58 @@ const Orders = () => {
                 className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Confirm Cancellation
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Assign Rider Modal */}
+      {assignModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-2xl shadow-theme-lg w-full max-w-md mx-4 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-2">
+                <Truck className="w-5 h-5 text-brand-500" />
+                <h2 className="text-lg font-semibold text-gray-800">Assign Delivery Partner</h2>
+              </div>
+              <button onClick={() => setAssignModal(null)} className="text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-sm text-gray-500 mb-4">
+              Order <span className="font-mono">#{assignModal.order.id.substring(0, 8)}</span> — assign a rider so it can be dispatched once packed.
+            </p>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Delivery Partner</label>
+            <select
+              value={assignRiderId}
+              onChange={(e) => setAssignRiderId(e.target.value)}
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white focus:outline-hidden focus:ring-3 focus:border-brand-300 focus:ring-brand-500/20"
+            >
+              <option value="">— Select rider —</option>
+              {deliveryPartners.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {`${r.first_name || ''} ${r.last_name || ''}`.trim() || r.email}
+                </option>
+              ))}
+            </select>
+            {deliveryPartners.length === 0 && (
+              <p className="text-xs text-amber-600 mt-2">No delivery partners found. Create one from the admin staff tools.</p>
+            )}
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => setAssignModal(null)}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitAssignRider}
+                disabled={assigningRider || !assignRiderId}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition font-medium text-sm disabled:opacity-50"
+              >
+                {assigningRider && <ButtonSpinner />}
+                Assign Rider
               </button>
             </div>
           </div>
