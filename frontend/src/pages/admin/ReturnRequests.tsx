@@ -7,6 +7,7 @@ import { staffService } from '../../services/warehouseService';
 import { ReturnRequest, User } from '../../types';
 import ButtonSpinner from '../../components/common/ButtonSpinner';
 import { formatDateTime } from '../../utils/date';
+import { useConfirm } from '../../components/common/ConfirmDialog';
 
 const statusColors: Record<string, string> = {
   requested: 'bg-amber-100 text-amber-700',
@@ -66,6 +67,7 @@ const roleLabels: Record<string, string> = {
 
 const ReturnRequests = () => {
   const dispatch = useAppDispatch();
+  const confirm = useConfirm();
   const { requests, loading, submitting } = useAppSelector((state) => state.returns);
 
   const [search, setSearch] = useState('');
@@ -128,8 +130,24 @@ const ReturnRequests = () => {
     return null;
   };
 
+  const confirmForAction = (action: ActionType) => {
+    if (action === 'approved') {
+      return { title: 'Approve return?', message: 'The customer will be able to schedule a pickup for the item.', confirmLabel: 'Approve' };
+    }
+    if (action === 'rejected') {
+      return { title: 'Reject return?', message: 'The customer will be notified that their return was declined.', confirmLabel: 'Reject', tone: 'danger' as const };
+    }
+    if (action === 'refunded') {
+      const amt = Number(selectedRequest?.refund_amount || 0).toFixed(2);
+      return { title: 'Process refund?', message: `$${amt} will be refunded to the customer. This can't be undone.`, confirmLabel: 'Refund' };
+    }
+    return null; // 'received' is a routine step — no confirmation
+  };
+
   const handleResolve = async (action: ActionType) => {
     if (!selectedRequest) return;
+    const opts = confirmForAction(action);
+    if (opts && !(await confirm(opts))) return;
     await dispatch(
       resolveReturnRequest({
         id: selectedRequest.id,

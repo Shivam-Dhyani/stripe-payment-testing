@@ -6,6 +6,7 @@ import { Order, ReturnRequest } from '../../types';
 import StaffHeader from '../../components/layout/StaffHeader';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ButtonSpinner from '../../components/common/ButtonSpinner';
+import { useConfirm } from '../../components/common/ConfirmDialog';
 import { formatDateTime } from '../../utils/date';
 import toast from 'react-hot-toast';
 
@@ -43,6 +44,7 @@ const DeliveryPartnerPortal = () => {
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [tab, setTab] = useState('pickup');
+  const confirm = useConfirm();
 
   const load = useCallback(async () => {
     try {
@@ -64,6 +66,14 @@ const DeliveryPartnerPortal = () => {
   }, [load]);
 
   const advance = async (order: Order, to: string) => {
+    if (to === 'delivered') {
+      const ok = await confirm({
+        title: 'Mark as delivered?',
+        message: `Confirm you handed order #${order.id.substring(0, 8)} to the customer. This can't be undone.`,
+        confirmLabel: 'Mark Delivered',
+      });
+      if (!ok) return;
+    }
     setUpdatingId(order.id);
     try {
       await orderService.updateOrderStatus(order.id, to);

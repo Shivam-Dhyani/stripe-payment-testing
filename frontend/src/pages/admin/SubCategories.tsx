@@ -14,6 +14,7 @@ import {
 } from '../../store/slices/categorySlice';
 import { SubCategory } from '../../types';
 import ButtonSpinner from '../../components/common/ButtonSpinner';
+import { useConfirm } from '../../components/common/ConfirmDialog';
 
 const subCategorySchema = z.object({
   category_id: z.string().min(1, 'Category is required'),
@@ -26,6 +27,7 @@ type SubCategoryFormData = z.infer<typeof subCategorySchema>;
 
 const SubCategories = () => {
   const dispatch = useAppDispatch();
+  const confirm = useConfirm();
   const { categories, subcategories, loading, submitting } = useAppSelector((state) => state.categories);
   const [showModal, setShowModal] = useState(false);
   const [editingSub, setEditingSub] = useState<SubCategory | null>(null);
@@ -107,10 +109,15 @@ const SubCategories = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this sub-category?')) {
-      await dispatch(deleteSubCategory(id));
-      dispatch(fetchSubCategories({ categoryId: filterCategoryId, includeInactive: true }));
-    }
+    const ok = await confirm({
+      title: 'Delete sub-category?',
+      message: 'This may affect its products. This cannot be undone.',
+      confirmLabel: 'Delete',
+      tone: 'danger',
+    });
+    if (!ok) return;
+    await dispatch(deleteSubCategory(id));
+    dispatch(fetchSubCategories({ categoryId: filterCategoryId, includeInactive: true }));
   };
 
   const getPageNumbers = () => {

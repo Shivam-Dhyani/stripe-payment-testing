@@ -11,6 +11,7 @@ import { warehouseService, staffService } from '../../services/warehouseService'
 import { Order, PaymentEvent, OrderStatusHistory, CancellationRequest, ReturnRequest, Warehouse, User } from '../../types';
 import ButtonSpinner from '../../components/common/ButtonSpinner';
 import { formatDate, formatDateTime } from '../../utils/date';
+import { useConfirm } from '../../components/common/ConfirmDialog';
 import toast from 'react-hot-toast';
 
 const statusColors: Record<string, string> = {
@@ -157,6 +158,7 @@ const CANCEL_REASONS = [
 const Orders = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const confirm = useConfirm();
   const { orders, loading } = useAppSelector((state) => state.orders);
   const { requests: returnRequests } = useAppSelector((state) => state.returns);
   const { requests: cancelRequests } = useAppSelector((state) => state.cancellations);
@@ -260,6 +262,14 @@ const Orders = () => {
   };
 
   const handleAdvanceStatus = async (orderId: string, newStatus: string) => {
+    if (newStatus === 'delivered') {
+      const ok = await confirm({
+        title: 'Mark order as delivered?',
+        message: 'This completes the order and starts the return window. It cannot be undone.',
+        confirmLabel: 'Mark Delivered',
+      });
+      if (!ok) return;
+    }
     setUpdatingOrderId(orderId);
     await dispatch(updateOrderStatus({ id: orderId, status: newStatus }));
     dispatch(fetchAllOrders());

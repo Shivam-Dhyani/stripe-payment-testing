@@ -7,6 +7,7 @@ import { createReturnRequest, fetchReturnRequests, schedulePickup, withdrawRetur
 import { Package, ChevronDown, ChevronUp, Calendar, Hash, Check, X, XCircle, CreditCard, Ban, RotateCcw, Truck, MapPin } from 'lucide-react';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ButtonSpinner from '../../components/common/ButtonSpinner';
+import { useConfirm } from '../../components/common/ConfirmDialog';
 import { Order, OrderItem, OrderStatusHistory, CancellationRequest, ReturnRequest } from '../../types';
 import { formatDate, formatShortDateTime, formatDateTime } from '../../utils/date';
 
@@ -195,6 +196,7 @@ const getStepData = (order: Order) => {
 
 const OrderHistory = () => {
   const dispatch = useAppDispatch();
+  const confirm = useConfirm();
   const { orders, selectedOrder, loading } = useAppSelector((state) => state.orders);
   const { requests: cancelRequests, submitting: cancelSubmitting } = useAppSelector((state) => state.cancellations);
   const { requests: returnRequests, submitting: returnSubmitting } = useAppSelector((state) => state.returns);
@@ -303,6 +305,13 @@ const OrderHistory = () => {
   };
 
   const handleWithdrawReturn = async (returnId: string) => {
+    const ok = await confirm({
+      title: 'Withdraw return request?',
+      message: 'This cancels your return. You can request it again later if the item is still eligible.',
+      confirmLabel: 'Withdraw',
+      tone: 'danger',
+    });
+    if (!ok) return;
     await dispatch(withdrawReturn(returnId));
     dispatch(fetchReturnRequests());
   };

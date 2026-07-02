@@ -10,6 +10,7 @@ import { fetchCategories, fetchSubCategories } from '../../store/slices/category
 import { productService } from '../../services/productService';
 import { Product } from '../../types';
 import ButtonSpinner from '../../components/common/ButtonSpinner';
+import { useConfirm } from '../../components/common/ConfirmDialog';
 import toast from 'react-hot-toast';
 
 const productSchema = z.object({
@@ -28,6 +29,7 @@ type ProductFormData = z.infer<typeof productSchema>;
 
 const Products = () => {
   const dispatch = useAppDispatch();
+  const confirm = useConfirm();
   const { products = [], loading, submitting } = useAppSelector((state) => state.products);
   const { categories, subcategories } = useAppSelector((state) => state.categories);
   const [showModal, setShowModal] = useState(false);
@@ -150,10 +152,15 @@ const Products = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this product?')) {
-      await dispatch(deleteProduct(id));
-      refetchProducts();
-    }
+    const ok = await confirm({
+      title: 'Delete product?',
+      message: 'This permanently removes the product from the catalog.',
+      confirmLabel: 'Delete',
+      tone: 'danger',
+    });
+    if (!ok) return;
+    await dispatch(deleteProduct(id));
+    refetchProducts();
   };
 
   const handleFormCategoryChange = (catId: string) => {

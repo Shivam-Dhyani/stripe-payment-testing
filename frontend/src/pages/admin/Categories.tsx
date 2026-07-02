@@ -13,6 +13,7 @@ import {
 } from '../../store/slices/categorySlice';
 import { Category } from '../../types';
 import ButtonSpinner from '../../components/common/ButtonSpinner';
+import { useConfirm } from '../../components/common/ConfirmDialog';
 
 const categorySchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -25,6 +26,7 @@ type CategoryFormData = z.infer<typeof categorySchema>;
 
 const Categories = () => {
   const dispatch = useAppDispatch();
+  const confirm = useConfirm();
   const { categories, loading, submitting } = useAppSelector((state) => state.categories);
   const [showModal, setShowModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -96,10 +98,15 @@ const Categories = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this category?')) {
-      await dispatch(deleteCategory(id));
-      dispatch(fetchCategories(true));
-    }
+    const ok = await confirm({
+      title: 'Delete category?',
+      message: 'This may affect its subcategories and products. This cannot be undone.',
+      confirmLabel: 'Delete',
+      tone: 'danger',
+    });
+    if (!ok) return;
+    await dispatch(deleteCategory(id));
+    dispatch(fetchCategories(true));
   };
 
   const getPageNumbers = () => {

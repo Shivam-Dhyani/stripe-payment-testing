@@ -6,6 +6,7 @@ import { fetchCancellationRequests, resolveCancellationRequest } from '../../sto
 import { CancellationRequest } from '../../types';
 import ButtonSpinner from '../../components/common/ButtonSpinner';
 import { formatDateTime } from '../../utils/date';
+import { useConfirm } from '../../components/common/ConfirmDialog';
 
 const statusColors: Record<string, string> = {
   pending: 'bg-amber-100 text-amber-700',
@@ -15,6 +16,7 @@ const statusColors: Record<string, string> = {
 
 const CancellationRequests = () => {
   const dispatch = useAppDispatch();
+  const confirm = useConfirm();
   const { requests, loading, submitting } = useAppSelector((state) => state.cancellations);
 
   const [search, setSearch] = useState('');
@@ -49,6 +51,21 @@ const CancellationRequests = () => {
 
   const handleResolve = async (action: 'approved' | 'rejected') => {
     if (!selectedRequest) return;
+    const ok = await confirm(
+      action === 'approved'
+        ? {
+            title: 'Approve cancellation?',
+            message: `The order will be cancelled and $${Number(selectedRequest.order_total || 0).toFixed(2)} refunded to the customer. This can't be undone.`,
+            confirmLabel: 'Approve & Refund',
+          }
+        : {
+            title: 'Reject cancellation?',
+            message: 'The customer will be notified and the order will continue to be fulfilled.',
+            confirmLabel: 'Reject',
+            tone: 'danger',
+          }
+    );
+    if (!ok) return;
     await dispatch(
       resolveCancellationRequest({
         id: selectedRequest.id,

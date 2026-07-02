@@ -10,6 +10,7 @@ import { fetchCart } from './store/slices/cartSlice';
 import UserLayout from './components/layout/UserLayout';
 import AdminLayout from './components/layout/AdminLayout';
 import ProtectedRoute from './components/common/ProtectedRoute';
+import { ConfirmProvider } from './components/common/ConfirmDialog';
 
 // Auth Pages
 import Login from './pages/auth/Login';
@@ -143,7 +144,9 @@ const AppContent = () => {
 const App = () => {
   return (
     <BrowserRouter>
-      <AppContent />
+      <ConfirmProvider>
+        <AppContent />
+      </ConfirmProvider>
       <Toaster
         position="top-right"
         toastOptions={{
