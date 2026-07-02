@@ -9,7 +9,7 @@ from app.models.cart import CartItem
 from app.models.product import Product
 from app.models.order import (
     Order, OrderItem, OrderStatusHistory, VALID_ORDER_STATUSES, VALID_TRANSITIONS, CANCELLABLE_STATUSES,
-    recompute_payment_status
+    ASSIGNABLE_STATUSES, recompute_payment_status
 )
 from app.models.address import Address
 from app.models.warehouse import Warehouse
@@ -486,6 +486,12 @@ def assign_order(
     order = _order_query(db).filter(Order.id == order_id).first()
     if not order:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
+
+    if order.status not in ASSIGNABLE_STATUSES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A warehouse or rider can only be assigned before the order is dispatched",
+        )
 
     if data.warehouse_id is not None:
         warehouse = db.query(Warehouse).filter(Warehouse.id == data.warehouse_id).first()

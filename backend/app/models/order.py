@@ -40,6 +40,11 @@ VALID_TRANSITIONS = {
 # Orders can be cancelled while still inside the store (before dispatch).
 CANCELLABLE_STATUSES = {"placed", "accepted", "picking", "packed"}
 
+# A warehouse / delivery partner can only be (re)assigned while the order is
+# still inside the store (before dispatch). Once it is out for delivery,
+# delivered, cancelled or refunded, the assignment is locked.
+ASSIGNABLE_STATUSES = {"placed", "accepted", "picking", "packed"}
+
 
 class Order(Base):
     __tablename__ = "orders"

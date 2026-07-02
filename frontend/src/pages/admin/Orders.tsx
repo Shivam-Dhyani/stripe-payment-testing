@@ -790,8 +790,8 @@ const Orders = () => {
               </div>
             </div>
 
-            {/* Fulfillment Assignment */}
-            {!['delivered', 'cancelled', 'refunded'].includes(detailOrder.status) && (
+            {/* Fulfillment Assignment — editable only while the order is still in the store (pre-dispatch) */}
+            {isPreDispatch(detailOrder.status) && (
               <div className="mb-6 rounded-lg border border-gray-200 p-4">
                 <h3 className="font-semibold text-gray-800 mb-3">Fulfillment Assignment</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -839,6 +839,18 @@ const Orders = () => {
                     Save Assignment
                   </button>
                 </div>
+              </div>
+            )}
+
+            {/* Read-only assignment summary once the order has been dispatched */}
+            {detailOrder.status === 'out_for_delivery' && (
+              <div className="mb-6 rounded-lg border border-gray-200 p-4">
+                <h3 className="font-semibold text-gray-800 mb-3">Fulfillment Assignment</h3>
+                <p className="text-sm text-gray-600">
+                  Out for delivery with{' '}
+                  <span className="font-medium text-gray-800">{riderName(detailOrder.delivery_partner_id)}</span>.
+                  Assignment is locked once an order leaves the store.
+                </p>
               </div>
             )}
 
