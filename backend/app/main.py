@@ -120,6 +120,14 @@ def run_migrations(db):
             db.commit()
             print("Widened products.image_url to TEXT")
 
+    # Step 11: Add pack-size unit to products (quick-commerce catalog)
+    if "products" in inspector.get_table_names():
+        product_cols = [c["name"] for c in inspector.get_columns("products")]
+        if "unit" not in product_cols:
+            db.execute(text("ALTER TABLE products ADD COLUMN unit VARCHAR(50)"))
+            db.commit()
+            print("Added unit column to products table")
+
     print("Database migrations completed.")
 
 

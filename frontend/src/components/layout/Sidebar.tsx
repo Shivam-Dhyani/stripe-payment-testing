@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, FolderTree, Layers, ShoppingBag, ClipboardList, Package, ShoppingCart, Store, Ban, RotateCcw } from 'lucide-react';
+import { LayoutDashboard, FolderTree, Layers, ShoppingBag, ClipboardList, ShoppingCart, Store, Ban, RotateCcw } from 'lucide-react';
+import BrandMark from '../common/BrandMark';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { fetchAllOrders } from '../../store/slices/orderSlice';
@@ -53,14 +54,8 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
           ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}
       >
         {/* Logo */}
-        <div className="flex items-center gap-3 py-8">
-          <div className="flex items-center justify-center w-10 h-10 bg-brand-500 rounded-xl">
-            <Package className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <span className="block text-lg font-bold text-gray-800 leading-tight">ShopHub</span>
-            <span className="block text-xs text-gray-400">Admin Panel</span>
-          </div>
+        <div className="py-8">
+          <BrandMark size="lg" subtitle="Admin Panel" />
         </div>
 
         {/* Navigation */}

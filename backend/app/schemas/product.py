@@ -13,6 +13,7 @@ class ProductCreate(BaseModel):
     sub_category_id: str
     name: str
     description: Optional[str] = None
+    unit: Optional[str] = None
     price: float
     stock: int = 0
     image_url: Optional[str] = None
@@ -24,6 +25,7 @@ class ProductUpdate(BaseModel):
     sub_category_id: Optional[str] = None
     name: Optional[str] = None
     description: Optional[str] = None
+    unit: Optional[str] = None
     price: Optional[float] = None
     stock: Optional[int] = None
     image_url: Optional[str] = None
@@ -53,6 +55,7 @@ class ProductResponse(BaseModel):
     sub_category_id: str
     name: str
     description: Optional[str] = None
+    unit: Optional[str] = None
     price: float
     stock: int
     image_url: Optional[str] = None

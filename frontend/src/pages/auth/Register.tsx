@@ -3,10 +3,11 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Package } from 'lucide-react';
+import { Eye, EyeOff, Zap } from 'lucide-react';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { registerUser, clearError } from '../../store/slices/authSlice';
+import { APP_NAME, APP_TAGLINE, DELIVERY_PROMISE } from '../../config/brand';
 
 const registerSchema = z.object({
   first_name: z.string().min(1, 'First name is required'),
@@ -59,29 +60,29 @@ const Register = () => {
     <div className="relative flex flex-col-reverse w-full min-h-screen lg:flex-row bg-white">
       {/* Branding Panel — Left */}
       <div className="hidden lg:grid w-full lg:w-1/2 h-screen items-center sticky top-0 overflow-hidden"
-        style={{ background: 'linear-gradient(135deg, #e3f9ec 0%, #c1f0d3 30%, #93e3b3 55%, #ffe485 100%)' }}
+        style={{ background: 'linear-gradient(135deg, #fff4c2 0%, #ffe485 32%, #f8cb46 62%, #f4b400 100%)' }}
       >
         <div className="absolute inset-0 opacity-[0.4]"
           style={{
-            backgroundImage: 'radial-gradient(circle at 20% 80%, rgba(12,159,79,0.22) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(244,180,0,0.20) 0%, transparent 50%), radial-gradient(circle at 50% 50%, rgba(47,185,110,0.16) 0%, transparent 70%)',
+            backgroundImage: 'radial-gradient(circle at 20% 80%, rgba(244,180,0,0.30) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(12,159,79,0.16) 0%, transparent 50%), radial-gradient(circle at 50% 50%, rgba(248,203,70,0.24) 0%, transparent 70%)',
           }}
         />
-        <div className="absolute inset-0 opacity-[0.05]"
+        <div className="absolute inset-0 opacity-[0.06]"
           style={{
-            backgroundImage: 'radial-gradient(circle, rgba(12,159,79,0.7) 1px, transparent 1px)',
+            backgroundImage: 'radial-gradient(circle, rgba(28,28,40,0.7) 1px, transparent 1px)',
             backgroundSize: '28px 28px',
           }}
         />
         <div className="relative flex items-center justify-center z-1">
           <div className="flex flex-col items-center max-w-sm">
             <div className="flex items-center space-x-3 mb-6">
-              <div className="w-14 h-14 bg-brand-500 rounded-2xl flex items-center justify-center shadow-lg shadow-brand-500/25">
-                <Package className="w-8 h-8 text-white" />
+              <div className="w-14 h-14 bg-ink-900 rounded-2xl flex items-center justify-center shadow-lg shadow-ink-900/25">
+                <Zap className="w-8 h-8 text-accent-400" fill="currentColor" strokeWidth={0} />
               </div>
-              <span className="text-4xl font-bold text-brand-900 tracking-tight">ShopHub</span>
+              <span className="text-4xl font-extrabold text-ink-900 tracking-tight">{APP_NAME}</span>
             </div>
-            <p className="text-center text-brand-700/70 text-lg leading-relaxed">
-              Your modern e-commerce platform for seamless shopping experiences
+            <p className="text-center text-ink-900/70 text-lg leading-relaxed font-medium">
+              {APP_TAGLINE} — {DELIVERY_PROMISE.toLowerCase()}. Fresh groceries & daily essentials, delivered fast.
             </p>
           </div>
         </div>

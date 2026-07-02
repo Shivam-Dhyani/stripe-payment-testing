@@ -1,8 +1,9 @@
-import { Package, LogOut } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { logoutUser } from '../../store/slices/authSlice';
+import BrandMark from '../common/BrandMark';
 
 interface StaffHeaderProps {
   title: string;
@@ -24,15 +25,7 @@ const StaffHeader = ({ title, subtitle }: StaffHeaderProps) => {
   return (
     <header className="sticky top-0 z-30 bg-white border-b border-gray-200">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-10 h-10 bg-brand-500 rounded-xl">
-            <Package className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <span className="block text-base font-bold text-gray-800 leading-tight">ShopHub</span>
-            <span className="block text-xs text-gray-400">{title}</span>
-          </div>
-        </div>
+        <BrandMark size="md" subtitle={title} />
         <div className="flex items-center gap-4">
           <div className="text-right hidden sm:block">
             <p className="text-sm font-medium text-gray-800 leading-tight">{name}</p>

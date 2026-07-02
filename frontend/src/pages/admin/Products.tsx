@@ -16,6 +16,7 @@ import toast from 'react-hot-toast';
 const productSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   description: z.string().min(1, 'Description is required'),
+  unit: z.string().optional(),
   price: z.number().min(0.01, 'Price must be greater than 0'),
   stock: z.number().min(0, 'Stock cannot be negative'),
   sub_category_id: z.string().min(1, 'Sub-category is required'),
@@ -47,7 +48,7 @@ const Products = () => {
 
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
-    defaultValues: { name: '', description: '', price: 0, stock: 0, sub_category_id: '', image_url: '', is_active: true, is_returnable: false, return_window_days: null },
+    defaultValues: { name: '', description: '', unit: '', price: 0, stock: 0, sub_category_id: '', image_url: '', is_active: true, is_returnable: false, return_window_days: null },
   });
 
   const handleGenerateImage = async () => {
@@ -133,6 +134,7 @@ const Products = () => {
     form.reset({
       name: product.name,
       description: product.description,
+      unit: product.unit || '',
       price: Number(product.price),
       stock: product.stock,
       sub_category_id: product.sub_category_id,
@@ -148,7 +150,7 @@ const Products = () => {
     setShowModal(false);
     setEditingProduct(null);
     setSelectedCategoryInForm(undefined);
-    form.reset({ name: '', description: '', price: 0, stock: 0, sub_category_id: '', image_url: '', is_active: true, is_returnable: false, return_window_days: null });
+    form.reset({ name: '', description: '', unit: '', price: 0, stock: 0, sub_category_id: '', image_url: '', is_active: true, is_returnable: false, return_window_days: null });
   };
 
   const handleDelete = async (id: string) => {
@@ -193,7 +195,7 @@ const Products = () => {
           onClick={() => {
             setEditingProduct(null);
             setSelectedCategoryInForm(undefined);
-            form.reset({ name: '', description: '', price: 0, stock: 0, sub_category_id: '', image_url: '', is_active: true, is_returnable: false, return_window_days: null });
+            form.reset({ name: '', description: '', unit: '', price: 0, stock: 0, sub_category_id: '', image_url: '', is_active: true, is_returnable: false, return_window_days: null });
             setShowModal(true);
           }}
           className="flex items-center space-x-2 px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition font-medium"
@@ -405,6 +407,12 @@ const Products = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
                 <input {...form.register('name')} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-3 focus:ring-brand-500/20 focus:border-brand-300 focus:outline-hidden transition" />
                 {form.formState.errors.name && <p className="mt-1 text-sm text-red-600">{form.formState.errors.name.message}</p>}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Pack size / Unit <span className="text-gray-400 font-normal">(e.g. 500 g, 1 L, 6 pcs)</span>
+                </label>
+                <input {...form.register('unit')} placeholder="e.g. 500 g" className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-3 focus:ring-brand-500/20 focus:border-brand-300 focus:outline-hidden transition" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>

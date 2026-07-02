@@ -42,6 +42,7 @@ export interface Product {
   sub_category_id: string;
   name: string;
   description: string;
+  unit?: string | null;
   price: number | string;
   stock: number;
   image_url: string | null;

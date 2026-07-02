@@ -54,6 +54,11 @@ const ProductCard = ({ product }: { product: Product }) => {
         <h3 className="text-sm font-semibold text-gray-800 leading-snug line-clamp-2 min-h-[2.5rem]">
           {product.name}
         </h3>
+        {product.unit && (
+          <span className="mt-0.5 inline-block rounded-md bg-gray-100 px-1.5 py-0.5 text-[11px] font-medium text-gray-500">
+            {product.unit}
+          </span>
+        )}
       </Link>
 
       <div className="flex items-center justify-between mt-2 gap-2">

@@ -4,6 +4,7 @@ from decimal import Decimal
 import random
 import bcrypt
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from app.models.user import User, UserRole
 from app.models.address import Address
 from app.models.warehouse import Warehouse
@@ -15,6 +16,374 @@ from app.models.order import Order, OrderItem
 
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+
+
+# ---------------------------------------------------------------------------
+# Quick-commerce grocery catalog (Blinkit / Instamart style).
+# Each product is (name, unit/pack-size, price, stock).
+# `returnable` is set per sub-category: perishables & consumables are not
+# returnable; sealed personal-care / household / baby items are (7-day window).
+# ---------------------------------------------------------------------------
+CATALOG = {
+    "Fruits & Vegetables": {
+        "description": "Fresh fruits, vegetables & herbs — sourced daily",
+        "subcategories": {
+            "Fresh Fruits": {
+                "returnable": False,
+                "products": [
+                    ("Banana (Robusta)", "6 pcs", 1.49, 120),
+                    ("Royal Gala Apple", "1 kg", 3.99, 90),
+                    ("Nagpur Orange", "1 kg", 2.99, 80),
+                    ("Pomegranate", "500 g", 3.49, 60),
+                    ("Alphonso Mango", "1 kg", 5.99, 40),
+                ],
+            },
+            "Fresh Vegetables": {
+                "returnable": False,
+                "products": [
+                    ("Tomato (Local)", "1 kg", 1.29, 150),
+                    ("Onion", "1 kg", 1.19, 160),
+                    ("Potato", "1 kg", 0.99, 200),
+                    ("Baby Spinach", "250 g", 1.49, 70),
+                    ("Green Capsicum", "500 g", 1.79, 65),
+                ],
+            },
+            "Herbs & Seasonings": {
+                "returnable": False,
+                "products": [
+                    ("Fresh Coriander", "100 g", 0.59, 90),
+                    ("Ginger", "200 g", 0.99, 85),
+                    ("Green Chilli", "100 g", 0.49, 95),
+                    ("Garlic", "200 g", 1.29, 80),
+                ],
+            },
+        },
+    },
+    "Dairy, Bread & Eggs": {
+        "description": "Milk, bread, eggs & everyday essentials",
+        "subcategories": {
+            "Milk": {
+                "returnable": False,
+                "products": [
+                    ("Whole Milk", "1 L", 1.29, 130),
+                    ("Toned Milk", "1 L", 1.09, 140),
+                    ("Almond Milk (Unsweetened)", "1 L", 3.49, 55),
+                    ("Lactose-Free Milk", "1 L", 2.29, 50),
+                ],
+            },
+            "Bread & Pav": {
+                "returnable": False,
+                "products": [
+                    ("White Sandwich Bread", "400 g", 1.19, 100),
+                    ("Whole Wheat Bread", "400 g", 1.49, 95),
+                    ("Burger Buns", "6 pcs", 1.39, 70),
+                ],
+            },
+            "Eggs": {
+                "returnable": False,
+                "products": [
+                    ("Farm Fresh Eggs", "6 pcs", 1.79, 110),
+                    ("Farm Fresh Eggs", "12 pcs", 3.29, 90),
+                    ("Free-Range Brown Eggs", "6 pcs", 2.49, 60),
+                ],
+            },
+            "Butter & Cheese": {
+                "returnable": False,
+                "products": [
+                    ("Salted Butter", "500 g", 4.49, 65),
+                    ("Cheese Slices", "200 g", 2.99, 80),
+                    ("Fresh Paneer", "200 g", 2.49, 75),
+                    ("Greek Yogurt", "400 g", 2.19, 85),
+                ],
+            },
+        },
+    },
+    "Snacks & Munchies": {
+        "description": "Chips, biscuits, namkeen & more",
+        "subcategories": {
+            "Chips & Crisps": {
+                "returnable": False,
+                "products": [
+                    ("Classic Salted Potato Chips", "52 g", 0.99, 200),
+                    ("Cream & Onion Chips", "52 g", 0.99, 180),
+                    ("Tortilla Nachos", "150 g", 2.49, 90),
+                ],
+            },
+            "Biscuits & Cookies": {
+                "returnable": False,
+                "products": [
+                    ("Choco Chip Cookies", "200 g", 1.89, 120),
+                    ("Digestive Biscuits", "250 g", 1.59, 130),
+                    ("Cream Sandwich Biscuits", "120 g", 0.89, 150),
+                ],
+            },
+            "Namkeen": {
+                "returnable": False,
+                "products": [
+                    ("Classic Mixture", "200 g", 1.49, 100),
+                    ("Salted Peanuts", "200 g", 1.29, 110),
+                    ("Aloo Bhujia", "200 g", 1.39, 105),
+                ],
+            },
+        },
+    },
+    "Cold Drinks & Juices": {
+        "description": "Soft drinks, juices & water",
+        "subcategories": {
+            "Soft Drinks": {
+                "returnable": False,
+                "products": [
+                    ("Cola", "750 ml", 1.19, 160),
+                    ("Lemon-Lime Soda", "750 ml", 1.19, 150),
+                    ("Orange Fizz", "750 ml", 1.19, 140),
+                ],
+            },
+            "Juices": {
+                "returnable": False,
+                "products": [
+                    ("100% Orange Juice", "1 L", 2.99, 90),
+                    ("Mixed Fruit Juice", "1 L", 2.79, 95),
+                    ("Cranberry Juice", "1 L", 3.29, 60),
+                ],
+            },
+            "Water & Sparkling": {
+                "returnable": False,
+                "products": [
+                    ("Mineral Water", "1 L", 0.79, 220),
+                    ("Sparkling Water", "750 ml", 1.29, 100),
+                ],
+            },
+        },
+    },
+    "Instant & Frozen Food": {
+        "description": "Noodles, frozen snacks & ready meals",
+        "subcategories": {
+            "Instant Noodles": {
+                "returnable": False,
+                "products": [
+                    ("Masala Instant Noodles", "70 g", 0.69, 200),
+                    ("Cup Noodles (Chicken)", "70 g", 1.19, 140),
+                    ("Hakka Noodles", "150 g", 1.49, 110),
+                ],
+            },
+            "Frozen Snacks": {
+                "returnable": False,
+                "products": [
+                    ("Crinkle French Fries", "500 g", 2.99, 85),
+                    ("Veg Nuggets", "300 g", 2.79, 80),
+                    ("Chicken Spring Rolls", "300 g", 3.49, 70),
+                ],
+            },
+            "Ready to Eat": {
+                "returnable": False,
+                "products": [
+                    ("Rajma Masala", "300 g", 2.49, 90),
+                    ("Ready Poha", "200 g", 1.29, 100),
+                    ("Pav Bhaji", "300 g", 2.59, 85),
+                ],
+            },
+        },
+    },
+    "Tea, Coffee & Health Drinks": {
+        "description": "Tea, coffee & health drinks",
+        "subcategories": {
+            "Tea": {
+                "returnable": False,
+                "products": [
+                    ("Green Tea Bags", "25 bags", 3.49, 120),
+                    ("Premium Black Tea", "250 g", 2.99, 110),
+                    ("Masala Chai", "250 g", 3.19, 90),
+                ],
+            },
+            "Coffee": {
+                "returnable": False,
+                "products": [
+                    ("Instant Coffee", "100 g", 4.99, 100),
+                    ("Filter Coffee Powder", "200 g", 3.99, 80),
+                    ("Cold Brew Concentrate", "500 ml", 5.49, 45),
+                ],
+            },
+            "Health Drinks": {
+                "returnable": False,
+                "products": [
+                    ("Chocolate Malt Drink", "500 g", 4.49, 85),
+                    ("Protein Shake Mix", "400 g", 8.99, 40),
+                ],
+            },
+        },
+    },
+    "Household & Cleaning": {
+        "description": "Cleaning, laundry & home care",
+        "subcategories": {
+            "Cleaning Essentials": {
+                "returnable": True,
+                "products": [
+                    ("Dishwash Gel (Lemon)", "500 ml", 1.99, 110),
+                    ("Floor Cleaner (Citrus)", "1 L", 2.49, 95),
+                    ("Glass Cleaner", "500 ml", 2.19, 80),
+                ],
+            },
+            "Laundry": {
+                "returnable": True,
+                "products": [
+                    ("Detergent Powder", "1 kg", 3.99, 100),
+                    ("Fabric Softener", "1 L", 3.49, 75),
+                    ("Liquid Detergent", "1 L", 4.49, 70),
+                ],
+            },
+            "Paper & Disposables": {
+                "returnable": True,
+                "products": [
+                    ("Kitchen Paper Towels", "2 rolls", 2.29, 130),
+                    ("Aluminium Foil", "72 m", 2.99, 90),
+                    ("Garbage Bags (Medium)", "30 pcs", 2.49, 100),
+                ],
+            },
+        },
+    },
+    "Personal Care": {
+        "description": "Bath, oral & hair care",
+        "subcategories": {
+            "Bath & Body": {
+                "returnable": True,
+                "products": [
+                    ("Moisturising Body Wash", "250 ml", 3.49, 90),
+                    ("Bath Soap (Pack of 4)", "4 x 100 g", 2.99, 110),
+                    ("Body Lotion", "200 ml", 3.99, 80),
+                ],
+            },
+            "Oral Care": {
+                "returnable": True,
+                "products": [
+                    ("Cavity Protection Toothpaste", "150 g", 2.19, 120),
+                    ("Toothbrush (Soft, Pack of 2)", "2 pcs", 1.99, 100),
+                    ("Antiseptic Mouthwash", "250 ml", 3.29, 70),
+                ],
+            },
+            "Hair Care": {
+                "returnable": True,
+                "products": [
+                    ("Anti-Dandruff Shampoo", "340 ml", 4.99, 85),
+                    ("Smooth & Silky Conditioner", "180 ml", 4.49, 75),
+                    ("Hair Oil", "200 ml", 3.79, 90),
+                ],
+            },
+        },
+    },
+    "Baby Care": {
+        "description": "Diapers, wipes & baby food",
+        "subcategories": {
+            "Diapers & Wipes": {
+                "returnable": True,
+                "products": [
+                    ("Baby Diapers (Medium)", "30 pcs", 8.99, 60),
+                    ("Baby Diapers (Large)", "28 pcs", 9.49, 55),
+                    ("Baby Wipes", "72 pcs", 2.99, 100),
+                ],
+            },
+            "Baby Food": {
+                "returnable": True,
+                "products": [
+                    ("Baby Cereal (Wheat & Apple)", "300 g", 5.49, 50),
+                    ("Baby Formula (Stage 1)", "400 g", 12.99, 35),
+                ],
+            },
+        },
+    },
+}
+
+
+def _seed_catalog(db: Session):
+    """Create the quick-commerce catalog and return the flat list of products."""
+    all_products = []
+    for cat_name, cat_info in CATALOG.items():
+        category = Category(
+            id=str(uuid.uuid4()),
+            name=cat_name,
+            description=cat_info["description"],
+            image_url=None,
+        )
+        db.add(category)
+        for sub_name, sub_info in cat_info["subcategories"].items():
+            sub = SubCategory(
+                id=str(uuid.uuid4()),
+                category_id=category.id,
+                name=sub_name,
+                description=f"{sub_name} in {cat_name}",
+            )
+            db.add(sub)
+            returnable = sub_info["returnable"]
+            for prod_name, unit, price, stock in sub_info["products"]:
+                product = Product(
+                    id=str(uuid.uuid4()),
+                    sub_category_id=sub.id,
+                    name=prod_name,
+                    description=f"{prod_name} — {unit}. Delivered fresh in minutes.",
+                    unit=unit,
+                    price=Decimal(str(price)),
+                    stock=stock,
+                    image_url=None,
+                    is_returnable=returnable,
+                    return_window_days=7 if returnable else None,
+                )
+                db.add(product)
+                all_products.append(product)
+    db.flush()
+    return all_products
+
+
+def _seed_demo_orders(db: Session, customers, addresses, all_products):
+    """Create sample orders across the last 30 days for dashboard data."""
+    statuses = ["picking", "packed", "out_for_delivery", "delivered", "delivered"]
+    now = datetime.utcnow()
+
+    for day_offset in range(30):
+        order_date = now - timedelta(days=day_offset)
+        num_orders = random.randint(1, 4)
+
+        for _ in range(num_orders):
+            customer = random.choice(customers)
+            address_idx = customers.index(customer)
+            address = addresses[address_idx]
+
+            num_items = random.randint(2, 6)
+            selected_products = random.sample(all_products, min(num_items, len(all_products)))
+
+            order_total = Decimal("0.00")
+            order_items = []
+            for prod in selected_products:
+                qty = random.randint(1, 3)
+                item_total = prod.price * qty
+                order_total += item_total
+                order_items.append({
+                    "product_id": prod.id,
+                    "product_name": prod.name,
+                    "product_price": prod.price,
+                    "quantity": qty,
+                })
+
+            order = Order(
+                id=str(uuid.uuid4()),
+                user_id=customer.id,
+                address_snapshot={
+                    "label": address.label,
+                    "street": address.street,
+                    "city": address.city,
+                    "state": address.state,
+                    "zip_code": address.zip_code,
+                    "country": address.country,
+                },
+                total=order_total,
+                status=random.choice(statuses),
+                stripe_payment_intent_id=f"pi_demo_{uuid.uuid4().hex[:16]}",
+                created_at=order_date,
+                updated_at=order_date,
+            )
+            db.add(order)
+            db.flush()
+
+            for item_data in order_items:
+                db.add(OrderItem(id=str(uuid.uuid4()), order_id=order.id, **item_data))
 
 
 def ensure_operational_data(db: Session):
@@ -66,7 +435,6 @@ def ensure_operational_data(db: Session):
 
 def seed_database(db: Session):
     """Seed the database with initial data for demo purposes."""
-    # Check if already seeded
     existing_admin = db.query(User).filter(User.email == "admin@ecommerce.com").first()
     if existing_admin:
         print("Database already seeded, skipping.")
@@ -132,244 +500,57 @@ def seed_database(db: Session):
         db.add(addr)
         addresses.append(addr)
 
-    # --- Create Categories ---
-    categories_info = {
-        "Electronics": "Gadgets, devices, and electronic accessories",
-        "Clothing": "Fashion apparel for men, women, and kids",
-        "Home & Kitchen": "Furniture, decor, and kitchen essentials",
-        "Books": "Fiction, non-fiction, educational, and more",
-        "Sports": "Sports equipment, fitness gear, and outdoor accessories",
-    }
-    categories = {}
-    for name, desc in categories_info.items():
-        cat = Category(
-            id=str(uuid.uuid4()),
-            name=name,
-            description=desc,
-            image_url=f"/images/categories/{name.lower().replace(' & ', '-').replace(' ', '-')}.jpg",
-        )
-        db.add(cat)
-        categories[name] = cat
-
-    # --- Create SubCategories ---
-    subcategories_info = {
-        "Electronics": [
-            ("Smartphones", "Latest smartphones and mobile devices"),
-            ("Laptops", "Notebooks and laptop computers"),
-            ("Audio", "Headphones, speakers, and audio equipment"),
-        ],
-        "Clothing": [
-            ("Men's Wear", "Clothing for men"),
-            ("Women's Wear", "Clothing for women"),
-            ("Accessories", "Fashion accessories and jewelry"),
-        ],
-        "Home & Kitchen": [
-            ("Furniture", "Home furniture and decor"),
-            ("Kitchen Appliances", "Small and large kitchen appliances"),
-            ("Bedding", "Sheets, pillows, and comforters"),
-        ],
-        "Books": [
-            ("Fiction", "Novels and fiction books"),
-            ("Non-Fiction", "Biographies, self-help, and educational"),
-            ("Technology", "Programming, science, and technology books"),
-        ],
-        "Sports": [
-            ("Fitness", "Gym and fitness equipment"),
-            ("Outdoor", "Camping, hiking, and outdoor gear"),
-            ("Team Sports", "Equipment for team sports"),
-        ],
-    }
-    subcategories = {}
-    for cat_name, subs in subcategories_info.items():
-        subcategories[cat_name] = []
-        for sub_name, sub_desc in subs:
-            sub = SubCategory(
-                id=str(uuid.uuid4()),
-                category_id=categories[cat_name].id,
-                name=sub_name,
-                description=sub_desc,
-            )
-            db.add(sub)
-            subcategories[cat_name].append(sub)
-
-    # --- Create Products ---
-    products_info = {
-        "Electronics": {
-            "Smartphones": [
-                ("iPhone 15 Pro", "Latest Apple smartphone with A17 Pro chip", 999.99, 50),
-                ("Samsung Galaxy S24", "Samsung flagship with AI features", 849.99, 45),
-                ("Google Pixel 8", "Pure Android experience with amazing camera", 699.99, 30),
-                ("OnePlus 12", "Flagship killer with Snapdragon 8 Gen 3", 799.99, 25),
-            ],
-            "Laptops": [
-                ("MacBook Pro 14\"", "Apple M3 Pro chip, 18GB RAM", 1999.99, 20),
-                ("Dell XPS 15", "Intel Core i7, 16GB RAM, OLED display", 1499.99, 15),
-                ("ThinkPad X1 Carbon", "Business ultrabook with great keyboard", 1349.99, 18),
-            ],
-            "Audio": [
-                ("AirPods Pro 2", "Active noise cancellation, spatial audio", 249.99, 100),
-                ("Sony WH-1000XM5", "Premium noise-cancelling headphones", 349.99, 40),
-                ("JBL Flip 6", "Portable Bluetooth speaker", 129.99, 60),
-            ],
-        },
-        "Clothing": {
-            "Men's Wear": [
-                ("Classic Fit Polo", "100% cotton polo shirt in navy blue", 49.99, 200),
-                ("Slim Fit Jeans", "Stretch denim jeans in dark wash", 69.99, 150),
-                ("Wool Blend Blazer", "Professional blazer for office wear", 189.99, 40),
-            ],
-            "Women's Wear": [
-                ("Floral Maxi Dress", "Elegant floral print summer dress", 79.99, 80),
-                ("High-Rise Yoga Pants", "Comfortable stretch yoga leggings", 59.99, 120),
-                ("Silk Blouse", "Luxurious silk blouse in ivory", 129.99, 50),
-                ("Denim Jacket", "Classic blue denim jacket", 89.99, 70),
-            ],
-            "Accessories": [
-                ("Leather Watch", "Minimalist analog watch with leather strap", 149.99, 60),
-                ("Designer Sunglasses", "UV protection polarized sunglasses", 199.99, 45),
-                ("Cashmere Scarf", "Soft cashmere scarf in charcoal", 89.99, 35),
-            ],
-        },
-        "Home & Kitchen": {
-            "Furniture": [
-                ("Ergonomic Office Chair", "Mesh back with lumbar support", 349.99, 25),
-                ("Standing Desk", "Electric height-adjustable desk", 499.99, 15),
-                ("Bookshelf", "5-tier wooden bookshelf in walnut", 159.99, 30),
-            ],
-            "Kitchen Appliances": [
-                ("Instant Pot Duo", "7-in-1 electric pressure cooker", 89.99, 80),
-                ("Vitamix Blender", "Professional-grade blender", 449.99, 20),
-                ("Air Fryer XL", "Large capacity air fryer, 5.8 qt", 119.99, 55),
-                ("Espresso Machine", "Semi-automatic espresso maker", 299.99, 25),
-            ],
-            "Bedding": [
-                ("Egyptian Cotton Sheet Set", "1000 thread count, queen", 149.99, 40),
-                ("Memory Foam Pillow", "Cooling gel memory foam pillow", 59.99, 90),
-                ("Down Comforter", "All-season goose down comforter", 229.99, 30),
-            ],
-        },
-        "Books": {
-            "Fiction": [
-                ("The Great Adventure", "A thrilling tale of exploration", 14.99, 200),
-                ("Mystery at Midnight", "A gripping detective novel", 12.99, 180),
-                ("Love in Paris", "A romantic story set in France", 11.99, 150),
-            ],
-            "Non-Fiction": [
-                ("The Power of Habits", "Transform your life with better habits", 16.99, 250),
-                ("History of Tomorrow", "A look at the future of humanity", 19.99, 120),
-                ("Mindful Living", "Guide to meditation and mindfulness", 13.99, 100),
-            ],
-            "Technology": [
-                ("Python Mastery", "Complete guide to Python programming", 39.99, 80),
-                ("Cloud Architecture", "Designing scalable cloud systems", 44.99, 50),
-                ("AI & Machine Learning", "Introduction to AI concepts", 49.99, 60),
-                ("Web Dev Bootcamp", "Full-stack web development guide", 34.99, 75),
-            ],
-        },
-        "Sports": {
-            "Fitness": [
-                ("Adjustable Dumbbells", "5-52.5 lb adjustable dumbbell set", 299.99, 30),
-                ("Yoga Mat Premium", "Extra thick non-slip yoga mat", 39.99, 100),
-                ("Resistance Bands Set", "Set of 5 resistance bands", 24.99, 150),
-                ("Pull-Up Bar", "Doorway pull-up bar, no screws needed", 34.99, 60),
-            ],
-            "Outdoor": [
-                ("Camping Tent 4P", "4-person waterproof camping tent", 189.99, 25),
-                ("Hiking Backpack 50L", "Large capacity hiking backpack", 129.99, 35),
-                ("Trekking Poles", "Lightweight carbon fiber trekking poles", 69.99, 45),
-            ],
-            "Team Sports": [
-                ("Basketball Official", "NBA official size basketball", 29.99, 80),
-                ("Soccer Ball Pro", "FIFA approved match soccer ball", 39.99, 70),
-                ("Football Gloves", "Receiver gloves with grip technology", 44.99, 55),
-            ],
-        },
-    }
-
-    all_products = []
-    for cat_name, sub_products in products_info.items():
-        sub_list = subcategories[cat_name]
-        for sub in sub_list:
-            if sub.name in sub_products:
-                for prod_name, prod_desc, price, stock in sub_products[sub.name]:
-                    slug = prod_name.lower().replace(' ', '-').replace('"', '').replace('&', 'and')
-                    product = Product(
-                        id=str(uuid.uuid4()),
-                        sub_category_id=sub.id,
-                        name=prod_name,
-                        description=prod_desc,
-                        price=Decimal(str(price)),
-                        stock=stock,
-                        image_url=f"/images/products/{slug}.jpg",
-                    )
-                    db.add(product)
-                    all_products.append(product)
-
-    db.flush()
-
-    # --- Create Sample Orders for Dashboard Data ---
-    statuses = ["picking", "packed", "out_for_delivery", "delivered", "delivered"]
-    now = datetime.utcnow()
-
-    for day_offset in range(30):
-        order_date = now - timedelta(days=day_offset)
-        num_orders = random.randint(1, 4)
-
-        for _ in range(num_orders):
-            customer = random.choice(customers)
-            address_idx = customers.index(customer)
-            address = addresses[address_idx]
-
-            # Pick 1-4 random products for this order
-            num_items = random.randint(1, 4)
-            selected_products = random.sample(all_products, min(num_items, len(all_products)))
-
-            order_total = Decimal("0.00")
-            order_items = []
-            for prod in selected_products:
-                qty = random.randint(1, 3)
-                item_total = prod.price * qty
-                order_total += item_total
-                order_items.append({
-                    "product_id": prod.id,
-                    "product_name": prod.name,
-                    "product_price": prod.price,
-                    "quantity": qty,
-                })
-
-            order = Order(
-                id=str(uuid.uuid4()),
-                user_id=customer.id,
-                address_snapshot={
-                    "label": address.label,
-                    "street": address.street,
-                    "city": address.city,
-                    "state": address.state,
-                    "zip_code": address.zip_code,
-                    "country": address.country,
-                },
-                total=order_total,
-                status=random.choice(statuses),
-                stripe_payment_intent_id=f"pi_demo_{uuid.uuid4().hex[:16]}",
-                created_at=order_date,
-                updated_at=order_date,
-            )
-            db.add(order)
-            db.flush()
-
-            for item_data in order_items:
-                oi = OrderItem(
-                    id=str(uuid.uuid4()),
-                    order_id=order.id,
-                    **item_data,
-                )
-                db.add(oi)
+    all_products = _seed_catalog(db)
+    _seed_demo_orders(db, customers, addresses, all_products)
 
     db.commit()
     print("Database seeded successfully!")
-    print(f"  - 1 admin user (admin@ecommerce.com / admin123)")
+    print("  - 1 admin user (admin@ecommerce.com / admin123)")
     print(f"  - {len(customers)} sample customers")
-    print(f"  - {len(categories)} categories")
-    print(f"  - {sum(len(v) for v in subcategories.values())} subcategories")
+    print(f"  - {len(CATALOG)} categories")
     print(f"  - {len(all_products)} products")
-    print(f"  - Sample orders for the last 30 days")
+    print("  - Sample orders for the last 30 days")
+
+
+def reset_and_seed_catalog(db: Session):
+    """Wipe all catalog + transactional data and reseed the quick-commerce
+    catalog and demo orders. Keeps users, addresses and warehouses.
+
+    Use this to convert an already-seeded (old e-commerce) database to the
+    quick-commerce catalog. Run via `python -m app.reseed` from backend/.
+    """
+    print("Resetting catalog and transactional data...")
+    # Delete in FK-safe order. Some tables may not exist on older schemas,
+    # so guard each statement.
+    for stmt in [
+        "DELETE FROM return_status_history",
+        "DELETE FROM return_request_items",
+        "DELETE FROM return_requests",
+        "DELETE FROM cancellation_requests",
+        "DELETE FROM order_status_history",
+        "DELETE FROM payment_events",
+        "DELETE FROM order_items",
+        "DELETE FROM orders",
+        "DELETE FROM cart_items",
+        "DELETE FROM products",
+        "DELETE FROM subcategories",
+        "DELETE FROM categories",
+    ]:
+        try:
+            db.execute(text(stmt))
+            db.commit()
+        except Exception as e:  # noqa: BLE001
+            db.rollback()
+            print(f"  (skipped) {stmt}: {e}")
+
+    customers = db.query(User).filter(User.role == UserRole.customer.value).all()
+    addresses = []
+    for c in customers:
+        addr = db.query(Address).filter(Address.user_id == c.id).first()
+        addresses.append(addr)
+
+    all_products = _seed_catalog(db)
+    if customers and all(addresses):
+        _seed_demo_orders(db, customers, addresses, all_products)
+    db.commit()
+    print(f"Reseeded {len(CATALOG)} categories and {len(all_products)} products.")

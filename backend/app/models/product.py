@@ -12,6 +12,8 @@ class Product(Base):
     sub_category_id = Column(String(36), ForeignKey("subcategories.id"), nullable=False)
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
+    # Pack size shown on the card, e.g. "500 g", "1 L", "6 pcs", "200 g pack".
+    unit = Column(String(50), nullable=True)
     price = Column(Numeric(10, 2), nullable=False)
     stock = Column(Integer, default=0, nullable=False)
     image_url = Column(Text, nullable=True)
