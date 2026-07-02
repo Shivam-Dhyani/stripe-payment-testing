@@ -45,14 +45,23 @@ const formatStatus = (status: string): string => {
   return status.replace(/_/g, ' ');
 };
 
-const statusTimeline: string[] = ['requested', 'approved', 'pickup_scheduled', 'handed_over', 'received', 'refunded'];
+// Admin-facing timeline labels.
+const timelineLabels: Record<string, string> = {
+  requested: 'Return requested',
+  approved: 'Approved',
+  rejected: 'Rejected',
+  pickup_scheduled: 'Pickup scheduled',
+  handed_over: 'Picked up by rider',
+  received: 'Received at warehouse',
+  refunded: 'Refunded',
+  withdrawn: 'Withdrawn',
+};
 
-const getCompletedStatuses = (currentStatus: string): string[] => {
-  if (currentStatus === 'rejected') return ['requested', 'rejected'];
-  if (currentStatus === 'withdrawn') return ['requested', 'withdrawn'];
-  const idx = statusTimeline.indexOf(currentStatus);
-  if (idx === -1) return ['requested'];
-  return statusTimeline.slice(0, idx + 1);
+const roleLabels: Record<string, string> = {
+  customer: 'Customer',
+  admin: 'Admin',
+  delivery_partner: 'Delivery Partner',
+  warehouse_operator: 'Warehouse',
 };
 
 const ReturnRequests = () => {
@@ -431,27 +440,32 @@ const ReturnRequests = () => {
               </div>
             </div>
 
-            {/* Status Timeline */}
+            {/* Status Timeline — every transition with time + who did it */}
             <div className="mb-6">
               <h3 className="font-semibold text-gray-800 mb-3">Status Timeline</h3>
               <div className="relative pl-6 border-l-2 border-gray-200 space-y-4">
-                {getCompletedStatuses(selectedRequest.status).map((status, index, arr) => {
+                {(selectedRequest.status_history || []).map((h, index, arr) => {
                   const isLast = index === arr.length - 1;
-                  const { color, bg } = getTimelineColor(status);
+                  const { color, bg } = getTimelineColor(h.status);
                   return (
-                    <div key={status} className="relative">
+                    <div key={`${h.status}-${index}`} className="relative">
                       <div className={`absolute -left-[calc(0.75rem+1px)] top-0 w-6 h-6 rounded-full flex items-center justify-center ${bg} ${color} ${isLast ? 'ring-2 ring-offset-2 ring-current' : ''}`}>
-                        {getTimelineIcon(status)}
+                        {getTimelineIcon(h.status)}
                       </div>
                       <div className="ml-4">
-                        <span className={`text-sm font-semibold capitalize ${color}`}>
-                          {formatStatus(status)}
+                        <span className={`text-sm font-semibold ${color}`}>
+                          {timelineLabels[h.status] || formatStatus(h.status)}
                         </span>
-                        {status === 'requested' && (
-                          <p className="text-xs text-gray-400 mt-0.5">{formatDateTime(selectedRequest.created_at)}</p>
-                        )}
-                        {status === selectedRequest.status && status !== 'requested' && (
-                          <p className="text-xs text-gray-400 mt-0.5">{formatDateTime(selectedRequest.updated_at)}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">{formatDateTime(h.created_at)}</p>
+                        {h.actor_name && (
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            by {h.actor_name}
+                            {h.actor_role && (
+                              <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 text-[10px] font-medium">
+                                {roleLabels[h.actor_role] || h.actor_role}
+                              </span>
+                            )}
+                          </p>
                         )}
                       </div>
                     </div>

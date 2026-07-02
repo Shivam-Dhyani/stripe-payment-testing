@@ -30,6 +30,16 @@ class ReturnAssignRider(BaseModel):
     delivery_partner_id: str
 
 
+class ReturnStatusHistoryResponse(BaseModel):
+    status: str
+    changed_by: Optional[str] = None
+    actor_name: Optional[str] = None  # hidden from customers
+    actor_role: Optional[str] = None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class ReturnRequestItemResponse(BaseModel):
     id: str
     order_item_id: str
@@ -61,5 +71,6 @@ class ReturnRequestResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     items: List[ReturnRequestItemResponse] = []
+    status_history: List[ReturnStatusHistoryResponse] = []
 
     model_config = ConfigDict(from_attributes=True)

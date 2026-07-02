@@ -68,42 +68,44 @@ const cancelPillColors: Record<string, string> = {
 };
 
 const RETURN_FLOW: { key: string; label: string }[] = [
-  { key: 'requested', label: 'Return Requested' },
+  { key: 'requested', label: 'Return requested' },
   { key: 'approved', label: 'Approved' },
-  { key: 'pickup_scheduled', label: 'Pickup Scheduled' },
-  { key: 'handed_over', label: 'Picked Up by Courier' },
-  { key: 'received', label: 'Received at Warehouse' },
+  { key: 'pickup_scheduled', label: 'Pickup scheduled' },
+  { key: 'handed_over', label: 'Handover' },
+  { key: 'received', label: 'Received by warehouse' },
   { key: 'refunded', label: 'Refunded' },
 ];
 
 type TimelineStep = { key: string; label: string; state: 'done' | 'current' | 'todo' | 'rejected'; date: string | null };
 
 const buildReturnSteps = (r: ReturnRequest): TimelineStep[] => {
-  if (r.status === 'rejected') {
-    return [
-      { key: 'requested', label: 'Return Requested', state: 'done', date: r.created_at },
-      { key: 'rejected', label: 'Rejected', state: 'rejected', date: r.updated_at },
-    ];
+  // First timestamp recorded for each status.
+  const at: Record<string, string> = {};
+  (r.status_history || []).forEach((h) => {
+    if (!at[h.status]) at[h.status] = h.created_at;
+  });
+  const terminal = r.status === 'rejected' || r.status === 'withdrawn';
+
+  if (terminal) {
+    const steps: TimelineStep[] = RETURN_FLOW.filter((s) => at[s.key]).map((s) => ({
+      key: s.key, label: s.label, state: 'done', date: at[s.key],
+    }));
+    if (steps.length === 0) steps.push({ key: 'requested', label: 'Return requested', state: 'done', date: r.created_at });
+    steps.push({
+      key: r.status,
+      label: r.status === 'rejected' ? 'Rejected' : 'Withdrawn by you',
+      state: 'rejected',
+      date: at[r.status] || r.updated_at,
+    });
+    return steps;
   }
-  if (r.status === 'withdrawn') {
-    return [
-      { key: 'requested', label: 'Return Requested', state: 'done', date: r.created_at },
-      { key: 'withdrawn', label: 'Withdrawn by you', state: 'rejected', date: r.updated_at },
-    ];
-  }
+
   const idx = RETURN_FLOW.findIndex((s) => s.key === r.status);
   return RETURN_FLOW.map((s, i) => ({
     key: s.key,
     label: s.label,
-    state: i < idx ? 'done' : i === idx ? 'current' : 'todo',
-    date:
-      s.key === 'requested'
-        ? r.created_at
-        : s.key === 'pickup_scheduled' && r.pickup_date
-        ? r.pickup_date
-        : i === idx
-        ? r.updated_at
-        : null,
+    state: at[s.key] ? (i === idx ? 'current' : 'done') : i < idx ? 'done' : 'todo',
+    date: at[s.key] || (s.key === 'requested' ? r.created_at : null),
   }));
 };
 

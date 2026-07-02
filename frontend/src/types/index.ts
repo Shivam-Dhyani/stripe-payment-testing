@@ -228,6 +228,14 @@ export interface ReturnRequestItem {
   product_price: number | null;
 }
 
+export interface ReturnStatusHistory {
+  status: string;
+  changed_by: string | null;
+  actor_name: string | null;
+  actor_role: string | null;
+  created_at: string;
+}
+
 export interface ReturnRequest {
   id: string;
   order_id: string;
@@ -249,6 +257,7 @@ export interface ReturnRequest {
   created_at: string;
   updated_at: string;
   items: ReturnRequestItem[];
+  status_history: ReturnStatusHistory[];
 }
 
 export interface AdminCartItem {

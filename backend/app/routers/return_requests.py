@@ -8,11 +8,11 @@ from app.database import get_db
 from app.models.user import User, UserRole
 from app.models.order import Order, OrderItem, OrderStatusHistory, recompute_payment_status
 from app.models.product import Product
-from app.models.return_request import ReturnRequest, ReturnRequestItem
+from app.models.return_request import ReturnRequest, ReturnRequestItem, ReturnStatusHistory
 from app.models.payment_event import PaymentEvent, PaymentEventType
 from app.schemas.return_request import (
     ReturnRequestCreate, ReturnRequestResolve, ReturnRequestResponse, ReturnRequestItemResponse,
-    SchedulePickupRequest, ReturnAssignRider,
+    SchedulePickupRequest, ReturnAssignRider, ReturnStatusHistoryResponse,
 )
 from app.middleware.auth import get_current_user, get_admin_user
 from app.services.stripe_service import create_refund
@@ -50,8 +50,39 @@ def _format_address(addr) -> str:
     return ", ".join(p for p in parts if p)
 
 
-def _build_response(req, db: Session) -> ReturnRequestResponse:
-    """Build a ReturnRequestResponse with computed fields from related models."""
+def _record_history(db: Session, req: ReturnRequest, status_value: str, user_id) -> None:
+    """Append a return status-transition entry (timestamped, with the acting user)."""
+    db.add(ReturnStatusHistory(return_request_id=req.id, status=status_value, changed_by=user_id))
+
+
+def _build_status_history(req, db: Session, hide_actors: bool):
+    """Build the timeline entries. Falls back to created/updated timestamps for
+    returns that predate the history table so their timeline isn't blank."""
+    rows = list(req.status_history or [])
+    if not rows:
+        history = [ReturnStatusHistoryResponse(status="requested", created_at=req.created_at)]
+        if req.status != "requested":
+            history.append(ReturnStatusHistoryResponse(status=req.status, created_at=req.updated_at))
+        return history
+
+    history = []
+    for h in sorted(rows, key=lambda x: x.created_at):
+        actor = db.query(User).filter(User.id == h.changed_by).first() if h.changed_by else None
+        history.append(ReturnStatusHistoryResponse(
+            status=h.status,
+            changed_by=h.changed_by,
+            actor_name=None if hide_actors or not actor else f"{actor.first_name} {actor.last_name}".strip(),
+            actor_role=None if hide_actors or not actor else str(actor.role),
+            created_at=h.created_at,
+        ))
+    return history
+
+
+def _build_response(req, db: Session, hide_actors: bool = False) -> ReturnRequestResponse:
+    """Build a ReturnRequestResponse with computed fields from related models.
+
+    hide_actors=True omits staff names (used for customer-facing responses).
+    """
     user = db.query(User).filter(User.id == req.user_id).first()
     order = db.query(Order).filter(Order.id == req.order_id).first()
     resolver = db.query(User).filter(User.id == req.resolved_by).first() if req.resolved_by else None
@@ -63,8 +94,9 @@ def _build_response(req, db: Session) -> ReturnRequestResponse:
     resp.customer_email = user.email if user else None
     resp.order_total = float(order.total) if order else None
     resp.order_status = order.status if order else None
-    resp.resolver_name = f"{resolver.first_name} {resolver.last_name}" if resolver else None
-    resp.delivery_partner_name = f"{rider.first_name} {rider.last_name}" if rider else None
+    resp.resolver_name = None if hide_actors else (f"{resolver.first_name} {resolver.last_name}" if resolver else None)
+    resp.delivery_partner_name = None if hide_actors else (f"{rider.first_name} {rider.last_name}" if rider else None)
+    resp.status_history = _build_status_history(req, db, hide_actors)
 
     for item_resp in resp.items:
         order_item = db.query(OrderItem).filter(OrderItem.id == item_resp.order_item_id).first()
@@ -232,10 +264,12 @@ def create_return_request(
         )
         db.add(return_item)
 
+    _record_history(db, return_request, "requested", current_user.id)
+
     db.commit()
     db.refresh(return_request)
 
-    return _build_response(return_request, db)
+    return _build_response(return_request, db, hide_actors=True)
 
 
 @router.get("", response_model=List[ReturnRequestResponse])
@@ -248,8 +282,13 @@ def list_return_requests(
     if current_user.role != UserRole.admin:
         query = query.filter(ReturnRequest.user_id == current_user.id)
 
-    requests = query.options(joinedload(ReturnRequest.items)).order_by(ReturnRequest.created_at.desc()).all()
-    return [_build_response(req, db) for req in requests]
+    requests = (
+        query.options(joinedload(ReturnRequest.items), joinedload(ReturnRequest.status_history))
+        .order_by(ReturnRequest.created_at.desc())
+        .all()
+    )
+    hide = current_user.role != UserRole.admin
+    return [_build_response(req, db, hide_actors=hide) for req in requests]
 
 
 @router.get("/{request_id}", response_model=ReturnRequestResponse)
@@ -259,14 +298,19 @@ def get_return_request(
     db: Session = Depends(get_db),
 ):
     """Get a single return request by ID."""
-    req = db.query(ReturnRequest).options(joinedload(ReturnRequest.items)).filter(ReturnRequest.id == request_id).first()
+    req = (
+        db.query(ReturnRequest)
+        .options(joinedload(ReturnRequest.items), joinedload(ReturnRequest.status_history))
+        .filter(ReturnRequest.id == request_id)
+        .first()
+    )
     if not req:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Return request not found")
 
     if current_user.role != UserRole.admin and req.user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
 
-    return _build_response(req, db)
+    return _build_response(req, db, hide_actors=current_user.role != UserRole.admin)
 
 
 # Admin-driven transitions. Scheduling pickup and confirming hand-over are
@@ -337,6 +381,7 @@ def resolve_return_request(
     if data.admin_notes:
         req.admin_notes = data.admin_notes
     req.resolved_by = admin.id
+    _record_history(db, req, data.status, admin.id)
 
     db.commit()
     db.refresh(req)
@@ -348,7 +393,7 @@ def _get_own_return(request_id: str, current_user: User, db: Session) -> ReturnR
     """Fetch a return request and ensure it belongs to the current customer."""
     req = (
         db.query(ReturnRequest)
-        .options(joinedload(ReturnRequest.items))
+        .options(joinedload(ReturnRequest.items), joinedload(ReturnRequest.status_history))
         .filter(ReturnRequest.id == request_id)
         .first()
     )
@@ -379,10 +424,11 @@ def schedule_pickup(
     req.pickup_date = data.pickup_date
     req.pickup_address = data.pickup_address or _format_address(order.address_snapshot if order else None)
     req.status = "pickup_scheduled"
+    _record_history(db, req, "pickup_scheduled", current_user.id)
 
     db.commit()
     db.refresh(req)
-    return _build_response(req, db)
+    return _build_response(req, db, hide_actors=True)
 
 
 @router.post("/{request_id}/withdraw", response_model=ReturnRequestResponse)
@@ -401,15 +447,16 @@ def withdraw_return(
         )
 
     req.status = "withdrawn"
+    _record_history(db, req, "withdrawn", current_user.id)
     db.commit()
     db.refresh(req)
-    return _build_response(req, db)
+    return _build_response(req, db, hide_actors=True)
 
 
 def _get_return_or_404(request_id: str, db: Session) -> ReturnRequest:
     req = (
         db.query(ReturnRequest)
-        .options(joinedload(ReturnRequest.items))
+        .options(joinedload(ReturnRequest.items), joinedload(ReturnRequest.status_history))
         .filter(ReturnRequest.id == request_id)
         .first()
     )
@@ -462,9 +509,10 @@ def mark_picked_up(
             detail=f"Pickup can only be confirmed once scheduled (current status: '{req.status}')",
         )
     req.status = "handed_over"
+    _record_history(db, req, "handed_over", current_user.id)
     db.commit()
     db.refresh(req)
-    return _build_response(req, db)
+    return _build_response(req, db, hide_actors=current_user.role != UserRole.admin)
 
 
 @router.post("/{request_id}/mark-received", response_model=ReturnRequestResponse)
@@ -483,6 +531,7 @@ def mark_received(
             detail=f"Only in-transit returns can be received (current status: '{req.status}')",
         )
     req.status = "received"
+    _record_history(db, req, "received", current_user.id)
     db.commit()
     db.refresh(req)
-    return _build_response(req, db)
+    return _build_response(req, db, hide_actors=current_user.role != UserRole.admin)

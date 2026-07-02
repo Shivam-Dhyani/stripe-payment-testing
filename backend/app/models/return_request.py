@@ -33,6 +33,26 @@ class ReturnRequest(Base):
     delivery_partner = relationship("User", foreign_keys=[delivery_partner_id])
     resolver = relationship("User", foreign_keys=[resolved_by])
     items = relationship("ReturnRequestItem", back_populates="return_request", cascade="all, delete-orphan")
+    status_history = relationship(
+        "ReturnStatusHistory",
+        back_populates="return_request",
+        cascade="all, delete-orphan",
+        order_by="ReturnStatusHistory.created_at",
+    )
+
+
+class ReturnStatusHistory(Base):
+    """One row per return status transition — powers the return timeline."""
+
+    __tablename__ = "return_status_history"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    return_request_id = Column(String(36), ForeignKey("return_requests.id"), nullable=False)
+    status = Column(String(20), nullable=False)          # the status moved into
+    changed_by = Column(String(36), ForeignKey("users.id"), nullable=True)  # actor
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    return_request = relationship("ReturnRequest", back_populates="status_history")
 
 
 class ReturnRequestItem(Base):
