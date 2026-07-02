@@ -80,6 +80,11 @@ const ReturnRequests = () => {
   const [deliveryPartners, setDeliveryPartners] = useState<User[]>([]);
   const [selectedRider, setSelectedRider] = useState('');
 
+  // Assign-rider modal (from the list)
+  const [assignModal, setAssignModal] = useState<ReturnRequest | null>(null);
+  const [assignRiderId, setAssignRiderId] = useState('');
+  const [assigningRider, setAssigningRider] = useState(false);
+
   useEffect(() => {
     dispatch(fetchReturnRequests());
     staffService.getByRole('delivery_partner').then(setDeliveryPartners).catch(() => {});
@@ -90,6 +95,22 @@ const ReturnRequests = () => {
     const result = await dispatch(assignReturnRider({ id: selectedRequest.id, deliveryPartnerId: selectedRider }));
     if (assignReturnRider.fulfilled.match(result)) {
       setSelectedRequest(result.payload);
+    }
+  };
+
+  const openAssignModal = (request: ReturnRequest) => {
+    setAssignModal(request);
+    setAssignRiderId(request.delivery_partner_id || '');
+  };
+
+  const submitAssignRider = async () => {
+    if (!assignModal || !assignRiderId) return;
+    setAssigningRider(true);
+    const result = await dispatch(assignReturnRider({ id: assignModal.id, deliveryPartnerId: assignRiderId }));
+    setAssigningRider(false);
+    if (assignReturnRider.fulfilled.match(result)) {
+      setAssignModal(null);
+      dispatch(fetchReturnRequests());
     }
   };
 
@@ -318,6 +339,31 @@ const ReturnRequests = () => {
                     </td>
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-2">
+                        {['approved', 'pickup_scheduled'].includes(request.status) && (
+                          request.delivery_partner_id ? (
+                            <button
+                              onClick={() => openAssignModal(request)}
+                              className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                              title="Reassign pickup rider"
+                            >
+                              <Truck className="w-3.5 h-3.5 text-brand-500" />
+                              {request.delivery_partner_name || 'Rider'}
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => openAssignModal(request)}
+                              className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors font-medium ${
+                                request.status === 'pickup_scheduled'
+                                  ? 'bg-amber-500 text-white hover:bg-amber-600'
+                                  : 'border border-brand-300 text-brand-600 hover:bg-brand-50'
+                              }`}
+                              title={request.status === 'pickup_scheduled' ? 'Pickup scheduled — assign a rider to collect' : 'Assign a pickup rider'}
+                            >
+                              <Truck className="w-3.5 h-3.5" />
+                              Assign Rider
+                            </button>
+                          )
+                        )}
                         {(() => {
                           const isActionable = nextActionsFor(request.status).length > 0;
                           return (
@@ -384,6 +430,58 @@ const ReturnRequests = () => {
           </div>
         )}
       </div>
+
+      {/* Assign Rider Modal (from the list) */}
+      {assignModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-2xl shadow-theme-lg w-full max-w-md mx-4 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-2">
+                <Truck className="w-5 h-5 text-brand-500" />
+                <h2 className="text-lg font-semibold text-gray-800">Assign Pickup Rider</h2>
+              </div>
+              <button onClick={() => setAssignModal(null)} className="text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-sm text-gray-500 mb-4">
+              Return for order <span className="font-mono">#{assignModal.order_id.substring(0, 8)}</span> — assign a rider to collect the item from the customer.
+            </p>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Delivery Partner</label>
+            <select
+              value={assignRiderId}
+              onChange={(e) => setAssignRiderId(e.target.value)}
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white focus:outline-hidden focus:ring-3 focus:border-brand-300 focus:ring-brand-500/20"
+            >
+              <option value="">— Select rider —</option>
+              {deliveryPartners.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {`${r.first_name || ''} ${r.last_name || ''}`.trim() || r.email}
+                </option>
+              ))}
+            </select>
+            {deliveryPartners.length === 0 && (
+              <p className="text-xs text-amber-600 mt-2">No delivery partners found. Create one from the admin staff tools.</p>
+            )}
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => setAssignModal(null)}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitAssignRider}
+                disabled={assigningRider || !assignRiderId}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition font-medium text-sm disabled:opacity-50"
+              >
+                {assigningRider && <ButtonSpinner />}
+                Assign Rider
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Detail Modal */}
       {selectedRequest && (
