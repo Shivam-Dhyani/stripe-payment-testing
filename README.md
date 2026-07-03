@@ -197,29 +197,19 @@ admin → `/admin/dashboard`, warehouse → `/warehouse`, rider → `/rider`, cu
 
 ## Features
 
-<<<<<<< Updated upstream
 **Customer Storefront:**
+
 - Quick-commerce browse with pack-size units (e.g. "500 g", "1 L", "6 pcs")
 - Blinkit-style product cards with ADD → quantity stepper
 - Product detail pages, "Delivery in 10 minutes" motif
-=======
-**Customer Portal:**
-
-- Browse products with category/subcategory filters
-- Product detail pages
->>>>>>> Stashed changes
 - Shopping cart with quantity management
 - Multi-step checkout (Address > Review > Stripe Payment)
 - Order history with fulfillment + refund timelines
 - Returns & cancellations with confirmation dialogs
 
 **Admin Dashboard:**
-<<<<<<< Updated upstream
-- KPI cards (revenue net of refunds, orders, products, customers)
-=======
 
-- KPI cards (revenue, orders, products, customers)
->>>>>>> Stashed changes
+- KPI cards (revenue net of refunds, orders, products, customers)
 - Revenue chart, order trends, category distribution (Recharts)
 - Full CRUD for categories, subcategories, and products
 - Order management, manual rider/warehouse assignment (pre-dispatch)
@@ -230,5 +220,6 @@ admin → `/admin/dashboard`, warehouse → `/warehouse`, rider → `/rider`, cu
 **Delivery Partner (rider) portal** (`/rider`): deliveries + return pickups.
 
 **Quick-commerce lifecycle:**
+
 - Order: `placed → accepted → picking → packed → out_for_delivery → delivered`
 - Return: `requested → approved → pickup_scheduled → handed_over → received → refunded`
