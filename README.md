@@ -91,7 +91,7 @@ STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key
 Start the backend:
 
 ```bash
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+python -m uvicorn app.main:app --reload --port 8000
 ```
 
 The server starts at `http://localhost:8000`. On first run it automatically
@@ -137,21 +137,21 @@ The app starts at `http://localhost:3000`.
 
 ### Backend
 
-| Command | Description |
-|---------|-------------|
-| `uvicorn app.main:app --reload` | Start dev server with hot reload |
-| `uvicorn app.main:app --host 0.0.0.0 --port 8000` | Start production server |
-| `pip install -r requirements.txt` | Install Python dependencies |
-| `pip freeze > requirements.txt` | Update dependency lock |
+| Command                                           | Description                      |
+| ------------------------------------------------- | -------------------------------- |
+| `uvicorn app.main:app --reload`                   | Start dev server with hot reload |
+| `uvicorn app.main:app --host 0.0.0.0 --port 8000` | Start production server          |
+| `pip install -r requirements.txt`                 | Install Python dependencies      |
+| `pip freeze > requirements.txt`                   | Update dependency lock           |
 
 ### Frontend
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start Vite dev server (port 3000) |
-| `npm run build` | Type-check and build for production |
-| `npm run preview` | Preview production build locally |
-| `npm run lint` | Run ESLint |
+| Command           | Description                         |
+| ----------------- | ----------------------------------- |
+| `npm run dev`     | Start Vite dev server (port 3000)   |
+| `npm run build`   | Type-check and build for production |
+| `npm run preview` | Preview production build locally    |
+| `npm run lint`    | Run ESLint                          |
 
 ## API Documentation
 
@@ -162,21 +162,21 @@ Once the backend is running, interactive API docs are available at:
 
 ### Key API Endpoints
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/auth/register` | POST | Register new customer |
-| `/api/auth/login` | POST | Login (returns JWT) |
-| `/api/auth/me` | GET | Current user profile |
-| `/api/categories` | GET | List categories |
-| `/api/subcategories` | GET | List subcategories |
-| `/api/products` | GET | List products (paginated) |
-| `/api/cart` | GET/POST/DELETE | Cart operations |
-| `/api/addresses` | GET/POST/PUT/DELETE | Address management |
-| `/api/orders/checkout` | POST | Create order + Stripe PaymentIntent |
-| `/api/orders/{id}/confirm` | POST | Confirm payment |
-| `/api/orders` | GET | User's orders |
-| `/api/orders/all` | GET | All orders (admin only) |
-| `/api/dashboard/stats` | GET | Dashboard KPIs (admin only) |
+| Endpoint                   | Method              | Description                         |
+| -------------------------- | ------------------- | ----------------------------------- |
+| `/api/auth/register`       | POST                | Register new customer               |
+| `/api/auth/login`          | POST                | Login (returns JWT)                 |
+| `/api/auth/me`             | GET                 | Current user profile                |
+| `/api/categories`          | GET                 | List categories                     |
+| `/api/subcategories`       | GET                 | List subcategories                  |
+| `/api/products`            | GET                 | List products (paginated)           |
+| `/api/cart`                | GET/POST/DELETE     | Cart operations                     |
+| `/api/addresses`           | GET/POST/PUT/DELETE | Address management                  |
+| `/api/orders/checkout`     | POST                | Create order + Stripe PaymentIntent |
+| `/api/orders/{id}/confirm` | POST                | Confirm payment                     |
+| `/api/orders`              | GET                 | User's orders                       |
+| `/api/orders/all`          | GET                 | All orders (admin only)             |
+| `/api/dashboard/stats`     | GET                 | Dashboard KPIs (admin only)         |
 
 ## Demo Accounts
 
@@ -184,30 +184,42 @@ Seeded automatically on first successful startup. Every password is `password123
 except the admin (`admin123`). After login each role lands on its own home:
 admin → `/admin/dashboard`, warehouse → `/warehouse`, rider → `/rider`, customer → `/`.
 
-| Role | Email | Password |
-|------|-------|----------|
-| Admin | `admin@ecommerce.com` | `admin123` |
-| Warehouse operator | `warehouse@ecommerce.com` | `password123` |
-| Delivery partner (rider) | `rider@ecommerce.com` | `password123` |
-| Customer | `john@example.com` | `password123` |
-| Customer | `jane@example.com` | `password123` |
-| Customer | `bob@example.com` | `password123` |
-| Customer | `alice@example.com` | `password123` |
-| Customer | `charlie@example.com` | `password123` |
+| Role                     | Email                     | Password      |
+| ------------------------ | ------------------------- | ------------- |
+| Admin                    | `admin@ecommerce.com`     | `admin123`    |
+| Warehouse operator       | `warehouse@ecommerce.com` | `password123` |
+| Delivery partner (rider) | `rider@ecommerce.com`     | `password123` |
+| Customer                 | `john@example.com`        | `password123` |
+| Customer                 | `jane@example.com`        | `password123` |
+| Customer                 | `bob@example.com`         | `password123` |
+| Customer                 | `alice@example.com`       | `password123` |
+| Customer                 | `charlie@example.com`     | `password123` |
 
 ## Features
 
+<<<<<<< Updated upstream
 **Customer Storefront:**
 - Quick-commerce browse with pack-size units (e.g. "500 g", "1 L", "6 pcs")
 - Blinkit-style product cards with ADD → quantity stepper
 - Product detail pages, "Delivery in 10 minutes" motif
+=======
+**Customer Portal:**
+
+- Browse products with category/subcategory filters
+- Product detail pages
+>>>>>>> Stashed changes
 - Shopping cart with quantity management
 - Multi-step checkout (Address > Review > Stripe Payment)
 - Order history with fulfillment + refund timelines
 - Returns & cancellations with confirmation dialogs
 
 **Admin Dashboard:**
+<<<<<<< Updated upstream
 - KPI cards (revenue net of refunds, orders, products, customers)
+=======
+
+- KPI cards (revenue, orders, products, customers)
+>>>>>>> Stashed changes
 - Revenue chart, order trends, category distribution (Recharts)
 - Full CRUD for categories, subcategories, and products
 - Order management, manual rider/warehouse assignment (pre-dispatch)
