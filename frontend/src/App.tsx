@@ -24,6 +24,7 @@ import ProductDetail from './pages/user/ProductDetail';
 import Cart from './pages/user/Cart';
 import Checkout from './pages/user/Checkout';
 import OrderHistory from './pages/user/OrderHistory';
+import OrderTracking from './pages/user/OrderTracking';
 import Profile from './pages/user/Profile';
 
 // Admin Pages
@@ -90,6 +91,14 @@ const AppContent = () => {
           element={
             <ProtectedRoute>
               <OrderHistory />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/orders/:id/track"
+          element={
+            <ProtectedRoute>
+              <OrderTracking />
             </ProtectedRoute>
           }
         />

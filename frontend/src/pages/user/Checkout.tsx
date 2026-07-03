@@ -139,7 +139,8 @@ const Checkout = () => {
 
   const handlePaymentSuccess = () => {
     toast.success('Order placed successfully!');
-    navigate('/orders');
+    // Drop straight into live tracking for the order just placed.
+    navigate(checkoutData?.order_id ? `/orders/${checkoutData.order_id}/track` : '/orders');
   };
 
   return (

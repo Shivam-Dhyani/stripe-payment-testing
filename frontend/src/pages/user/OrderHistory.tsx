@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { fetchOrders, fetchOrderById } from '../../store/slices/orderSlice';
 import { createCancellationRequest, fetchCancellationRequests } from '../../store/slices/cancellationSlice';
 import { createReturnRequest, fetchReturnRequests, schedulePickup, withdrawReturn } from '../../store/slices/returnSlice';
-import { Package, ChevronDown, ChevronUp, Calendar, Hash, Check, X, XCircle, CreditCard, Ban, RotateCcw, Truck, MapPin } from 'lucide-react';
+import { Package, ChevronDown, ChevronUp, Calendar, Hash, Check, X, XCircle, CreditCard, Ban, RotateCcw, Truck, MapPin, Zap } from 'lucide-react';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ButtonSpinner from '../../components/common/ButtonSpinner';
 import { useConfirm } from '../../components/common/ConfirmDialog';
@@ -389,6 +390,24 @@ const OrderHistory = () => {
 
               {expandedOrderId === order.id && selectedOrder?.id === order.id && (
                 <div className="border-t border-gray-200 p-6 bg-gray-50">
+                  {/* Live tracking CTA for in-progress orders */}
+                  {!['delivered', 'cancelled', 'refunded'].includes(selectedOrder.status) && (
+                    <Link
+                      to={`/orders/${order.id}/track`}
+                      className="mb-5 flex items-center justify-between gap-3 rounded-2xl bg-ink-900 px-4 py-3 text-white hover:bg-ink-800 transition-colors"
+                    >
+                      <span className="flex items-center gap-2 text-sm font-semibold">
+                        <span className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent-400 opacity-75" />
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-accent-400" />
+                        </span>
+                        Track this order live
+                      </span>
+                      <span className="inline-flex items-center gap-1 text-xs font-bold text-accent-400">
+                        <Zap className="w-3.5 h-3.5" fill="currentColor" strokeWidth={0} /> View
+                      </span>
+                    </Link>
+                  )}
                   {/* Step Tracker */}
                   {(() => {
                     const steps = getStepData(selectedOrder);
