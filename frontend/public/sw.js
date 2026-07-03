@@ -1,7 +1,7 @@
 // Zippy service worker — installable PWA + basic offline support.
 // Bump CACHE whenever the app shell/branding changes so returning users
 // purge the old cache instead of being served stale assets.
-const CACHE = 'zippy-v2';
+const CACHE = 'zippy-v3';
 const APP_SHELL = [
   '/',
   '/index.html',
