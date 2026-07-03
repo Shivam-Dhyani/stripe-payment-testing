@@ -10,6 +10,7 @@ from app.models.payment_event import PaymentEvent, PaymentEventType
 from app.models.webhook_event import WebhookEvent
 from app.models.cancellation_request import CancellationRequest, VALID_CANCELLATION_STATUSES
 from app.models.return_request import ReturnRequest, ReturnRequestItem, ReturnStatusHistory, VALID_RETURN_STATUSES
+from app.models.push_subscription import PushSubscription
 
 __all__ = [
     "User",
@@ -35,4 +36,5 @@ __all__ = [
     "ReturnRequestItem",
     "ReturnStatusHistory",
     "VALID_RETURN_STATUSES",
+    "PushSubscription",
 ]

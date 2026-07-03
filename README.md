@@ -86,7 +86,25 @@ ACCESS_TOKEN_EXPIRE_MINUTES=1440
 STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
 STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
 STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key
+
+# Web Push (optional). Leave blank to disable push notifications.
+VAPID_PUBLIC_KEY=
+VAPID_PRIVATE_KEY=
+VAPID_SUBJECT=mailto:you@example.com
 ```
+
+**Push notifications (optional).** To enable order/delivery push alerts,
+generate a free VAPID keypair once and paste it into `.env`:
+
+```bash
+pip install pywebpush
+vapid --gen && vapid --applicationServerKey   # prints the public/private keys
+# or: npx web-push generate-vapid-keys
+```
+
+Push is scoped to customers (order status) and riders (new assignments), and
+only works over HTTPS (localhost is exempt). If the keys are blank the app runs
+normally — the notification UI simply hides itself.
 
 Start the backend:
 

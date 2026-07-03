@@ -11,6 +11,13 @@ class Settings(BaseSettings):
     STRIPE_WEBHOOK_SECRET: str = "whsec_placeholder"
     STRIPE_PUBLISHABLE_KEY: str = "pk_test_placeholder"
 
+    # Web Push (VAPID). Generate a keypair locally and set these in .env:
+    #   pip install pywebpush && vapid --gen   (or: npx web-push generate-vapid-keys)
+    # Leave blank to disable push notifications — the app no-ops gracefully.
+    VAPID_PUBLIC_KEY: str = ""
+    VAPID_PRIVATE_KEY: str = ""
+    VAPID_SUBJECT: str = "mailto:admin@zippy.app"
+
     model_config = {"env_file": ".env", "extra": "ignore"}
 
 

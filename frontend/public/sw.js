@@ -1,7 +1,7 @@
 // Zippy service worker — installable PWA + basic offline support.
 // Bump CACHE whenever the app shell/branding changes so returning users
 // purge the old cache instead of being served stale assets.
-const CACHE = 'zippy-v5';
+const CACHE = 'zippy-v6';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -23,6 +23,35 @@ self.addEventListener('install', (event) => {
 // The page tells us to activate immediately (user accepted the update).
 self.addEventListener('message', (event) => {
   if (event.data === 'SKIP_WAITING') self.skipWaiting();
+});
+
+// ===== Web Push =====
+self.addEventListener('push', (event) => {
+  let data = {};
+  try { data = event.data ? event.data.json() : {}; } catch (e) { data = {}; }
+  const title = data.title || 'Zippy';
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body: data.body || '',
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      data: { url: data.url || '/' },
+      vibrate: [80, 40, 80],
+    })
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = (event.notification.data && event.notification.data.url) || '/';
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((wins) => {
+      for (const client of wins) {
+        if (client.url.includes(target) && 'focus' in client) return client.focus();
+      }
+      if (self.clients.openWindow) return self.clients.openWindow(target);
+    })
+  );
 });
 
 self.addEventListener('activate', (event) => {

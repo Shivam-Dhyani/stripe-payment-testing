@@ -5,6 +5,7 @@ import { returnService } from '../../services/returnService';
 import { Order, ReturnRequest } from '../../types';
 import StaffHeader from '../../components/layout/StaffHeader';
 import InstallAppButton from '../../components/common/InstallAppButton';
+import NotificationToggle from '../../components/common/NotificationToggle';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ButtonSpinner from '../../components/common/ButtonSpinner';
 import { useConfirm } from '../../components/common/ConfirmDialog';
@@ -146,6 +147,7 @@ const DeliveryPartnerPortal = () => {
               </div>
             </div>
             <div className="flex flex-shrink-0 items-center gap-2">
+              <NotificationToggle />
               <InstallAppButton />
               <button
                 onClick={load}

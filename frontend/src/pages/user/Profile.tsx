@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { User, MapPin, Plus, Pencil, Trash2, Star, Smartphone } from 'lucide-react';
 import InstallAppButton from '../../components/common/InstallAppButton';
+import NotificationToggle from '../../components/common/NotificationToggle';
 import { APP_NAME } from '../../config/brand';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
@@ -217,7 +218,10 @@ const Profile = () => {
                 <p className="text-sm text-gray-500 mt-0.5 mb-3">
                   Install {APP_NAME} on your device for faster, full-screen ordering.
                 </p>
-                <InstallAppButton />
+                <div className="flex flex-wrap items-center gap-2">
+                  <InstallAppButton />
+                  <NotificationToggle />
+                </div>
               </div>
             </div>
           </div>

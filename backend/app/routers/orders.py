@@ -20,12 +20,21 @@ from app.schemas.order import (
 )
 from app.middleware.auth import get_current_user, get_admin_user
 from app.services.stripe_service import create_payment_intent, create_refund
+from app.services.push_service import notify_user_safe
 from app.config import settings
 import stripe
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
 router = APIRouter(prefix="/orders", tags=["Orders"], redirect_slashes=False)
+
+# Customer-facing push copy per fulfillment milestone.
+STATUS_PUSH = {
+    "accepted": ("Order accepted 🛒", "The store is preparing your order."),
+    "out_for_delivery": ("Out for delivery 🛵", "Your rider is on the way — arriving soon!"),
+    "delivered": ("Delivered ✅", "Your order has arrived. Enjoy!"),
+    "cancelled": ("Order cancelled", "Your order has been cancelled."),
+}
 
 
 def _order_query(db: Session):
@@ -472,6 +481,12 @@ def update_order_status(
 
     db.commit()
     db.refresh(order)
+
+    # Notify the customer of the milestone (best-effort; deep-links to tracking).
+    push = STATUS_PUSH.get(new_status)
+    if push:
+        notify_user_safe(db, order.user_id, push[0], push[1], url=f"/orders/{order.id}/track")
+
     return order
 
 
@@ -499,6 +514,8 @@ def assign_order(
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Warehouse not found")
         order.warehouse_id = data.warehouse_id
 
+    previous_rider = order.delivery_partner_id
+    newly_assigned_rider = None
     if data.delivery_partner_id is not None:
         rider = db.query(User).filter(User.id == data.delivery_partner_id).first()
         if not rider or rider.role != UserRole.delivery_partner:
@@ -507,7 +524,19 @@ def assign_order(
                 detail="delivery_partner_id must reference a delivery partner",
             )
         order.delivery_partner_id = data.delivery_partner_id
+        if data.delivery_partner_id != previous_rider:
+            newly_assigned_rider = data.delivery_partner_id
 
     db.commit()
     db.refresh(order)
+
+    # Notify the rider of a new assignment (best-effort; deep-links to console).
+    if newly_assigned_rider:
+        notify_user_safe(
+            db, newly_assigned_rider,
+            "New delivery assigned 🛵",
+            f"Order #{order.id[:8]} is ready for delivery.",
+            url="/rider",
+        )
+
     return order

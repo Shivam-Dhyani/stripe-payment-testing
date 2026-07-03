@@ -16,6 +16,7 @@ from app.schemas.return_request import (
 )
 from app.middleware.auth import get_current_user, get_admin_user
 from app.services.stripe_service import create_refund
+from app.services.push_service import notify_user_safe
 from app.config import settings
 import stripe
 
@@ -485,9 +486,19 @@ def assign_return_rider(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="delivery_partner_id must reference a delivery partner",
         )
+    previous_rider = req.delivery_partner_id
     req.delivery_partner_id = data.delivery_partner_id
     db.commit()
     db.refresh(req)
+
+    if data.delivery_partner_id != previous_rider:
+        notify_user_safe(
+            db, data.delivery_partner_id,
+            "New return pickup 📦",
+            "A return is ready to collect from a customer.",
+            url="/rider",
+        )
+
     return _build_response(req, db)
 
 
