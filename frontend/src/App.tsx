@@ -11,6 +11,7 @@ import UserLayout from './components/layout/UserLayout';
 import AdminLayout from './components/layout/AdminLayout';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import { ConfirmProvider } from './components/common/ConfirmDialog';
+import InstallAppModal from './components/common/InstallAppModal';
 
 // Auth Pages
 import Login from './pages/auth/Login';
@@ -146,6 +147,7 @@ const App = () => {
     <BrowserRouter>
       <ConfirmProvider>
         <AppContent />
+        <InstallAppModal />
       </ConfirmProvider>
       <Toaster
         position="top-right"

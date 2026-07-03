@@ -1,7 +1,7 @@
 // Zippy service worker — installable PWA + basic offline support.
 // Bump CACHE whenever the app shell/branding changes so returning users
 // purge the old cache instead of being served stale assets.
-const CACHE = 'zippy-v3';
+const CACHE = 'zippy-v4';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -12,11 +12,16 @@ const APP_SHELL = [
 ];
 
 self.addEventListener('install', (event) => {
+  // Do NOT skipWaiting here: the new worker waits until the user clicks
+  // "Reload" in the update toast (which posts SKIP_WAITING below).
   event.waitUntil(
-    caches.open(CACHE)
-      .then((cache) => cache.addAll(APP_SHELL))
-      .then(() => self.skipWaiting())
+    caches.open(CACHE).then((cache) => cache.addAll(APP_SHELL))
   );
+});
+
+// The page tells us to activate immediately (user accepted the update).
+self.addEventListener('message', (event) => {
+  if (event.data === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {

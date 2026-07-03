@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { User, MapPin, Plus, Pencil, Trash2, Star } from 'lucide-react';
+import { User, MapPin, Plus, Pencil, Trash2, Star, Smartphone } from 'lucide-react';
+import InstallAppButton from '../../components/common/InstallAppButton';
+import { APP_NAME } from '../../config/brand';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { fetchCurrentUser } from '../../store/slices/authSlice';
@@ -203,6 +205,22 @@ const Profile = () => {
               Save Changes
             </button>
           </form>
+
+          {/* Install app */}
+          <div className="mt-6 pt-6 border-t border-gray-100">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-accent-100 text-accent-700 flex items-center justify-center shrink-0">
+                <Smartphone className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-gray-800">Get the {APP_NAME} app</h3>
+                <p className="text-sm text-gray-500 mt-0.5 mb-3">
+                  Install {APP_NAME} on your device for faster, full-screen ordering.
+                </p>
+                <InstallAppButton />
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

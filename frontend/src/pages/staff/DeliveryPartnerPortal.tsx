@@ -4,6 +4,7 @@ import { orderService } from '../../services/orderService';
 import { returnService } from '../../services/returnService';
 import { Order, ReturnRequest } from '../../types';
 import StaffHeader from '../../components/layout/StaffHeader';
+import InstallAppButton from '../../components/common/InstallAppButton';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ButtonSpinner from '../../components/common/ButtonSpinner';
 import { useConfirm } from '../../components/common/ConfirmDialog';
@@ -144,12 +145,15 @@ const DeliveryPartnerPortal = () => {
                 </span>
               </div>
             </div>
-            <button
-              onClick={load}
-              className="flex flex-shrink-0 items-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors"
-            >
-              <RefreshCw className="w-4 h-4" /> <span className="hidden sm:inline">Refresh</span>
-            </button>
+            <div className="flex flex-shrink-0 items-center gap-2">
+              <InstallAppButton />
+              <button
+                onClick={load}
+                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <RefreshCw className="w-4 h-4" /> <span className="hidden sm:inline">Refresh</span>
+              </button>
+            </div>
           </div>
         </div>
 
