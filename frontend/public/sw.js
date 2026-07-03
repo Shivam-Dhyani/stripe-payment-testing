@@ -1,10 +1,11 @@
 // Zippy service worker — installable PWA + basic offline support.
 // Bump CACHE whenever the app shell/branding changes so returning users
 // purge the old cache instead of being served stale assets.
-const CACHE = 'zippy-v4';
+const CACHE = 'zippy-v5';
 const APP_SHELL = [
   '/',
   '/index.html',
+  '/offline.html',
   '/manifest.webmanifest',
   '/favicon.svg',
   '/icon-192.png',
@@ -40,9 +41,11 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== self.location.origin) return; // leave cross-origin (fonts, Stripe) alone
   if (url.pathname.startsWith('/api')) return;      // never cache API calls
 
-  // SPA navigations: network first, fall back to the cached shell when offline.
+  // SPA navigations: network first. A full page load / reload while offline
+  // shows the branded offline page (in-app navigation stays client-side and is
+  // unaffected). We auto-reload from that page once connectivity returns.
   if (request.mode === 'navigate') {
-    event.respondWith(fetch(request).catch(() => caches.match('/index.html')));
+    event.respondWith(fetch(request).catch(() => caches.match('/offline.html')));
     return;
   }
 
