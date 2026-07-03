@@ -180,12 +180,10 @@ const Orders = () => {
   // Payment events accordion state
   const [paymentEventsOpen, setPaymentEventsOpen] = useState(false);
 
-  // Fulfillment assignment state
+  // Warehouses + riders, used for the read-only assignment summary and the
+  // single quick "Assign Rider" modal (the one assignment path).
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [deliveryPartners, setDeliveryPartners] = useState<User[]>([]);
-  const [selectedWarehouse, setSelectedWarehouse] = useState('');
-  const [selectedRider, setSelectedRider] = useState('');
-  const [assigning, setAssigning] = useState(false);
 
   useEffect(() => {
     dispatch(fetchAllOrders());
@@ -199,24 +197,6 @@ const Orders = () => {
     if (!id) return null;
     const r = deliveryPartners.find((p) => p.id === id);
     return r ? `${r.first_name || ''} ${r.last_name || ''}`.trim() || r.email : id.substring(0, 8);
-  };
-
-  const handleAssign = async () => {
-    if (!detailOrder) return;
-    setAssigning(true);
-    try {
-      const updated = await orderService.assignOrder(detailOrder.id, {
-        warehouse_id: selectedWarehouse || undefined,
-        delivery_partner_id: selectedRider || undefined,
-      });
-      setDetailOrder(updated);
-      dispatch(fetchAllOrders());
-      toast.success('Assignment updated');
-    } catch (e: any) {
-      toast.error(e?.response?.data?.detail || 'Failed to update assignment');
-    } finally {
-      setAssigning(false);
-    }
   };
 
   // Return requests for a given order (most recent first, as returned by the API).
@@ -255,8 +235,6 @@ const Orders = () => {
     if (order) {
       setDetailOrder(order);
       setPaymentEventsOpen(false);
-      setSelectedWarehouse(order.warehouse_id || '');
-      setSelectedRider(order.delivery_partner_id || '');
     }
   };
 
@@ -310,8 +288,10 @@ const Orders = () => {
     if (!assignModal || !assignRiderId) return;
     setAssigningRider(true);
     try {
-      await orderService.assignOrder(assignModal.order.id, { delivery_partner_id: assignRiderId });
+      const updated = await orderService.assignOrder(assignModal.order.id, { delivery_partner_id: assignRiderId });
       dispatch(fetchAllOrders());
+      // Keep the detail view in sync if the rider was assigned from there.
+      setDetailOrder((cur) => (cur && cur.id === updated.id ? updated : cur));
       toast.success('Rider assigned');
       setAssignModal(null);
     } catch (e: any) {
@@ -790,67 +770,45 @@ const Orders = () => {
               </div>
             </div>
 
-            {/* Fulfillment Assignment — editable only while the order is still in the store (pre-dispatch) */}
-            {isPreDispatch(detailOrder.status) && (
+            {/* Fulfillment Assignment — read-only summary. Rider assignment happens
+                the one quick way: the "Assign Rider" action (list or the button below). */}
+            {!['cancelled', 'refunded'].includes(detailOrder.status) && (
               <div className="mb-6 rounded-lg border border-gray-200 p-4">
-                <h3 className="font-semibold text-gray-800 mb-3">Fulfillment Assignment</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Warehouse / Dark Store</label>
-                    <select
-                      value={selectedWarehouse}
-                      onChange={(e) => setSelectedWarehouse(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-hidden focus:ring-3 focus:border-brand-300 focus:ring-brand-500/20"
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <h3 className="font-semibold text-gray-800">Fulfillment Assignment</h3>
+                  {isPreDispatch(detailOrder.status) && (
+                    <button
+                      onClick={() => openAssignModal(detailOrder)}
+                      className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-medium transition-colors ${
+                        detailOrder.delivery_partner_id
+                          ? 'border border-gray-200 text-gray-600 hover:bg-gray-50'
+                          : detailOrder.status === 'packed'
+                            ? 'bg-amber-500 text-white hover:bg-amber-600'
+                            : 'bg-brand-500 text-white hover:bg-brand-600'
+                      }`}
                     >
-                      <option value="">— Select warehouse —</option>
-                      {warehouses.map((w) => (
-                        <option key={w.id} value={w.id}>{w.name}</option>
-                      ))}
-                    </select>
+                      <Truck className="w-3.5 h-3.5" />
+                      {detailOrder.delivery_partner_id ? 'Reassign Rider' : 'Assign Rider'}
+                    </button>
+                  )}
+                </div>
+                <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <dt className="text-xs text-gray-400">Dark store</dt>
+                    <dd className="font-medium text-gray-800">
+                      {warehouses.find((w) => w.id === detailOrder.warehouse_id)?.name || '—'}
+                    </dd>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Delivery Partner</label>
-                    <select
-                      value={selectedRider}
-                      onChange={(e) => setSelectedRider(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-hidden focus:ring-3 focus:border-brand-300 focus:ring-brand-500/20"
-                    >
-                      <option value="">— Unassigned —</option>
-                      {deliveryPartners.map((r) => (
-                        <option key={r.id} value={r.id}>
-                          {`${r.first_name || ''} ${r.last_name || ''}`.trim() || r.email}
-                        </option>
-                      ))}
-                    </select>
+                    <dt className="text-xs text-gray-400">Delivery partner</dt>
+                    <dd className="font-medium text-gray-800">
+                      {detailOrder.delivery_partner_id ? riderName(detailOrder.delivery_partner_id) : 'Not assigned yet'}
+                    </dd>
                   </div>
-                </div>
-                <div className="flex items-center justify-between mt-3">
-                  <p className="text-xs text-gray-400">
-                    {detailOrder.delivery_partner_id
-                      ? `Assigned rider: ${riderName(detailOrder.delivery_partner_id)}`
-                      : 'A delivery partner is required before dispatching (Out for Delivery).'}
-                  </p>
-                  <button
-                    onClick={handleAssign}
-                    disabled={assigning}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition font-medium text-sm disabled:opacity-50"
-                  >
-                    {assigning && <ButtonSpinner />}
-                    Save Assignment
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Read-only assignment summary once the order has been dispatched */}
-            {detailOrder.status === 'out_for_delivery' && (
-              <div className="mb-6 rounded-lg border border-gray-200 p-4">
-                <h3 className="font-semibold text-gray-800 mb-3">Fulfillment Assignment</h3>
-                <p className="text-sm text-gray-600">
-                  Out for delivery with{' '}
-                  <span className="font-medium text-gray-800">{riderName(detailOrder.delivery_partner_id)}</span>.
-                  Assignment is locked once an order leaves the store.
-                </p>
+                </dl>
+                {!isPreDispatch(detailOrder.status) && (
+                  <p className="mt-3 text-xs text-gray-400">Assignment is locked once an order leaves the store.</p>
+                )}
               </div>
             )}
 

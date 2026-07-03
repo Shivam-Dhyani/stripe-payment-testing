@@ -36,13 +36,13 @@ const Navbar = () => {
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         placeholder='Search "milk", "bread", "eggs"...'
-        className="w-full h-11 pl-10 pr-4 rounded-xl bg-gray-100 border border-transparent text-sm text-gray-700 placeholder:text-gray-400 focus:outline-hidden focus:bg-white focus:border-brand-300 focus:ring-3 focus:ring-brand-500/15 transition"
+        className="w-full h-11 pl-10 pr-4 rounded-xl bg-white border border-black/5 shadow-qc-card text-sm text-ink-900 placeholder:text-gray-400 focus:outline-hidden focus:border-brand-300 focus:ring-3 focus:ring-brand-500/15 transition"
       />
     </form>
   );
 
   return (
-    <nav className="sticky top-0 z-50 bg-white border-b border-gray-200">
+    <nav className="sticky top-0 z-50 bg-accent-400 border-b border-black/5 shadow-qc-card">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-4 h-16">
           {/* Logo */}
@@ -51,9 +51,9 @@ const Navbar = () => {
           </Link>
 
           {/* Delivery / location chip */}
-          <div className="hidden lg:flex flex-col leading-tight pl-2 border-l border-gray-100">
-            <span className="text-[13px] font-bold text-gray-900">{DELIVERY_PROMISE}</span>
-            <span className="flex items-center gap-0.5 text-xs text-gray-500">
+          <div className="hidden lg:flex flex-col leading-tight pl-2 border-l border-ink-900/10">
+            <span className="text-[13px] font-bold text-ink-900">{DELIVERY_PROMISE}</span>
+            <span className="flex items-center gap-0.5 text-xs text-ink-900/60">
               <MapPin className="w-3 h-3" /> Home · New York <ChevronDown className="w-3 h-3" />
             </span>
           </div>
@@ -91,13 +91,13 @@ const Navbar = () => {
                 <div className="relative">
                   <button
                     onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                    className="flex items-center gap-2 h-11 px-2 rounded-xl hover:bg-gray-100 transition-colors"
+                    className="flex items-center gap-2 h-11 px-2 rounded-xl hover:bg-black/5 transition-colors"
                   >
-                    <div className="w-8 h-8 rounded-full bg-brand-100 text-brand-700 text-sm font-bold flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-full bg-ink-900 text-accent-400 text-sm font-bold flex items-center justify-center">
                       {user.first_name?.charAt(0).toUpperCase()}
                     </div>
-                    <span className="hidden md:block text-sm font-medium text-gray-700">{user.first_name}</span>
-                    <ChevronDown className="hidden md:block w-4 h-4 text-gray-400" />
+                    <span className="hidden md:block text-sm font-semibold text-ink-900">{user.first_name}</span>
+                    <ChevronDown className="hidden md:block w-4 h-4 text-ink-900/50" />
                   </button>
                   {userDropdownOpen && (
                     <>
@@ -132,8 +132,8 @@ const Navbar = () => {
               </>
             ) : (
               <div className="flex items-center gap-2">
-                <Link to="/login" className="px-4 py-2 text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors">Sign in</Link>
-                <Link to="/register" className="px-4 py-2.5 bg-brand-500 text-white rounded-xl hover:bg-brand-600 transition-colors text-sm font-semibold">Get Started</Link>
+                <Link to="/login" className="px-4 py-2 text-ink-900/80 hover:text-ink-900 text-sm font-semibold transition-colors">Sign in</Link>
+                <Link to="/register" className="px-4 py-2.5 bg-ink-900 text-white rounded-xl hover:bg-ink-800 transition-colors text-sm font-semibold">Get Started</Link>
               </div>
             )}
           </div>
