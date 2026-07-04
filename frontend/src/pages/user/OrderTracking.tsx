@@ -6,8 +6,9 @@ import {
 } from 'lucide-react';
 import { orderService } from '../../services/orderService';
 import { Order, OrderStatusHistory } from '../../types';
-import { parseUTC, formatShortDateTime } from '../../utils/date';
+import { parseUTC } from '../../utils/date';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import StatusTimeline, { TimelineStep } from '../../components/common/StatusTimeline';
 
 const PROMISE_MINUTES = 10;
 const POLL_MS = 12000;
@@ -167,40 +168,20 @@ const OrderTracking = () => {
 
       {/* Status stepper */}
       <section className="mt-6 rounded-2xl border border-gray-200 bg-white p-5">
-        <ol className="relative">
-          {STEPS.map((step, i) => {
+        <StatusTimeline
+          steps={STEPS.map((step, i): TimelineStep => {
             const reached = !isCancelled && currentIdx >= i;
             const isCurrent = !isCancelled && order.status === step.key;
-            const at = dateMap[step.key];
-            const Icon = step.icon;
-            const last = i === STEPS.length - 1;
-            return (
-              <li key={step.key} className="flex gap-4 pb-6 last:pb-0">
-                {/* rail */}
-                <div className="flex flex-col items-center">
-                  <div className={`flex items-center justify-center w-9 h-9 rounded-full shrink-0 transition-colors ${
-                    reached ? 'bg-brand-500 text-white' : 'bg-gray-100 text-gray-400'
-                  } ${isCurrent ? 'ring-4 ring-brand-500/20' : ''}`}>
-                    <Icon className="w-4.5 h-4.5" />
-                  </div>
-                  {!last && <div className={`w-0.5 flex-1 mt-1 ${reached && currentIdx > i ? 'bg-brand-500' : 'bg-gray-200'}`} />}
-                </div>
-                {/* content */}
-                <div className={`flex-1 ${last ? '' : 'pb-1'}`}>
-                  <div className="flex items-center justify-between gap-2">
-                    <p className={`text-sm font-semibold ${reached ? 'text-gray-900' : 'text-gray-400'}`}>
-                      {step.label}
-                    </p>
-                    {at && <span className="text-[11px] text-gray-400 shrink-0">{formatShortDateTime(at)}</span>}
-                  </div>
-                  <p className={`text-xs mt-0.5 ${isCurrent ? 'text-brand-600 font-medium' : 'text-gray-400'}`}>
-                    {step.sub}
-                  </p>
-                </div>
-              </li>
-            );
+            return {
+              key: step.key,
+              label: step.label,
+              sub: step.sub,
+              date: dateMap[step.key] || null,
+              icon: step.icon,
+              state: isCurrent ? 'current' : reached ? 'done' : 'todo',
+            };
           })}
-        </ol>
+        />
       </section>
 
       {/* Delivery address */}

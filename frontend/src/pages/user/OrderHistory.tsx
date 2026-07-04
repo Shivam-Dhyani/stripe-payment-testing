@@ -5,8 +5,9 @@ import { useAppSelector } from '../../hooks/useAppSelector';
 import { fetchOrders, fetchOrderById } from '../../store/slices/orderSlice';
 import { createCancellationRequest, fetchCancellationRequests } from '../../store/slices/cancellationSlice';
 import { createReturnRequest, fetchReturnRequests, schedulePickup, withdrawReturn } from '../../store/slices/returnSlice';
-import { Package, ChevronDown, ChevronUp, Calendar, Hash, Check, X, XCircle, CreditCard, Ban, RotateCcw, Truck, MapPin, Zap } from 'lucide-react';
+import { Package, ChevronDown, ChevronUp, Calendar, Hash, Check, X, XCircle, CreditCard, Ban, RotateCcw, Truck, MapPin, Zap, ShoppingBag, CheckCircle2, PackageCheck, Bike } from 'lucide-react';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import StatusTimeline from '../../components/common/StatusTimeline';
 import ButtonSpinner from '../../components/common/ButtonSpinner';
 import { useConfirm } from '../../components/common/ConfirmDialog';
 import { Order, OrderItem, OrderStatusHistory, CancellationRequest, ReturnRequest } from '../../types';
@@ -124,39 +125,6 @@ const buildCancelSteps = (c: CancellationRequest): TimelineStep[] => {
   ];
 };
 
-const renderTimeline = (steps: TimelineStep[]) => (
-  <div className="relative pl-6 border-l-2 border-gray-200 space-y-3">
-    {steps.map((s) => (
-      <div key={s.key} className="relative">
-        <div
-          className={`absolute -left-[calc(0.75rem+1px)] top-0 w-6 h-6 rounded-full flex items-center justify-center ${
-            s.state === 'done'
-              ? 'bg-green-500 text-white'
-              : s.state === 'current'
-              ? 'bg-brand-500 text-white'
-              : s.state === 'rejected'
-              ? 'bg-red-500 text-white'
-              : 'bg-gray-200 text-gray-400'
-          }`}
-        >
-          {s.state === 'done' ? (
-            <Check className="w-3.5 h-3.5" />
-          ) : s.state === 'rejected' ? (
-            <X className="w-3.5 h-3.5" />
-          ) : s.state === 'current' ? (
-            <span className="w-2 h-2 bg-white rounded-full" />
-          ) : (
-            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full" />
-          )}
-        </div>
-        <div className="ml-3">
-          <span className={`text-sm font-medium ${s.state === 'todo' ? 'text-gray-400' : 'text-gray-700'}`}>{s.label}</span>
-          {s.date && <p className="text-[11px] text-gray-400">{formatDateTime(s.date)}</p>}
-        </div>
-      </div>
-    ))}
-  </div>
-);
 
 const getStepData = (order: Order) => {
   const history = order.status_history || [];
@@ -190,9 +158,19 @@ const getStepData = (order: Order) => {
       completed: isCompleted || wasReachedBeforeCancel,
       active: isActive,
       cancelled: showCancelled,
-      date: stepDate ? formatShortDateTime(stepDate) : undefined,
+      date: stepDate || null,
     };
   });
+};
+
+// Icons per fulfillment milestone, matching the live tracking page.
+const FULFILLMENT_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  placed: ShoppingBag,
+  accepted: CheckCircle2,
+  picking: Package,
+  packed: PackageCheck,
+  out_for_delivery: Bike,
+  delivered: CheckCircle2,
 };
 
 const OrderHistory = () => {
@@ -223,6 +201,18 @@ const OrderHistory = () => {
     dispatch(fetchCancellationRequests());
     dispatch(fetchReturnRequests());
   }, [dispatch]);
+
+  // Auto-refresh so order status updates appear without a manual reload.
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (document.visibilityState !== 'visible') return;
+      dispatch(fetchOrders());
+      dispatch(fetchCancellationRequests());
+      dispatch(fetchReturnRequests());
+      if (expandedOrderId) dispatch(fetchOrderById(expandedOrderId));
+    }, 15000);
+    return () => clearInterval(id);
+  }, [dispatch, expandedOrderId]);
 
   const toggleOrder = (orderId: string) => {
     if (expandedOrderId === orderId) {
@@ -408,32 +398,20 @@ const OrderHistory = () => {
                       </span>
                     </Link>
                   )}
-                  {/* Step Tracker */}
+                  {/* Fulfillment timeline (shared design) */}
                   {(() => {
                     const steps = getStepData(selectedOrder);
                     return (
-                      <div className="flex items-center justify-between mb-6">
-                        {steps.map((step, index) => (
-                          <div key={step.key} className="flex items-center flex-1">
-                            <div className="flex flex-col items-center">
-                              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                                step.completed ? 'bg-green-500 text-white' :
-                                step.active ? 'bg-brand-500 text-white' :
-                                step.cancelled ? 'bg-red-500 text-white' :
-                                'bg-gray-200 text-gray-400'
-                              }`}>
-                                {step.completed ? <Check className="w-4 h-4" /> :
-                                 step.cancelled ? <X className="w-4 h-4" /> :
-                                 <span className="text-xs font-bold">{index + 1}</span>}
-                              </div>
-                              <span className="text-xs mt-1 text-gray-500">{step.label}</span>
-                              {step.date && <span className="text-[10px] text-gray-400">{step.date}</span>}
-                            </div>
-                            {index < steps.length - 1 && (
-                              <div className={`flex-1 h-0.5 mx-2 ${step.completed ? 'bg-green-500' : 'bg-gray-200'}`} />
-                            )}
-                          </div>
-                        ))}
+                      <div className="mb-6">
+                        <StatusTimeline
+                          steps={steps.map((step) => ({
+                            key: step.key,
+                            label: step.label,
+                            date: step.date,
+                            icon: FULFILLMENT_ICONS[step.key],
+                            state: step.cancelled ? 'rejected' : step.active ? 'current' : step.completed ? 'done' : 'todo',
+                          }))}
+                        />
                       </div>
                     );
                   })()}
@@ -450,7 +428,7 @@ const OrderHistory = () => {
                             <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                               <Ban className="w-4 h-4 text-red-400" /> Cancellation Request
                             </h4>
-                            {renderTimeline(buildCancelSteps(c))}
+                            <StatusTimeline steps={buildCancelSteps(c)} />
                           </div>
                         )}
                         {r && (
@@ -458,7 +436,7 @@ const OrderHistory = () => {
                             <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                               <RotateCcw className="w-4 h-4 text-brand-400" /> Return &amp; Refund
                             </h4>
-                            {renderTimeline(buildReturnSteps(r))}
+                            <StatusTimeline steps={buildReturnSteps(r)} />
                           </div>
                         )}
                       </div>
