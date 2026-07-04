@@ -1,0 +1,28 @@
+# Render Blueprint for the Zippy FastAPI backend.
+# In Render: New + > Blueprint > pick this repo. Then set the `sync: false`
+# secrets in the dashboard. DB stays on Supabase (use the POOLER host URL).
+services:
+  - type: web
+    name: zippy-backend
+    runtime: python
+    rootDir: backend
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL          # Supabase POOLER connection string
+        sync: false
+      - key: SECRET_KEY            # any long random string
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_PUBLISHABLE_KEY
+        sync: false
+      - key: VAPID_PUBLIC_KEY      # optional (push)
+        sync: false
+      - key: VAPID_PRIVATE_KEY     # optional (push)
+        sync: false
+      - key: VAPID_SUBJECT
+        value: mailto:you@example.com
