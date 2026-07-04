@@ -5,27 +5,31 @@ import { APP_NAME } from '../../config/brand';
 
 /**
  * Manual "Install app" entry point for account sections (customer Profile &
- * rider portal). Uses the native prompt on Chromium, shows manual steps on iOS,
- * and confirms when the app is already installed.
+ * rider portal). Shows the installed state when the app is already on the
+ * device, the native prompt on Chromium, and clear guidance otherwise.
  */
 const InstallAppButton = ({ className = '' }: { className?: string }) => {
   const { canInstall, installed, isIOS, promptInstall } = usePwaInstall();
-  const [showIosSteps, setShowIosSteps] = useState(false);
+  const [hint, setHint] = useState<'none' | 'ios' | 'reload'>('none');
 
   if (installed) {
     return (
-      <div className={`inline-flex items-center gap-2 text-sm font-medium text-brand-600 ${className}`}>
-        <CheckCircle2 className="w-4.5 h-4.5" /> {APP_NAME} is installed
+      <div className={`inline-flex items-center gap-2 h-11 px-4 rounded-xl bg-brand-50 text-brand-700 text-sm font-semibold ${className}`}>
+        <CheckCircle2 className="w-4.5 h-4.5" /> Installed on this device
       </div>
     );
   }
 
-  const handleClick = () => {
+  const handleClick = async () => {
     if (canInstall) {
-      promptInstall();
+      setHint('none');
+      await promptInstall();
+    } else if (isIOS) {
+      setHint((h) => (h === 'ios' ? 'none' : 'ios'));
     } else {
-      // iOS, or a browser without the install API — show manual guidance.
-      setShowIosSteps((v) => !v);
+      // Not installed and no prompt available yet (common right after an
+      // uninstall) — the browser re-arms the prompt on reload.
+      setHint((h) => (h === 'reload' ? 'none' : 'reload'));
     }
   };
 
@@ -38,29 +42,27 @@ const InstallAppButton = ({ className = '' }: { className?: string }) => {
         <Download className="w-4.5 h-4.5" /> Install app
       </button>
 
-      {showIosSteps && (
+      {hint === 'ios' && (
         <div className="mt-3 rounded-2xl bg-gray-50 border border-gray-100 p-4 text-sm text-gray-700 space-y-2 max-w-sm">
-          {isIOS ? (
-            <>
-              <p className="font-semibold text-gray-800 flex items-center gap-1.5">
-                <Smartphone className="w-4 h-4" /> Install on iPhone / iPad
-              </p>
-              <p className="flex items-center gap-2">
-                <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-white border border-gray-200"><Share className="w-3.5 h-3.5" /></span>
-                Tap <span className="font-medium">Share</span>
-              </p>
-              <p className="flex items-center gap-2">
-                <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-white border border-gray-200"><Plus className="w-3.5 h-3.5" /></span>
-                Choose <span className="font-medium">Add to Home Screen</span>
-              </p>
-            </>
-          ) : (
-            <p>
-              Open {APP_NAME} in <span className="font-medium">Chrome</span> or <span className="font-medium">Edge</span> and
-              use the browser menu → <span className="font-medium">Install app</span> to add it to your device.
-            </p>
-          )}
+          <p className="font-semibold text-gray-800 flex items-center gap-1.5">
+            <Smartphone className="w-4 h-4" /> Install on iPhone / iPad
+          </p>
+          <p className="flex items-center gap-2">
+            <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-white border border-gray-200"><Share className="w-3.5 h-3.5" /></span>
+            Tap <span className="font-medium">Share</span>
+          </p>
+          <p className="flex items-center gap-2">
+            <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-white border border-gray-200"><Plus className="w-3.5 h-3.5" /></span>
+            Choose <span className="font-medium">Add to Home Screen</span>
+          </p>
         </div>
+      )}
+
+      {hint === 'reload' && (
+        <p className="mt-2 text-xs text-gray-500 max-w-sm">
+          Almost there — please <button onClick={() => window.location.reload()} className="text-brand-600 font-semibold underline">reload the page</button> and tap
+          Install again. (Make sure {APP_NAME} isn’t already installed.)
+        </p>
       )}
     </div>
   );

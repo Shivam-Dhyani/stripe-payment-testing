@@ -2,6 +2,7 @@
   "name": "Zippy",
   "short_name": "Zippy",
   "description": "Zippy quick-commerce — groceries & daily essentials delivered in minutes.",
+  "id": "/",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
