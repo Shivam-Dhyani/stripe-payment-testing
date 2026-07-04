@@ -55,7 +55,7 @@ const CancellationRequests = () => {
       action === 'approved'
         ? {
             title: 'Approve cancellation?',
-            message: `The order will be cancelled and $${Number(selectedRequest.order_total || 0).toFixed(2)} refunded to the customer. This can't be undone.`,
+            message: `The order will be cancelled and ₹${Number(selectedRequest.order_total || 0).toFixed(2)} refunded to the customer. This can't be undone.`,
             confirmLabel: 'Approve & Refund',
           }
         : {

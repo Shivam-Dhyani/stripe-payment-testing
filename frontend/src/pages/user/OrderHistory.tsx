@@ -373,7 +373,7 @@ const OrderHistory = () => {
                   </div>
                 </div>
                 <div className="flex items-center space-x-4">
-                  <span className="text-lg font-semibold text-gray-800">${Number(order.total).toFixed(2)}</span>
+                  <span className="text-lg font-semibold text-gray-800">₹{Number(order.total).toFixed(2)}</span>
                   {expandedOrderId === order.id ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
                 </div>
               </button>
@@ -519,13 +519,13 @@ const OrderHistory = () => {
                             <div className="mt-1">
                               {existingReturn.items.map((item, i) => (
                                 <p key={i} className="text-xs text-gray-500">
-                                  {item.product_name} x{item.quantity} — ${((item.product_price || 0) * item.quantity).toFixed(2)}
+                                  {item.product_name} x{item.quantity} — ₹{((item.product_price || 0) * item.quantity).toFixed(2)}
                                 </p>
                               ))}
                             </div>
                           )}
                           {existingReturn.refund_amount && (
-                            <p className="text-sm text-gray-600 mt-1">Refund amount: ${Number(existingReturn.refund_amount).toFixed(2)}</p>
+                            <p className="text-sm text-gray-600 mt-1">Refund amount: ₹{Number(existingReturn.refund_amount).toFixed(2)}</p>
                           )}
                           {existingReturn.pickup_date && (
                             <p className="text-xs text-gray-500 mt-1">Pickup: {formatDateTime(existingReturn.pickup_date)}</p>
@@ -550,7 +550,7 @@ const OrderHistory = () => {
                             </div>
                             <div>
                               <p className="font-medium text-gray-800">{item.product_name}</p>
-                              <p className="text-sm text-gray-500">Qty: {item.quantity} x ${Number(item.product_price).toFixed(2)}</p>
+                              <p className="text-sm text-gray-500">Qty: {item.quantity} x ₹{Number(item.product_price).toFixed(2)}</p>
                               {selectedOrder.status === 'delivered' && item.is_returnable && (
                                 item.returned_quantity > 0 && item.returnable_quantity === 0 ? (
                                   <p className="text-xs text-gray-400 mt-0.5">Returned &amp; refunded</p>
@@ -566,7 +566,7 @@ const OrderHistory = () => {
                               )}
                             </div>
                           </div>
-                          <p className="font-medium text-gray-800">${(item.quantity * Number(item.product_price)).toFixed(2)}</p>
+                          <p className="font-medium text-gray-800">₹{(item.quantity * Number(item.product_price)).toFixed(2)}</p>
                         </div>
                       ))}
                     </div>
@@ -741,7 +741,7 @@ const OrderHistory = () => {
                       <div>
                         <p className="text-sm font-medium text-gray-800">{item.product_name}</p>
                         <p className="text-xs text-gray-500">
-                          ${Number(item.product_price).toFixed(2)} each &middot; {item.returnable_quantity} eligible
+                          ₹{Number(item.product_price).toFixed(2)} each &middot; {item.returnable_quantity} eligible
                         </p>
                       </div>
                     </div>

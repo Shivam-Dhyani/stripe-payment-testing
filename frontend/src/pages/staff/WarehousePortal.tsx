@@ -266,7 +266,7 @@ const WarehousePortal = () => {
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                      <span className="text-sm font-semibold text-gray-800">${Number(order.total).toFixed(2)}</span>
+                      <span className="text-sm font-semibold text-gray-800">₹{Number(order.total).toFixed(2)}</span>
                       {action ? (
                         <button
                           onClick={() => advance(order, action.to)}

@@ -417,7 +417,7 @@ const Orders = () => {
                         <span className="font-mono text-xs text-gray-500">{order.user_id.substring(0, 8)}</span>
                       </td>
                       <td className="px-5 py-4 text-sm text-gray-800">{order.items?.length || '-'}</td>
-                      <td className="px-5 py-4 text-sm font-medium text-gray-800">${Number(order.total).toFixed(2)}</td>
+                      <td className="px-5 py-4 text-sm font-medium text-gray-800">₹{Number(order.total).toFixed(2)}</td>
                       <td className="px-5 py-4">
                         <div className="flex flex-col items-start gap-1">
                           <span className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize ${statusColors[order.status] || 'bg-gray-100 text-gray-700'}`}>
@@ -704,7 +704,7 @@ const Orders = () => {
               </div>
               <div>
                 <p className="text-sm text-gray-500">Total</p>
-                <p className="font-semibold text-lg">${Number(detailOrder.total).toFixed(2)}</p>
+                <p className="font-semibold text-lg">₹{Number(detailOrder.total).toFixed(2)}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Date</p>
@@ -721,7 +721,7 @@ const Orders = () => {
                   </span>
                 </div>
                 {Number(detailOrder.refunded_amount) > 0 && (
-                  <p className="text-xs text-amber-600 mt-0.5">Refunded: ${Number(detailOrder.refunded_amount).toFixed(2)}</p>
+                  <p className="text-xs text-amber-600 mt-0.5">Refunded: ₹{Number(detailOrder.refunded_amount).toFixed(2)}</p>
                 )}
                 {detailOrder.receipt_url && (
                   <a href={detailOrder.receipt_url} target="_blank" rel="noopener noreferrer" className="text-xs text-brand-500 hover:underline mt-0.5 inline-block">
@@ -917,7 +917,7 @@ const Orders = () => {
                             {r.status.replace('_', ' ')}
                           </span>
                           {r.refund_amount != null && (
-                            <span className="text-xs text-gray-500 ml-auto">Refund: ${Number(r.refund_amount).toFixed(2)}</span>
+                            <span className="text-xs text-gray-500 ml-auto">Refund: ₹{Number(r.refund_amount).toFixed(2)}</span>
                           )}
                         </div>
                         <p className="text-xs text-gray-500 mb-3">Reason: {r.reason}</p>
@@ -944,7 +944,7 @@ const Orders = () => {
                           </div>
                           <div>
                             <p className="font-medium text-gray-800">{item.product_name}</p>
-                            <p className="text-sm text-gray-500">Qty: {item.quantity} x ${Number(item.product_price).toFixed(2)}</p>
+                            <p className="text-sm text-gray-500">Qty: {item.quantity} x ₹{Number(item.product_price).toFixed(2)}</p>
                             {itemReturns.length > 0 ? (
                               <div className="flex flex-wrap items-center gap-1.5 mt-1">
                                 {itemReturns.map((ret, i) => (
@@ -964,7 +964,7 @@ const Orders = () => {
                             ) : null}
                           </div>
                         </div>
-                        <p className="font-medium">${(item.quantity * Number(item.product_price)).toFixed(2)}</p>
+                        <p className="font-medium">₹{(item.quantity * Number(item.product_price)).toFixed(2)}</p>
                       </div>
                     );
                   })}

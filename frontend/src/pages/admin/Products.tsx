@@ -310,7 +310,7 @@ const Products = () => {
                     </td>
                     <td className="px-5 py-4 text-sm text-gray-800">{product.sub_category?.category?.name || '-'}</td>
                     <td className="px-5 py-4 text-sm text-gray-800">{product.sub_category?.name || '-'}</td>
-                    <td className="px-5 py-4 text-sm font-medium text-gray-800">${Number(product.price).toFixed(2)}</td>
+                    <td className="px-5 py-4 text-sm font-medium text-gray-800">₹{Number(product.price).toFixed(2)}</td>
                     <td className="px-5 py-4 text-sm text-gray-800">{product.stock}</td>
                     <td className="px-5 py-4">
                       <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${product.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>

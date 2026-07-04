@@ -74,7 +74,7 @@ const Navbar = () => {
                     {cartItemCount > 0 ? (
                       <div className="hidden sm:flex flex-col items-start leading-none">
                         <span className="text-[11px] font-medium opacity-90">{cartItemCount} item{cartItemCount > 1 ? 's' : ''}</span>
-                        <span className="text-sm font-bold">${cartTotal.toFixed(2)}</span>
+                        <span className="text-sm font-bold">₹{cartTotal.toFixed(2)}</span>
                       </div>
                     ) : (
                       <span className="hidden sm:block text-sm font-semibold">Cart</span>

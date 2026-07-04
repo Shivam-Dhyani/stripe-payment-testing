@@ -59,7 +59,7 @@ const Dashboard = () => {
   };
 
   const kpiCards: { title: string; value: string | number; icon: typeof DollarSign; sub: string; hero?: boolean; tile?: string }[] = [
-    { title: 'Total Revenue', value: `$${(stats?.total_revenue || 0).toLocaleString()}`, icon: DollarSign, sub: 'Across all dark stores', hero: true },
+    { title: 'Total Revenue', value: `₹${(stats?.total_revenue || 0).toLocaleString()}`, icon: DollarSign, sub: 'Across all dark stores', hero: true },
     { title: 'Total Orders', value: stats?.total_orders || 0, icon: ShoppingBag, sub: 'All time', tile: 'bg-brand-50 text-brand-600' },
     { title: 'Products Live', value: stats?.total_products || 0, icon: Package, sub: 'In catalog', tile: 'bg-blue-50 text-blue-600' },
     { title: 'Customers', value: stats?.total_customers || 0, icon: Users, sub: 'Registered shoppers', tile: 'bg-purple-50 text-purple-600' },
@@ -238,7 +238,7 @@ const Dashboard = () => {
                 recentOrders.map((order) => (
                   <tr key={order.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
                     <td className="px-6 py-4 text-sm text-gray-800 font-mono">#{order.id}</td>
-                    <td className="px-6 py-4 text-sm text-gray-800 font-semibold">${Number(order.total).toFixed(2)}</td>
+                    <td className="px-6 py-4 text-sm text-gray-800 font-semibold">₹{Number(order.total).toFixed(2)}</td>
                     <td className="px-6 py-4">
                       <span className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize ${statusColors[order.status] || 'bg-gray-100 text-gray-700'}`}>
                         {order.status}

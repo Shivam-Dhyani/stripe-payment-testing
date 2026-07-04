@@ -211,13 +211,13 @@ const OrderTracking = () => {
             {order.items.map((it) => (
               <li key={it.id} className="flex items-center justify-between text-sm">
                 <span className="text-gray-700">{it.product_name} × {it.quantity}</span>
-                <span className="text-gray-500">${(Number(it.product_price) * it.quantity).toFixed(2)}</span>
+                <span className="text-gray-500">₹{(Number(it.product_price) * it.quantity).toFixed(2)}</span>
               </li>
             ))}
           </ul>
           <div className="flex items-center justify-between border-t border-gray-100 mt-3 pt-3">
             <span className="text-sm font-semibold text-gray-800">Total</span>
-            <span className="text-sm font-bold text-gray-900">${Number(order.total).toFixed(2)}</span>
+            <span className="text-sm font-bold text-gray-900">₹{Number(order.total).toFixed(2)}</span>
           </div>
         </section>
       )}

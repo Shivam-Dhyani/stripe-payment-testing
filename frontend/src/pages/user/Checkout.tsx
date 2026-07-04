@@ -251,14 +251,14 @@ const Checkout = () => {
                       </p>
                     </div>
                   </div>
-                  <p className="font-semibold">${(Number(item.product?.price || 0) * item.quantity).toFixed(2)}</p>
+                  <p className="font-semibold">₹{(Number(item.product?.price || 0) * item.quantity).toFixed(2)}</p>
                 </div>
               ))}
             </div>
             <div className="border-t border-gray-200 mt-4 pt-4">
               <div className="flex justify-between font-semibold text-lg">
                 <span>Total</span>
-                <span className="text-brand-500">${subtotal.toFixed(2)}</span>
+                <span className="text-brand-500">₹{subtotal.toFixed(2)}</span>
               </div>
             </div>
           </div>

@@ -62,7 +62,7 @@ const ProductCard = ({ product }: { product: Product }) => {
       </Link>
 
       <div className="flex items-center justify-between mt-2 gap-2">
-        <span className="text-sm font-bold text-gray-900">${Number(product.price).toFixed(2)}</span>
+        <span className="text-sm font-bold text-gray-900">₹{Number(product.price).toFixed(2)}</span>
         {outOfStock ? (
           <span className="text-[11px] font-medium text-gray-400">Sold out</span>
         ) : isCustomer ? (

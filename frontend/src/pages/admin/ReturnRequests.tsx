@@ -202,7 +202,7 @@ const ReturnRequests = () => {
     }
     if (action === 'refunded') {
       const amt = Number(selectedRequest?.refund_amount || 0).toFixed(2);
-      return { title: 'Process refund?', message: `$${amt} will be refunded to the customer. This can't be undone.`, confirmLabel: 'Refund' };
+      return { title: 'Process refund?', message: `₹${amt} will be refunded to the customer. This can't be undone.`, confirmLabel: 'Refund' };
     }
     return null; // 'received' is a routine step — no confirmation
   };
@@ -341,7 +341,7 @@ const ReturnRequests = () => {
                       {request.items.length} {request.items.length === 1 ? 'item' : 'items'}
                     </td>
                     <td className="px-5 py-4 text-sm font-medium text-gray-800">
-                      ${Number(request.refund_amount || 0).toFixed(2)}
+                      ₹{Number(request.refund_amount || 0).toFixed(2)}
                     </td>
                     <td className="px-5 py-4">
                       <span className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize ${statusColors[request.status] || 'bg-gray-100 text-gray-700'}`}>
@@ -531,7 +531,7 @@ const ReturnRequests = () => {
               </div>
               <div>
                 <p className="text-sm text-gray-500">Refund Amount</p>
-                <p className="font-semibold text-lg">${Number(selectedRequest.refund_amount || 0).toFixed(2)}</p>
+                <p className="font-semibold text-lg">₹{Number(selectedRequest.refund_amount || 0).toFixed(2)}</p>
               </div>
               {selectedRequest.resolver_name && (
                 <div>
@@ -561,10 +561,10 @@ const ReturnRequests = () => {
                       </div>
                       <div>
                         <p className="font-medium text-gray-800">{item.product_name || 'Unknown Product'}</p>
-                        <p className="text-sm text-gray-500">Qty: {item.quantity} x ${Number(item.product_price || 0).toFixed(2)}</p>
+                        <p className="text-sm text-gray-500">Qty: {item.quantity} x ₹{Number(item.product_price || 0).toFixed(2)}</p>
                       </div>
                     </div>
-                    <p className="font-medium">${(item.quantity * Number(item.product_price || 0)).toFixed(2)}</p>
+                    <p className="font-medium">₹{(item.quantity * Number(item.product_price || 0)).toFixed(2)}</p>
                   </div>
                 ))}
               </div>

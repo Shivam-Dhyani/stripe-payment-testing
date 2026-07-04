@@ -75,7 +75,7 @@ const Cart = () => {
                 {item.product?.unit && (
                   <p className="text-xs text-gray-400 mt-0.5">{item.product.unit}</p>
                 )}
-                <p className="text-brand-500 font-medium mt-0.5">${Number(item.product?.price || 0).toFixed(2)}</p>
+                <p className="text-brand-500 font-medium mt-0.5">₹{Number(item.product?.price || 0).toFixed(2)}</p>
               </div>
               <div className="qc-stepper">
                 <button onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)} disabled={submitting} aria-label="decrease">
@@ -88,7 +88,7 @@ const Cart = () => {
               </div>
               <div className="text-right min-w-[80px]">
                 <p className="font-semibold text-gray-800">
-                  ${(Number(item.product?.price || 0) * item.quantity).toFixed(2)}
+                  ₹{(Number(item.product?.price || 0) * item.quantity).toFixed(2)}
                 </p>
               </div>
               <button
@@ -108,7 +108,7 @@ const Cart = () => {
           <div className="space-y-3 mb-6">
             <div className="flex justify-between text-sm text-gray-600">
               <span>Item total ({items.length} item{items.length > 1 ? 's' : ''})</span>
-              <span>${subtotal.toFixed(2)}</span>
+              <span>₹{subtotal.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-sm text-gray-600">
               <span>Delivery fee</span>
@@ -121,7 +121,7 @@ const Cart = () => {
             <hr className="border-gray-100" />
             <div className="flex justify-between font-bold text-lg text-gray-900">
               <span>To pay</span>
-              <span>${subtotal.toFixed(2)}</span>
+              <span>₹{subtotal.toFixed(2)}</span>
             </div>
           </div>
           <button

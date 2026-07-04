@@ -103,7 +103,7 @@ const ProductDetail = () => {
           {/* Price + delivery */}
           <div className="flex flex-wrap items-center gap-3 mb-4">
             <p className="text-3xl font-bold text-gray-900">
-              ${Number(product.price).toFixed(2)}
+              ₹{Number(product.price).toFixed(2)}
               {product.unit && (
                 <span className="ml-2 text-sm font-medium text-gray-400">/ {product.unit}</span>
               )}
@@ -174,7 +174,7 @@ const ProductDetail = () => {
                 >
                   {submitting ? <ButtonSpinner /> : <ShoppingCart className="w-4 h-4" />}
                   <span>{submitting ? 'Adding...' : 'Add to Cart'}</span>
-                  <span className="text-white/70 ml-1">&middot; ${totalPrice}</span>
+                  <span className="text-white/70 ml-1">&middot; ₹{totalPrice}</span>
                 </button>
               </div>
             </div>

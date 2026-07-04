@@ -314,7 +314,7 @@ const DeliveryPartnerPortal = () => {
                   </div>
 
                   <div className="mt-4 flex items-center justify-between gap-3 border-t border-gray-100 pt-4">
-                    <span className="text-base font-bold text-gray-900 flex-shrink-0">${Number(order.total).toFixed(2)}</span>
+                    <span className="text-base font-bold text-gray-900 flex-shrink-0">₹{Number(order.total).toFixed(2)}</span>
                     {action ? (
                       <button
                         onClick={() => advance(order, action.to)}
