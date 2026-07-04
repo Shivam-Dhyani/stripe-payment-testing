@@ -68,6 +68,15 @@ const DeliveryPartnerPortal = () => {
     load();
   }, [load]);
 
+  // Auto-refresh so newly assigned deliveries and return pickups appear without a manual refresh.
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (document.visibilityState !== 'visible') return;
+      load();
+    }, 15000);
+    return () => clearInterval(id);
+  }, [load]);
+
   const advance = async (order: Order, to: string) => {
     if (to === 'delivered') {
       const ok = await confirm({

@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Eye, X, CheckCircle, XCircle, Clock, Search, Truck, Package, RefreshCw, ChevronLeft, ChevronRight, Calendar, MapPin } from 'lucide-react';
+import { Eye, X, Clock, Search, Truck, Package, ChevronLeft, ChevronRight, Calendar, MapPin, RotateCcw, CheckCircle2, CalendarClock, PackageCheck, Warehouse, BadgeCheck } from 'lucide-react';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { fetchReturnRequests, resolveReturnRequest, assignReturnRider } from '../../store/slices/returnSlice';
 import { staffService } from '../../services/warehouseService';
 import { ReturnRequest, User } from '../../types';
+import StatusTimeline, { TimelineStep } from '../../components/common/StatusTimeline';
 import ButtonSpinner from '../../components/common/ButtonSpinner';
 import { formatDateTime } from '../../utils/date';
 import { useConfirm } from '../../components/common/ConfirmDialog';
@@ -65,6 +66,38 @@ const roleLabels: Record<string, string> = {
   warehouse_operator: 'Warehouse',
 };
 
+// Per-step icons for the shared status timeline (rejected/withdrawn use the
+// component's built-in rejected marker instead).
+const returnStepIcons: Record<string, React.ComponentType<{ className?: string }>> = {
+  requested: RotateCcw,
+  approved: CheckCircle2,
+  pickup_scheduled: CalendarClock,
+  handed_over: PackageCheck,
+  received: Warehouse,
+  refunded: BadgeCheck,
+};
+
+// Build timeline steps from the return's status history, preserving the
+// done/current/rejected state, raw dates, and the acting user's name + role.
+const buildReturnTimeline = (request: ReturnRequest): TimelineStep[] => {
+  const history = request.status_history || [];
+  return history.map((h, index): TimelineStep => {
+    const isLast = index === history.length - 1;
+    const rejected = h.status === 'rejected' || h.status === 'withdrawn';
+    const actor = h.actor_name
+      ? `by ${h.actor_name}${h.actor_role ? ` · ${roleLabels[h.actor_role] || h.actor_role}` : ''}`
+      : undefined;
+    return {
+      key: `${h.status}-${index}`,
+      label: timelineLabels[h.status] || formatStatus(h.status),
+      sub: actor,
+      date: h.created_at,
+      state: rejected ? 'rejected' : isLast ? 'current' : 'done',
+      icon: rejected ? undefined : returnStepIcons[h.status],
+    };
+  });
+};
+
 const ReturnRequests = () => {
   const dispatch = useAppDispatch();
   const confirm = useConfirm();
@@ -88,6 +121,15 @@ const ReturnRequests = () => {
   useEffect(() => {
     dispatch(fetchReturnRequests());
     staffService.getByRole('delivery_partner').then(setDeliveryPartners).catch(() => {});
+  }, [dispatch]);
+
+  // Auto-refresh so incoming return requests and status changes appear without a manual refresh.
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (document.visibilityState !== 'visible') return;
+      dispatch(fetchReturnRequests());
+    }, 15000);
+    return () => clearInterval(id);
   }, [dispatch]);
 
   const handleAssignRider = async () => {
@@ -207,34 +249,6 @@ const ReturnRequests = () => {
       pages.push(totalPages);
     }
     return pages;
-  };
-
-  const getTimelineIcon = (status: string) => {
-    switch (status) {
-      case 'requested': return <Clock className="w-3.5 h-3.5" />;
-      case 'approved': return <CheckCircle className="w-3.5 h-3.5" />;
-      case 'rejected': return <XCircle className="w-3.5 h-3.5" />;
-      case 'pickup_scheduled': return <Calendar className="w-3.5 h-3.5" />;
-      case 'handed_over': return <Truck className="w-3.5 h-3.5" />;
-      case 'received': return <Package className="w-3.5 h-3.5" />;
-      case 'refunded': return <RefreshCw className="w-3.5 h-3.5" />;
-      case 'withdrawn': return <X className="w-3.5 h-3.5" />;
-      default: return <Clock className="w-3.5 h-3.5" />;
-    }
-  };
-
-  const getTimelineColor = (status: string) => {
-    switch (status) {
-      case 'requested': return { color: 'text-amber-600', bg: 'bg-amber-100' };
-      case 'approved': return { color: 'text-blue-600', bg: 'bg-blue-100' };
-      case 'rejected': return { color: 'text-red-600', bg: 'bg-red-100' };
-      case 'pickup_scheduled': return { color: 'text-purple-600', bg: 'bg-purple-100' };
-      case 'handed_over': return { color: 'text-indigo-600', bg: 'bg-indigo-100' };
-      case 'received': return { color: 'text-cyan-600', bg: 'bg-cyan-100' };
-      case 'refunded': return { color: 'text-green-600', bg: 'bg-green-100' };
-      case 'withdrawn': return { color: 'text-gray-600', bg: 'bg-gray-100' };
-      default: return { color: 'text-gray-600', bg: 'bg-gray-100' };
-    }
   };
 
   return (
@@ -559,35 +573,7 @@ const ReturnRequests = () => {
             {/* Status Timeline — every transition with time + who did it */}
             <div className="mb-6">
               <h3 className="font-semibold text-gray-800 mb-3">Status Timeline</h3>
-              <div className="relative pl-6 border-l-2 border-gray-200 space-y-4">
-                {(selectedRequest.status_history || []).map((h, index, arr) => {
-                  const isLast = index === arr.length - 1;
-                  const { color, bg } = getTimelineColor(h.status);
-                  return (
-                    <div key={`${h.status}-${index}`} className="relative">
-                      <div className={`absolute -left-[calc(0.75rem+1px)] top-0 w-6 h-6 rounded-full flex items-center justify-center ${bg} ${color} ${isLast ? 'ring-2 ring-offset-2 ring-current' : ''}`}>
-                        {getTimelineIcon(h.status)}
-                      </div>
-                      <div className="ml-4">
-                        <span className={`text-sm font-semibold ${color}`}>
-                          {timelineLabels[h.status] || formatStatus(h.status)}
-                        </span>
-                        <p className="text-xs text-gray-400 mt-0.5">{formatDateTime(h.created_at)}</p>
-                        {h.actor_name && (
-                          <p className="text-xs text-gray-500 mt-0.5">
-                            by {h.actor_name}
-                            {h.actor_role && (
-                              <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 text-[10px] font-medium">
-                                {roleLabels[h.actor_role] || h.actor_role}
-                              </span>
-                            )}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+              <StatusTimeline steps={buildReturnTimeline(selectedRequest)} />
             </div>
 
             {/* Admin Notes */}

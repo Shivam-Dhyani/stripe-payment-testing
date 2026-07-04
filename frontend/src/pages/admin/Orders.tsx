@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
+import type { ComponentType } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Eye, X, CheckCircle, XCircle, Clock, CreditCard, Truck, RefreshCw, Search, ShoppingBag, ChevronLeft, ChevronRight, ChevronDown, ArrowRight, AlertTriangle, Package, Check, RotateCcw, Ban } from 'lucide-react';
+import { Eye, X, CheckCircle, CheckCircle2, XCircle, Clock, CreditCard, Truck, RefreshCw, Search, ShoppingBag, ChevronLeft, ChevronRight, ChevronDown, AlertTriangle, Package, PackageCheck, Bike, CalendarClock, Warehouse as WarehouseIcon, BadgeCheck, RotateCcw, Ban } from 'lucide-react';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { fetchAllOrders, updateOrderStatus } from '../../store/slices/orderSlice';
@@ -10,6 +11,7 @@ import { orderService } from '../../services/orderService';
 import { warehouseService, staffService } from '../../services/warehouseService';
 import { Order, PaymentEvent, OrderStatusHistory, CancellationRequest, ReturnRequest, Warehouse, User } from '../../types';
 import ButtonSpinner from '../../components/common/ButtonSpinner';
+import StatusTimeline, { TimelineStep } from '../../components/common/StatusTimeline';
 import { formatDate, formatDateTime } from '../../utils/date';
 import toast from 'react-hot-toast';
 
@@ -51,27 +53,38 @@ const cancelStatusColors: Record<string, string> = {
   rejected: 'bg-red-100 text-red-700',
 };
 
-const RETURN_FLOW: { key: string; label: string }[] = [
-  { key: 'requested', label: 'Return Requested' },
-  { key: 'approved', label: 'Approved' },
-  { key: 'pickup_scheduled', label: 'Pickup Scheduled' },
-  { key: 'handed_over', label: 'Picked Up by Courier' },
-  { key: 'received', label: 'Received at Warehouse' },
-  { key: 'refunded', label: 'Refunded' },
-];
+// Shared lucide icons keep every timeline on the one design language used
+// across the customer + admin apps.
+const FULFILLMENT_ICONS: Record<string, ComponentType<{ className?: string }>> = {
+  placed: ShoppingBag,
+  accepted: CheckCircle2,
+  picking: Package,
+  packed: PackageCheck,
+  out_for_delivery: Bike,
+  delivered: CheckCircle2,
+  cancelled: XCircle,
+  refunded: RefreshCw,
+};
 
-type TimelineStep = { key: string; label: string; state: 'done' | 'current' | 'todo' | 'rejected'; date: string | null };
+const RETURN_FLOW: { key: string; label: string; icon: ComponentType<{ className?: string }> }[] = [
+  { key: 'requested', label: 'Return Requested', icon: RotateCcw },
+  { key: 'approved', label: 'Approved', icon: CheckCircle2 },
+  { key: 'pickup_scheduled', label: 'Pickup Scheduled', icon: CalendarClock },
+  { key: 'handed_over', label: 'Picked Up by Courier', icon: PackageCheck },
+  { key: 'received', label: 'Received at Warehouse', icon: WarehouseIcon },
+  { key: 'refunded', label: 'Refunded', icon: BadgeCheck },
+];
 
 const buildReturnSteps = (r: ReturnRequest): TimelineStep[] => {
   if (r.status === 'rejected') {
     return [
-      { key: 'requested', label: 'Return Requested', state: 'done', date: r.created_at },
+      { key: 'requested', label: 'Return Requested', state: 'done', date: r.created_at, icon: RotateCcw },
       { key: 'rejected', label: 'Rejected', state: 'rejected', date: r.updated_at },
     ];
   }
   if (r.status === 'withdrawn') {
     return [
-      { key: 'requested', label: 'Return Requested', state: 'done', date: r.created_at },
+      { key: 'requested', label: 'Return Requested', state: 'done', date: r.created_at, icon: RotateCcw },
       { key: 'withdrawn', label: 'Withdrawn by customer', state: 'rejected', date: r.updated_at },
     ];
   }
@@ -79,6 +92,7 @@ const buildReturnSteps = (r: ReturnRequest): TimelineStep[] => {
   return RETURN_FLOW.map((s, i) => ({
     key: s.key,
     label: s.label,
+    icon: s.icon,
     state: i < idx ? 'done' : i === idx ? 'current' : 'todo',
     date:
       s.key === 'requested'
@@ -96,47 +110,13 @@ const buildCancelSteps = (c: CancellationRequest): TimelineStep[] => {
     c.status === 'pending'
       ? { key: 'pending', label: 'Awaiting Review', state: 'current', date: null }
       : c.status === 'approved'
-      ? { key: 'approved', label: 'Approved — Order Cancelled', state: 'done', date: c.resolved_at }
+      ? { key: 'approved', label: 'Approved — Order Cancelled', state: 'done', date: c.resolved_at, icon: XCircle }
       : { key: 'rejected', label: 'Rejected', state: 'rejected', date: c.resolved_at };
   return [
-    { key: 'requested', label: 'Cancellation Requested', state: 'done', date: c.created_at },
+    { key: 'requested', label: 'Cancellation Requested', state: 'done', date: c.created_at, icon: Ban },
     second,
   ];
 };
-
-const renderRequestTimeline = (steps: TimelineStep[]) => (
-  <div className="relative pl-6 border-l-2 border-gray-200 space-y-3">
-    {steps.map((s) => (
-      <div key={s.key} className="relative">
-        <div
-          className={`absolute -left-[calc(0.75rem+1px)] top-0 w-6 h-6 rounded-full flex items-center justify-center ${
-            s.state === 'done'
-              ? 'bg-green-500 text-white'
-              : s.state === 'current'
-              ? 'bg-brand-500 text-white'
-              : s.state === 'rejected'
-              ? 'bg-red-500 text-white'
-              : 'bg-gray-200 text-gray-400'
-          }`}
-        >
-          {s.state === 'done' ? (
-            <Check className="w-3.5 h-3.5" />
-          ) : s.state === 'rejected' ? (
-            <X className="w-3.5 h-3.5" />
-          ) : s.state === 'current' ? (
-            <span className="w-2 h-2 bg-white rounded-full" />
-          ) : (
-            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full" />
-          )}
-        </div>
-        <div className="ml-3">
-          <span className={`text-sm font-medium ${s.state === 'todo' ? 'text-gray-400' : 'text-gray-700'}`}>{s.label}</span>
-          {s.date && <p className="text-[11px] text-gray-400">{formatDateTime(s.date)}</p>}
-        </div>
-      </div>
-    ))}
-  </div>
-);
 
 const validTransitions: Record<string, string[]> = {
   placed: ['accepted', 'cancelled'],
@@ -191,6 +171,18 @@ const Orders = () => {
     dispatch(fetchCancellationRequests());
     warehouseService.getAll(true).then(setWarehouses).catch(() => {});
     staffService.getByRole('delivery_partner').then(setDeliveryPartners).catch(() => {});
+  }, [dispatch]);
+
+  // Auto-refresh so admins see order/cancellation/return updates without
+  // clicking Refresh. Only polls while the tab is visible.
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (document.visibilityState !== 'visible') return;
+      dispatch(fetchAllOrders());
+      dispatch(fetchReturnRequests());
+      dispatch(fetchCancellationRequests());
+    }, 15000);
+    return () => clearInterval(id);
   }, [dispatch]);
 
   const riderName = (id?: string | null) => {
@@ -332,34 +324,6 @@ const Orders = () => {
       pages.push(totalPages);
     }
     return pages;
-  };
-
-  const getTimelineIcon = (toStatus: string) => {
-    switch (toStatus) {
-      case 'placed': return <Check className="w-3.5 h-3.5" />;
-      case 'accepted': return <CheckCircle className="w-3.5 h-3.5" />;
-      case 'picking': return <Package className="w-3.5 h-3.5" />;
-      case 'packed': return <Package className="w-3.5 h-3.5" />;
-      case 'out_for_delivery': return <Truck className="w-3.5 h-3.5" />;
-      case 'delivered': return <CheckCircle className="w-3.5 h-3.5" />;
-      case 'cancelled': return <XCircle className="w-3.5 h-3.5" />;
-      case 'refunded': return <RefreshCw className="w-3.5 h-3.5" />;
-      default: return <Clock className="w-3.5 h-3.5" />;
-    }
-  };
-
-  const getTimelineColor = (toStatus: string) => {
-    switch (toStatus) {
-      case 'placed': return { color: 'text-blue-600', bg: 'bg-blue-100' };
-      case 'accepted': return { color: 'text-indigo-600', bg: 'bg-indigo-100' };
-      case 'picking': return { color: 'text-amber-600', bg: 'bg-amber-100' };
-      case 'packed': return { color: 'text-orange-600', bg: 'bg-orange-100' };
-      case 'out_for_delivery': return { color: 'text-purple-600', bg: 'bg-purple-100' };
-      case 'delivered': return { color: 'text-green-600', bg: 'bg-green-100' };
-      case 'cancelled': return { color: 'text-red-600', bg: 'bg-red-100' };
-      case 'refunded': return { color: 'text-gray-600', bg: 'bg-gray-100' };
-      default: return { color: 'text-gray-600', bg: 'bg-gray-100' };
-    }
   };
 
   return (
@@ -827,41 +791,24 @@ const Orders = () => {
             {detailOrder.status_history && detailOrder.status_history.length > 0 && (
               <div className="mb-6">
                 <h3 className="font-semibold text-gray-800 mb-3">Fulfillment Timeline</h3>
-                <div className="relative pl-6 border-l-2 border-gray-200 space-y-4">
-                  {detailOrder.status_history.map((entry: OrderStatusHistory, index: number) => {
+                <StatusTimeline
+                  steps={detailOrder.status_history.map((entry: OrderStatusHistory, index: number) => {
                     const isLast = index === detailOrder.status_history!.length - 1;
-                    const { color, bg } = getTimelineColor(entry.to_status);
-                    return (
-                      <div key={entry.id} className="relative">
-                        <div className={`absolute -left-[calc(0.75rem+1px)] top-0 w-6 h-6 rounded-full flex items-center justify-center ${bg} ${color} ${isLast ? 'ring-2 ring-offset-2 ring-current' : ''}`}>
-                          {getTimelineIcon(entry.to_status)}
-                        </div>
-                        <div className="ml-4">
-                          <div className="flex items-center space-x-2">
-                            <span className={`text-sm font-semibold capitalize ${color}`}>
-                              {entry.from_status ? (
-                                <>{formatStatus(entry.from_status)} <ArrowRight className="w-3 h-3 inline mx-0.5" /> {formatStatus(entry.to_status)}</>
-                              ) : (
-                                formatStatus(entry.to_status)
-                              )}
-                            </span>
-                          </div>
-                          <div className="flex items-center space-x-2 mt-0.5">
-                            <span className="text-xs text-gray-400">
-                              {formatDateTime(entry.created_at)}
-                            </span>
-                            {entry.changed_by_name && (
-                              <span className="text-xs text-gray-500">by {entry.changed_by_name}</span>
-                            )}
-                          </div>
-                          {entry.notes && (
-                            <p className="text-sm text-gray-600 mt-0.5">{entry.notes}</p>
-                          )}
-                        </div>
-                      </div>
-                    );
+                    const label = formatStatus(entry.to_status);
+                    const sub = [
+                      entry.changed_by_name ? `by ${entry.changed_by_name}` : null,
+                      entry.notes || null,
+                    ].filter(Boolean).join(' · ') || undefined;
+                    return {
+                      key: entry.id,
+                      label: label.charAt(0).toUpperCase() + label.slice(1),
+                      sub,
+                      date: entry.created_at,
+                      state: entry.to_status === 'cancelled' ? 'rejected' : isLast ? 'current' : 'done',
+                      icon: FULFILLMENT_ICONS[entry.to_status],
+                    };
                   })}
-                </div>
+                />
               </div>
             )}
 
@@ -958,7 +905,7 @@ const Orders = () => {
                           </span>
                         </div>
                         <p className="text-xs text-gray-500 mb-3">Reason: {c.reason}</p>
-                        {renderRequestTimeline(buildCancelSteps(c))}
+                        <StatusTimeline steps={buildCancelSteps(c)} />
                       </div>
                     ))}
                     {returns.map((r) => (
@@ -974,7 +921,7 @@ const Orders = () => {
                           )}
                         </div>
                         <p className="text-xs text-gray-500 mb-3">Reason: {r.reason}</p>
-                        {renderRequestTimeline(buildReturnSteps(r))}
+                        <StatusTimeline steps={buildReturnSteps(r)} />
                       </div>
                     ))}
                   </div>

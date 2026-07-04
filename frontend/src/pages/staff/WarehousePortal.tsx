@@ -63,6 +63,15 @@ const WarehousePortal = () => {
     load();
   }, [load]);
 
+  // Auto-refresh the fulfillment queue so new orders and returns appear without a manual refresh.
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (document.visibilityState !== 'visible') return;
+      load();
+    }, 15000);
+    return () => clearInterval(id);
+  }, [load]);
+
   const advance = async (order: Order, to: string) => {
     setUpdatingId(order.id);
     try {
