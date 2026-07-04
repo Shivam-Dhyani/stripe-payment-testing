@@ -26,6 +26,7 @@ import Checkout from './pages/user/Checkout';
 import OrderHistory from './pages/user/OrderHistory';
 import OrderTracking from './pages/user/OrderTracking';
 import Profile from './pages/user/Profile';
+import { HelpCenter, ContactUs, PrivacyPolicy } from './pages/user/StaticPages';
 
 // Admin Pages
 import Dashboard from './pages/admin/Dashboard';
@@ -68,6 +69,9 @@ const AppContent = () => {
         <Route path="/" element={<Home />} />
         <Route path="/products" element={<ProductList />} />
         <Route path="/products/:id" element={<ProductDetail />} />
+        <Route path="/help" element={<HelpCenter />} />
+        <Route path="/contact" element={<ContactUs />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
 
         {/* Protected Customer Routes */}
         <Route

@@ -7,7 +7,7 @@ import { Eye, EyeOff, Zap } from 'lucide-react';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { loginUser, clearError } from '../../store/slices/authSlice';
-import { APP_NAME, APP_TAGLINE, DELIVERY_PROMISE } from '../../config/brand';
+import { APP_NAME, APP_TAGLINE } from '../../config/brand';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -75,7 +75,7 @@ const Login = () => {
               <span className="text-4xl font-extrabold text-ink-900 tracking-tight">{APP_NAME}</span>
             </div>
             <p className="text-center text-ink-900/70 text-lg leading-relaxed font-medium">
-              {APP_TAGLINE} — {DELIVERY_PROMISE.toLowerCase()}. Fresh groceries & daily essentials, delivered fast.
+              {APP_TAGLINE}. Fresh produce, snacks and daily essentials, delivered to your door.
             </p>
           </div>
         </div>

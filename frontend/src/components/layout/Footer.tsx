@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import BrandMark from '../common/BrandMark';
 import { APP_NAME, DELIVERY_PROMISE } from '../../config/brand';
 
@@ -15,17 +16,17 @@ const Footer = () => {
           <div>
             <h3 className="font-semibold mb-4">Quick Links</h3>
             <ul className="space-y-2 text-gray-400">
-              <li><a href="/products" className="hover:text-white transition">Shop</a></li>
-              <li><a href="/cart" className="hover:text-white transition">Cart</a></li>
-              <li><a href="/orders" className="hover:text-white transition">Orders</a></li>
+              <li><Link to="/products" className="hover:text-white transition">Shop</Link></li>
+              <li><Link to="/cart" className="hover:text-white transition">Cart</Link></li>
+              <li><Link to="/orders" className="hover:text-white transition">Orders</Link></li>
             </ul>
           </div>
           <div>
             <h3 className="font-semibold mb-4">Support</h3>
             <ul className="space-y-2 text-gray-400">
-              <li><a href="#" className="hover:text-white transition">Help Center</a></li>
-              <li><a href="#" className="hover:text-white transition">Contact Us</a></li>
-              <li><a href="#" className="hover:text-white transition">Privacy Policy</a></li>
+              <li><Link to="/help" className="hover:text-white transition">Help Center</Link></li>
+              <li><Link to="/contact" className="hover:text-white transition">Contact Us</Link></li>
+              <li><Link to="/privacy" className="hover:text-white transition">Privacy Policy</Link></li>
             </ul>
           </div>
         </div>

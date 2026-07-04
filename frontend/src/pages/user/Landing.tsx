@@ -7,7 +7,7 @@ import {
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { fetchCategories } from '../../store/slices/categorySlice';
-import { APP_NAME, APP_TAGLINE, DELIVERY_PROMISE } from '../../config/brand';
+import { APP_NAME, DELIVERY_PROMISE } from '../../config/brand';
 
 const categoryTints = [
   'bg-brand-50 text-brand-500',
@@ -63,11 +63,11 @@ const Landing = () => {
             <Zap className="w-3.5 h-3.5" fill="currentColor" strokeWidth={0} /> {DELIVERY_PROMISE.toUpperCase()}
           </span>
           <h1 className="mt-5 max-w-3xl text-4xl sm:text-6xl font-extrabold text-ink-900 leading-[1.05] tracking-tight">
-            {APP_NAME} — {APP_TAGLINE.toLowerCase()}, delivered in minutes.
+            Groceries &amp; daily essentials, delivered in minutes.
           </h1>
           <p className="mt-4 max-w-xl text-ink-900/75 text-base sm:text-lg font-medium">
-            Fresh groceries and daily essentials from the dark store nearest you —
-            ordered in a tap and at your door before you know it.
+            Fresh produce, snacks, household must-haves and more — picked at the
+            store nearest you and brought to your door in a flash.
           </p>
           <div className="mt-7 flex flex-wrap items-center gap-3">
             <Link to="/products" className="inline-flex items-center gap-2 h-12 px-6 bg-brand-500 text-white rounded-xl font-semibold hover:bg-brand-600 transition-colors shadow-qc-card">
