@@ -118,7 +118,7 @@ def checkout(
         amount_cents = int(total * 100)
         payment_intent = create_payment_intent(
             amount=amount_cents,
-            currency="usd",
+            currency=settings.STRIPE_CURRENCY,
             metadata={"user_id": current_user.id},
         )
     except Exception as e:
@@ -148,7 +148,7 @@ def checkout(
         order_id=order.id,
         event_type=PaymentEventType.created,
         message="Payment intent created",
-        event_data={"payment_intent_id": payment_intent["id"], "amount_cents": amount_cents, "currency": "usd"},
+        event_data={"payment_intent_id": payment_intent["id"], "amount_cents": amount_cents, "currency": settings.STRIPE_CURRENCY},
     )
     db.add(payment_event)
 

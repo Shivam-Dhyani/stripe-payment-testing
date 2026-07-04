@@ -4,7 +4,7 @@ from app.config import settings
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
 
-def create_payment_intent(amount: int, currency: str = "usd", metadata: dict = None,
+def create_payment_intent(amount: int, currency: str = "inr", metadata: dict = None,
                           idempotency_key: str = None) -> dict:
     """
     Create a Stripe PaymentIntent.

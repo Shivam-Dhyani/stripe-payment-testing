@@ -10,6 +10,9 @@ class Settings(BaseSettings):
     STRIPE_SECRET_KEY: str = "sk_test_placeholder"
     STRIPE_WEBHOOK_SECRET: str = "whsec_placeholder"
     STRIPE_PUBLISHABLE_KEY: str = "pk_test_placeholder"
+    # Payment currency (INR for the Indian quick-commerce catalog). Set to
+    # "usd" in .env if your Stripe test account can't charge INR.
+    STRIPE_CURRENCY: str = "inr"
 
     # Web Push (VAPID). Generate a keypair locally and set these in .env:
     #   pip install pywebpush && vapid --gen   (or: npx web-push generate-vapid-keys)

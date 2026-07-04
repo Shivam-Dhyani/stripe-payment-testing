@@ -18,276 +18,232 @@ def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
 
+import urllib.parse
+import hashlib
+
+
+def _product_image(name: str) -> str:
+    """A free, keyless product image generated from the item name (Pollinations).
+    Loads client-side in the shopper's browser; a stable seed keeps it fixed."""
+    prompt = (
+        f"photorealistic product packshot of {name}, indian grocery product, "
+        "clean white background, studio lighting, e-commerce catalogue photo, centered"
+    )
+    seed = int(hashlib.md5(name.encode()).hexdigest(), 16) % 100000
+    return (
+        "https://image.pollinations.ai/prompt/"
+        + urllib.parse.quote(prompt)
+        + f"?width=500&height=500&nologo=true&seed={seed}"
+    )
+
+
 # ---------------------------------------------------------------------------
-# Quick-commerce grocery catalog (Blinkit / Instamart style).
-# Each product is (name, unit/pack-size, price, stock).
-# `returnable` is set per sub-category: perishables & consumables are not
-# returnable; sealed personal-care / household / baby items are (7-day window).
+# Indian quick-commerce catalog (Blinkit / Instamart / Zepto style).
+# Each product is (name, pack-size, price in Rupees, stock).
+# `returnable` is per sub-category: fresh/food is non-returnable; sealed
+# personal-care / household / baby items are returnable (7-day window).
 # ---------------------------------------------------------------------------
 CATALOG = {
     "Fruits & Vegetables": {
-        "description": "Fresh fruits, vegetables & herbs — sourced daily",
+        "description": "Farm-fresh fruits, vegetables & herbs",
         "subcategories": {
-            "Fresh Fruits": {
-                "returnable": False,
-                "products": [
-                    ("Banana (Robusta)", "6 pcs", 1.49, 120),
-                    ("Royal Gala Apple", "1 kg", 3.99, 90),
-                    ("Nagpur Orange", "1 kg", 2.99, 80),
-                    ("Pomegranate", "500 g", 3.49, 60),
-                    ("Alphonso Mango", "1 kg", 5.99, 40),
-                ],
-            },
-            "Fresh Vegetables": {
-                "returnable": False,
-                "products": [
-                    ("Tomato (Local)", "1 kg", 1.29, 150),
-                    ("Onion", "1 kg", 1.19, 160),
-                    ("Potato", "1 kg", 0.99, 200),
-                    ("Baby Spinach", "250 g", 1.49, 70),
-                    ("Green Capsicum", "500 g", 1.79, 65),
-                ],
-            },
-            "Herbs & Seasonings": {
-                "returnable": False,
-                "products": [
-                    ("Fresh Coriander", "100 g", 0.59, 90),
-                    ("Ginger", "200 g", 0.99, 85),
-                    ("Green Chilli", "100 g", 0.49, 95),
-                    ("Garlic", "200 g", 1.29, 80),
-                ],
-            },
+            "Fresh Vegetables": {"returnable": False, "products": [
+                ("Onion", "1 kg", 39, 200),
+                ("Tomato (Local)", "1 kg", 32, 180),
+                ("Potato", "1 kg", 29, 220),
+                ("Ginger", "200 g", 25, 120),
+                ("Green Chilli", "100 g", 12, 140),
+                ("Fresh Coriander", "100 g", 10, 130),
+            ]},
+            "Fresh Fruits": {"returnable": False, "products": [
+                ("Banana (Robusta)", "1 dozen", 49, 150),
+                ("Shimla Apple", "1 kg", 149, 90),
+                ("Pomegranate", "500 g", 89, 70),
+                ("Nagpur Orange", "1 kg", 79, 80),
+            ]},
         },
     },
     "Dairy, Bread & Eggs": {
-        "description": "Milk, bread, eggs & everyday essentials",
+        "description": "Milk, bread, eggs & everyday dairy",
         "subcategories": {
-            "Milk": {
-                "returnable": False,
-                "products": [
-                    ("Whole Milk", "1 L", 1.29, 130),
-                    ("Toned Milk", "1 L", 1.09, 140),
-                    ("Almond Milk (Unsweetened)", "1 L", 3.49, 55),
-                    ("Lactose-Free Milk", "1 L", 2.29, 50),
-                ],
-            },
-            "Bread & Pav": {
-                "returnable": False,
-                "products": [
-                    ("White Sandwich Bread", "400 g", 1.19, 100),
-                    ("Whole Wheat Bread", "400 g", 1.49, 95),
-                    ("Burger Buns", "6 pcs", 1.39, 70),
-                ],
-            },
-            "Eggs": {
-                "returnable": False,
-                "products": [
-                    ("Farm Fresh Eggs", "6 pcs", 1.79, 110),
-                    ("Farm Fresh Eggs", "12 pcs", 3.29, 90),
-                    ("Free-Range Brown Eggs", "6 pcs", 2.49, 60),
-                ],
-            },
-            "Butter & Cheese": {
-                "returnable": False,
-                "products": [
-                    ("Salted Butter", "500 g", 4.49, 65),
-                    ("Cheese Slices", "200 g", 2.99, 80),
-                    ("Fresh Paneer", "200 g", 2.49, 75),
-                    ("Greek Yogurt", "400 g", 2.19, 85),
-                ],
-            },
+            "Milk": {"returnable": False, "products": [
+                ("Amul Gold Full Cream Milk", "500 ml", 34, 200),
+                ("Mother Dairy Toned Milk", "500 ml", 27, 200),
+                ("Amul Taaza Toned Milk", "1 L", 66, 150),
+            ]},
+            "Bread & Eggs": {"returnable": False, "products": [
+                ("Britannia Brown Bread", "400 g", 45, 120),
+                ("Harvest Gold White Bread", "400 g", 40, 120),
+                ("Farm Fresh Eggs", "6 pcs", 42, 140),
+            ]},
+            "Curd, Paneer & Butter": {"returnable": False, "products": [
+                ("Amul Masti Dahi", "400 g", 35, 110),
+                ("Amul Malai Paneer", "200 g", 89, 90),
+                ("Amul Butter", "100 g", 56, 130),
+            ]},
+        },
+    },
+    "Atta, Rice & Dal": {
+        "description": "Staples — atta, rice, dal & pulses",
+        "subcategories": {
+            "Atta & Flours": {"returnable": False, "products": [
+                ("Aashirvaad Shudh Chakki Atta", "5 kg", 265, 80),
+                ("Fortune Chakki Fresh Atta", "5 kg", 245, 80),
+            ]},
+            "Rice": {"returnable": False, "products": [
+                ("India Gate Basmati Rice", "1 kg", 119, 100),
+                ("Daawat Rozana Gold Rice", "5 kg", 320, 60),
+            ]},
+            "Dal & Pulses": {"returnable": False, "products": [
+                ("Tata Sampann Toor Dal", "1 kg", 145, 90),
+                ("Moong Dal", "500 g", 79, 100),
+                ("Rajma (Kidney Beans)", "500 g", 89, 90),
+            ]},
+        },
+    },
+    "Masala, Oil & More": {
+        "description": "Cooking oil, ghee, spices & essentials",
+        "subcategories": {
+            "Oil & Ghee": {"returnable": False, "products": [
+                ("Fortune Sunflower Oil", "1 L", 145, 100),
+                ("Saffola Gold Oil", "1 L", 175, 90),
+                ("Amul Pure Ghee", "1 L", 599, 50),
+            ]},
+            "Spices & Salt": {"returnable": False, "products": [
+                ("Everest Garam Masala", "100 g", 72, 120),
+                ("MDH Chana Masala", "100 g", 65, 120),
+                ("Tata Salt", "1 kg", 28, 200),
+            ]},
+            "Sugar & Jaggery": {"returnable": False, "products": [
+                ("Sugar", "1 kg", 45, 160),
+                ("Organic Jaggery (Gud)", "500 g", 40, 120),
+            ]},
         },
     },
     "Snacks & Munchies": {
-        "description": "Chips, biscuits, namkeen & more",
+        "description": "Chips, namkeen & biscuits",
         "subcategories": {
-            "Chips & Crisps": {
-                "returnable": False,
-                "products": [
-                    ("Classic Salted Potato Chips", "52 g", 0.99, 200),
-                    ("Cream & Onion Chips", "52 g", 0.99, 180),
-                    ("Tortilla Nachos", "150 g", 2.49, 90),
-                ],
-            },
-            "Biscuits & Cookies": {
-                "returnable": False,
-                "products": [
-                    ("Choco Chip Cookies", "200 g", 1.89, 120),
-                    ("Digestive Biscuits", "250 g", 1.59, 130),
-                    ("Cream Sandwich Biscuits", "120 g", 0.89, 150),
-                ],
-            },
-            "Namkeen": {
-                "returnable": False,
-                "products": [
-                    ("Classic Mixture", "200 g", 1.49, 100),
-                    ("Salted Peanuts", "200 g", 1.29, 110),
-                    ("Aloo Bhujia", "200 g", 1.39, 105),
-                ],
-            },
+            "Chips & Namkeen": {"returnable": False, "products": [
+                ("Lay's Classic Salted Chips", "52 g", 20, 200),
+                ("Kurkure Masala Munch", "90 g", 20, 200),
+                ("Haldiram's Aloo Bhujia", "200 g", 52, 130),
+            ]},
+            "Biscuits & Cookies": {"returnable": False, "products": [
+                ("Parle-G Original Glucose Biscuits", "250 g", 30, 220),
+                ("Britannia Good Day Cashew", "100 g", 30, 180),
+                ("Cadbury Oreo Vanilla", "120 g", 35, 160),
+            ]},
         },
     },
     "Cold Drinks & Juices": {
         "description": "Soft drinks, juices & water",
         "subcategories": {
-            "Soft Drinks": {
-                "returnable": False,
-                "products": [
-                    ("Cola", "750 ml", 1.19, 160),
-                    ("Lemon-Lime Soda", "750 ml", 1.19, 150),
-                    ("Orange Fizz", "750 ml", 1.19, 140),
-                ],
-            },
-            "Juices": {
-                "returnable": False,
-                "products": [
-                    ("100% Orange Juice", "1 L", 2.99, 90),
-                    ("Mixed Fruit Juice", "1 L", 2.79, 95),
-                    ("Cranberry Juice", "1 L", 3.29, 60),
-                ],
-            },
-            "Water & Sparkling": {
-                "returnable": False,
-                "products": [
-                    ("Mineral Water", "1 L", 0.79, 220),
-                    ("Sparkling Water", "750 ml", 1.29, 100),
-                ],
-            },
-        },
-    },
-    "Instant & Frozen Food": {
-        "description": "Noodles, frozen snacks & ready meals",
-        "subcategories": {
-            "Instant Noodles": {
-                "returnable": False,
-                "products": [
-                    ("Masala Instant Noodles", "70 g", 0.69, 200),
-                    ("Cup Noodles (Chicken)", "70 g", 1.19, 140),
-                    ("Hakka Noodles", "150 g", 1.49, 110),
-                ],
-            },
-            "Frozen Snacks": {
-                "returnable": False,
-                "products": [
-                    ("Crinkle French Fries", "500 g", 2.99, 85),
-                    ("Veg Nuggets", "300 g", 2.79, 80),
-                    ("Chicken Spring Rolls", "300 g", 3.49, 70),
-                ],
-            },
-            "Ready to Eat": {
-                "returnable": False,
-                "products": [
-                    ("Rajma Masala", "300 g", 2.49, 90),
-                    ("Ready Poha", "200 g", 1.29, 100),
-                    ("Pav Bhaji", "300 g", 2.59, 85),
-                ],
-            },
+            "Soft Drinks": {"returnable": False, "products": [
+                ("Coca-Cola", "750 ml", 40, 180),
+                ("Thums Up", "750 ml", 40, 180),
+                ("Sprite", "750 ml", 40, 170),
+            ]},
+            "Juices & Water": {"returnable": False, "products": [
+                ("Real Mixed Fruit Juice", "1 L", 110, 100),
+                ("Tropicana Orange Juice", "1 L", 120, 90),
+                ("Bisleri Mineral Water", "1 L", 20, 250),
+            ]},
         },
     },
     "Tea, Coffee & Health Drinks": {
-        "description": "Tea, coffee & health drinks",
+        "description": "Chai, coffee & health drinks",
         "subcategories": {
-            "Tea": {
-                "returnable": False,
-                "products": [
-                    ("Green Tea Bags", "25 bags", 3.49, 120),
-                    ("Premium Black Tea", "250 g", 2.99, 110),
-                    ("Masala Chai", "250 g", 3.19, 90),
-                ],
-            },
-            "Coffee": {
-                "returnable": False,
-                "products": [
-                    ("Instant Coffee", "100 g", 4.99, 100),
-                    ("Filter Coffee Powder", "200 g", 3.99, 80),
-                    ("Cold Brew Concentrate", "500 ml", 5.49, 45),
-                ],
-            },
-            "Health Drinks": {
-                "returnable": False,
-                "products": [
-                    ("Chocolate Malt Drink", "500 g", 4.49, 85),
-                    ("Protein Shake Mix", "400 g", 8.99, 40),
-                ],
-            },
+            "Tea": {"returnable": False, "products": [
+                ("Brooke Bond Red Label Tea", "250 g", 140, 120),
+                ("Tata Tea Gold", "250 g", 155, 110),
+                ("Taj Mahal Tea", "100 g", 90, 100),
+            ]},
+            "Coffee": {"returnable": False, "products": [
+                ("Bru Instant Coffee", "50 g", 145, 90),
+                ("Nescafe Classic Coffee", "50 g", 160, 90),
+            ]},
+            "Health Drinks": {"returnable": False, "products": [
+                ("Cadbury Bournvita", "500 g", 235, 80),
+                ("Horlicks Classic Malt", "500 g", 260, 80),
+            ]},
         },
     },
-    "Household & Cleaning": {
-        "description": "Cleaning, laundry & home care",
+    "Instant & Frozen Food": {
+        "description": "Noodles, ready-to-eat & frozen snacks",
         "subcategories": {
-            "Cleaning Essentials": {
-                "returnable": True,
-                "products": [
-                    ("Dishwash Gel (Lemon)", "500 ml", 1.99, 110),
-                    ("Floor Cleaner (Citrus)", "1 L", 2.49, 95),
-                    ("Glass Cleaner", "500 ml", 2.19, 80),
-                ],
-            },
-            "Laundry": {
-                "returnable": True,
-                "products": [
-                    ("Detergent Powder", "1 kg", 3.99, 100),
-                    ("Fabric Softener", "1 L", 3.49, 75),
-                    ("Liquid Detergent", "1 L", 4.49, 70),
-                ],
-            },
-            "Paper & Disposables": {
-                "returnable": True,
-                "products": [
-                    ("Kitchen Paper Towels", "2 rolls", 2.29, 130),
-                    ("Aluminium Foil", "72 m", 2.99, 90),
-                    ("Garbage Bags (Medium)", "30 pcs", 2.49, 100),
-                ],
-            },
+            "Noodles & Pasta": {"returnable": False, "products": [
+                ("Maggi 2-Minute Masala Noodles", "70 g", 14, 250),
+                ("Maggi Masala Noodles (Pack of 6)", "420 g", 84, 120),
+                ("Sunfeast Yippee Magic Masala", "70 g", 13, 200),
+            ]},
+            "Ready to Eat": {"returnable": False, "products": [
+                ("MTR Poha", "200 g", 45, 110),
+                ("Gits Gulab Jamun Mix", "200 g", 75, 90),
+            ]},
+            "Frozen Snacks": {"returnable": False, "products": [
+                ("McCain French Fries", "420 g", 99, 80),
+                ("McCain Aloo Tikki", "400 g", 110, 80),
+            ]},
+        },
+    },
+    "Sweet Tooth": {
+        "description": "Chocolates & ice cream",
+        "subcategories": {
+            "Chocolates": {"returnable": False, "products": [
+                ("Cadbury Dairy Milk", "50 g", 40, 200),
+                ("Nestle KitKat 4 Finger", "37.3 g", 45, 190),
+                ("Cadbury Perk", "26 g", 20, 210),
+            ]},
+            "Ice Cream": {"returnable": False, "products": [
+                ("Amul Vanilla Ice Cream Tub", "1 L", 199, 70),
+                ("Kwality Wall's Cornetto", "120 ml", 45, 120),
+            ]},
+        },
+    },
+    "Cleaning & Household": {
+        "description": "Detergents, cleaners & home care",
+        "subcategories": {
+            "Detergent": {"returnable": True, "products": [
+                ("Surf Excel Easy Wash Detergent", "1 kg", 135, 100),
+                ("Ariel Matic Front Load", "1 kg", 145, 90),
+                ("Vim Dishwash Bar", "200 g", 20, 200),
+            ]},
+            "Cleaners": {"returnable": True, "products": [
+                ("Harpic Power Plus Toilet Cleaner", "500 ml", 92, 110),
+                ("Lizol Disinfectant Floor Cleaner", "500 ml", 99, 100),
+                ("Colin Glass Cleaner", "500 ml", 89, 100),
+            ]},
         },
     },
     "Personal Care": {
         "description": "Bath, oral & hair care",
         "subcategories": {
-            "Bath & Body": {
-                "returnable": True,
-                "products": [
-                    ("Moisturising Body Wash", "250 ml", 3.49, 90),
-                    ("Bath Soap (Pack of 4)", "4 x 100 g", 2.99, 110),
-                    ("Body Lotion", "200 ml", 3.99, 80),
-                ],
-            },
-            "Oral Care": {
-                "returnable": True,
-                "products": [
-                    ("Cavity Protection Toothpaste", "150 g", 2.19, 120),
-                    ("Toothbrush (Soft, Pack of 2)", "2 pcs", 1.99, 100),
-                    ("Antiseptic Mouthwash", "250 ml", 3.29, 70),
-                ],
-            },
-            "Hair Care": {
-                "returnable": True,
-                "products": [
-                    ("Anti-Dandruff Shampoo", "340 ml", 4.99, 85),
-                    ("Smooth & Silky Conditioner", "180 ml", 4.49, 75),
-                    ("Hair Oil", "200 ml", 3.79, 90),
-                ],
-            },
+            "Bath & Body": {"returnable": True, "products": [
+                ("Dettol Original Soap", "125 g", 48, 150),
+                ("Dove Cream Beauty Bar", "100 g", 55, 140),
+                ("Lifebuoy Total Soap (Pack of 4)", "4 x 125 g", 130, 100),
+            ]},
+            "Oral Care": {"returnable": True, "products": [
+                ("Colgate MaxFresh Toothpaste", "150 g", 95, 130),
+                ("Sensodyne Fresh Mint", "70 g", 95, 110),
+                ("Colgate ZigZag Toothbrush (2 pcs)", "2 pcs", 60, 120),
+            ]},
+            "Hair Care": {"returnable": True, "products": [
+                ("Clinic Plus Strong & Long Shampoo", "175 ml", 99, 110),
+                ("Head & Shoulders Anti-Dandruff", "180 ml", 165, 90),
+            ]},
         },
     },
     "Baby Care": {
         "description": "Diapers, wipes & baby food",
         "subcategories": {
-            "Diapers & Wipes": {
-                "returnable": True,
-                "products": [
-                    ("Baby Diapers (Medium)", "30 pcs", 8.99, 60),
-                    ("Baby Diapers (Large)", "28 pcs", 9.49, 55),
-                    ("Baby Wipes", "72 pcs", 2.99, 100),
-                ],
-            },
-            "Baby Food": {
-                "returnable": True,
-                "products": [
-                    ("Baby Cereal (Wheat & Apple)", "300 g", 5.49, 50),
-                    ("Baby Formula (Stage 1)", "400 g", 12.99, 35),
-                ],
-            },
+            "Diapers & Wipes": {"returnable": True, "products": [
+                ("Pampers All Round Protection (M)", "30 pcs", 399, 60),
+                ("Huggies Baby Wipes", "72 pcs", 199, 90),
+            ]},
+            "Baby Food": {"returnable": True, "products": [
+                ("Nestle Cerelac Wheat", "300 g", 245, 55),
+            ]},
         },
     },
 }
@@ -301,7 +257,7 @@ def _seed_catalog(db: Session):
             id=str(uuid.uuid4()),
             name=cat_name,
             description=cat_info["description"],
-            image_url=None,
+            image_url=_product_image(cat_name),
         )
         db.add(category)
         for sub_name, sub_info in cat_info["subcategories"].items():
@@ -318,11 +274,11 @@ def _seed_catalog(db: Session):
                     id=str(uuid.uuid4()),
                     sub_category_id=sub.id,
                     name=prod_name,
-                    description=f"{prod_name} — {unit}. Delivered fresh in minutes.",
+                    description=f"{prod_name} — {unit}. Delivered to your door in minutes.",
                     unit=unit,
                     price=Decimal(str(price)),
                     stock=stock,
-                    image_url=None,
+                    image_url=_product_image(prod_name),
                     is_returnable=returnable,
                     return_window_days=7 if returnable else None,
                 )
