@@ -26,8 +26,8 @@ const ProductDetail = () => {
   }, [dispatch, id]);
 
   const handleAddToCart = () => {
-    if (product && user) {
-      dispatch(addToCart({ productId: product.id, quantity }));
+    if (product) {
+      dispatch(addToCart({ product, quantity }));
     }
   };
 
@@ -35,7 +35,8 @@ const ProductDetail = () => {
     return <LoadingSpinner />;
   }
 
-  const isCustomer = user?.role === 'customer';
+  // Guests (local cart) and customers can shop; staff cannot.
+  const isCustomer = !user || user.role === 'customer';
   const totalPrice = (Number(product.price) * quantity).toFixed(2);
 
   return (
@@ -180,17 +181,8 @@ const ProductDetail = () => {
             </div>
           )}
 
-          {user && user.role === 'admin' && (
-            <p className="text-sm text-gray-400 mt-auto italic">Products can only be purchased from a customer account.</p>
-          )}
-
-          {!user && (
-            <Link
-              to="/login"
-              className="mt-auto inline-flex items-center justify-center px-8 py-3 bg-brand-500 text-white rounded-full hover:bg-brand-600 transition-colors font-medium"
-            >
-              Login to Purchase
-            </Link>
+          {user && user.role !== 'customer' && (
+            <p className="text-sm text-gray-400 mt-auto italic">Shopping is available from a customer account.</p>
           )}
         </div>
       </div>

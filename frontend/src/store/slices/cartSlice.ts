@@ -1,6 +1,8 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { cartService } from '../../services/cartService';
-import { CartItem } from '../../types';
+import { CartItem, Product } from '../../types';
+import { getGuestCart, guestAdd, guestUpdate, guestRemove, clearGuestCart } from '../../utils/guestCart';
+import type { RootState } from '../index';
 // No success toasts for cart actions — the cart badge is the feedback.
 // Errors surface globally via the axios response interceptor.
 
@@ -18,40 +20,64 @@ const initialState: CartState = {
   error: null,
 };
 
-export const fetchCart = createAsyncThunk('cart/fetch', async () => {
-  return await cartService.getCart();
+const isAuthed = (getState: () => unknown) => !!(getState() as RootState).auth.user;
+
+export const fetchCart = createAsyncThunk('cart/fetch', async (_, { getState }) => {
+  return isAuthed(getState) ? await cartService.getCart() : getGuestCart();
 });
 
+// Adds accept the full product so a guest cart can render offline.
 export const addToCart = createAsyncThunk(
   'cart/add',
-  async ({ productId, quantity }: { productId: string; quantity: number }, { rejectWithValue }) => {
-    try {
-      const item = await cartService.addItem(productId, quantity);
-      return item;
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.detail || 'Failed to add to cart');
+  async ({ product, quantity }: { product: Product; quantity: number }, { getState }) => {
+    if (isAuthed(getState)) {
+      await cartService.addItem(product.id, quantity);
+      return await cartService.getCart();
     }
+    return guestAdd(product, quantity);
   }
 );
 
 export const updateCartItem = createAsyncThunk(
   'cart/update',
-  async ({ itemId, quantity }: { itemId: string; quantity: number }) => {
-    return await cartService.updateItem(itemId, quantity);
+  async ({ itemId, quantity }: { itemId: string; quantity: number }, { getState }) => {
+    if (isAuthed(getState)) {
+      await cartService.updateItem(itemId, quantity);
+      return await cartService.getCart();
+    }
+    return guestUpdate(itemId, quantity);
   }
 );
 
 export const removeFromCart = createAsyncThunk(
   'cart/remove',
-  async (itemId: string) => {
-    await cartService.removeItem(itemId);
-    return itemId;
+  async (itemId: string, { getState }) => {
+    if (isAuthed(getState)) {
+      await cartService.removeItem(itemId);
+      return await cartService.getCart();
+    }
+    return guestRemove(itemId);
   }
 );
 
-export const clearCart = createAsyncThunk('cart/clear', async () => {
-  await cartService.clearCart();
-  return [];
+export const clearCart = createAsyncThunk('cart/clear', async (_, { getState }) => {
+  if (isAuthed(getState)) await cartService.clearCart();
+  else clearGuestCart();
+  return [] as CartItem[];
+});
+
+// On login, push any guest-cart items to the server, then load the merged cart.
+export const mergeGuestCart = createAsyncThunk('cart/merge', async () => {
+  const guest = getGuestCart();
+  for (const it of guest) {
+    try {
+      await cartService.addItem(it.product_id, it.quantity);
+    } catch {
+      /* skip items that fail (e.g. out of stock) */
+    }
+  }
+  clearGuestCart();
+  return await cartService.getCart();
 });
 
 const cartSlice = createSlice({
@@ -72,30 +98,23 @@ const cartSlice = createSlice({
       .addCase(addToCart.pending, (state) => { state.submitting = true; })
       .addCase(addToCart.fulfilled, (state, action) => {
         state.submitting = false;
-        const existingIndex = state.items.findIndex(item => item.product_id === action.payload.product_id);
-        if (existingIndex !== -1) {
-          state.items[existingIndex] = action.payload;
-        } else {
-          state.items.push(action.payload);
-        }
+        state.items = action.payload;
       })
       .addCase(addToCart.rejected, (state) => { state.submitting = false; })
       .addCase(updateCartItem.pending, (state) => { state.submitting = true; })
       .addCase(updateCartItem.fulfilled, (state, action) => {
         state.submitting = false;
-        const index = state.items.findIndex(item => item.id === action.payload.id);
-        if (index !== -1) state.items[index] = action.payload;
+        state.items = action.payload;
       })
       .addCase(updateCartItem.rejected, (state) => { state.submitting = false; })
       .addCase(removeFromCart.pending, (state) => { state.submitting = true; })
       .addCase(removeFromCart.fulfilled, (state, action) => {
         state.submitting = false;
-        state.items = state.items.filter(item => item.id !== action.payload);
+        state.items = action.payload;
       })
       .addCase(removeFromCart.rejected, (state) => { state.submitting = false; })
-      .addCase(clearCart.fulfilled, (state) => {
-        state.items = [];
-      });
+      .addCase(mergeGuestCart.fulfilled, (state, action) => { state.items = action.payload; })
+      .addCase(clearCart.fulfilled, (state) => { state.items = []; });
   },
 });
 

@@ -292,6 +292,7 @@ def _seed_demo_orders(db: Session, customers, addresses, all_products):
     """Create sample orders across the last 30 days for dashboard data."""
     statuses = ["picking", "packed", "out_for_delivery", "delivered", "delivered"]
     now = datetime.utcnow()
+    order_seq = 1000
 
     for day_offset in range(30):
         order_date = now - timedelta(days=day_offset)
@@ -318,8 +319,10 @@ def _seed_demo_orders(db: Session, customers, addresses, all_products):
                     "quantity": qty,
                 })
 
+            order_seq += 1
             order = Order(
                 id=str(uuid.uuid4()),
+                order_number=order_seq,
                 user_id=customer.id,
                 address_snapshot={
                     "label": address.label,

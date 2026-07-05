@@ -110,6 +110,8 @@ export type OrderStatus =
 
 export interface Order {
   id: string;
+  order_number?: number | null;
+  delivery_fee?: number;
   user_id: string;
   warehouse_id?: string | null;
   delivery_partner_id?: string | null;

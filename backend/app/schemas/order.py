@@ -59,10 +59,12 @@ class OrderStatusHistoryResponse(BaseModel):
 
 class OrderResponse(BaseModel):
     id: str
+    order_number: Optional[int] = None
     user_id: str
     warehouse_id: Optional[str] = None
     delivery_partner_id: Optional[str] = None
     address_snapshot: Optional[Any] = None
+    delivery_fee: float = 0
     total: float
     status: str
     payment_status: str = "pending"

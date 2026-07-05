@@ -4,7 +4,7 @@ import { Toaster } from 'react-hot-toast';
 import { useAppDispatch } from './hooks/useAppDispatch';
 import { useAppSelector } from './hooks/useAppSelector';
 import { fetchCurrentUser } from './store/slices/authSlice';
-import { fetchCart } from './store/slices/cartSlice';
+import { fetchCart, mergeGuestCart } from './store/slices/cartSlice';
 import { fetchAddresses } from './store/slices/addressSlice';
 
 // Layouts
@@ -56,8 +56,12 @@ const AppContent = () => {
 
   useEffect(() => {
     if (user) {
-      dispatch(fetchCart());
+      // On login, merge any guest cart into the server cart (also loads it).
+      dispatch(mergeGuestCart());
       if (user.role === 'customer') dispatch(fetchAddresses());
+    } else {
+      // Guests: load the local cart from storage.
+      dispatch(fetchCart());
     }
   }, [dispatch, user]);
 
@@ -77,14 +81,8 @@ const AppContent = () => {
         <Route path="/privacy" element={<PrivacyPolicy />} />
 
         {/* Protected Customer Routes */}
-        <Route
-          path="/cart"
-          element={
-            <ProtectedRoute>
-              <Cart />
-            </ProtectedRoute>
-          }
-        />
+        {/* Cart is public so guests can build a cart before signing in. */}
+        <Route path="/cart" element={<Cart />} />
         <Route
           path="/checkout"
           element={

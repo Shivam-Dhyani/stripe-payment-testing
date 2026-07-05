@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload, subqueryload
 from app.models.return_request import ReturnRequestItem
 from typing import List
@@ -20,6 +21,7 @@ from app.schemas.order import (
 )
 from app.middleware.auth import get_current_user, get_admin_user
 from app.services.stripe_service import create_payment_intent, create_refund
+from app.services.fees import compute_delivery_fee
 from app.services.push_service import notify_user_safe
 from app.realtime import notify_order_change
 from app.config import settings
@@ -115,8 +117,12 @@ def checkout(
         "country": address.country,
     }
 
+    subtotal = total
+    delivery_fee = compute_delivery_fee(subtotal)
+    grand_total = subtotal + delivery_fee
+
     try:
-        amount_cents = int(total * 100)
+        amount_cents = int(grand_total * 100)
         payment_intent = create_payment_intent(
             amount=amount_cents,
             currency=settings.STRIPE_CURRENCY,
@@ -128,11 +134,14 @@ def checkout(
             detail=f"Payment processing error: {str(e)}",
         )
 
+    next_number = (db.query(func.max(Order.order_number)).scalar() or 1000) + 1
     order = Order(
+        order_number=next_number,
         user_id=current_user.id,
         warehouse_id=_default_warehouse_id(db),
         address_snapshot=address_snapshot,
-        total=total,
+        delivery_fee=delivery_fee,
+        total=grand_total,
         status="placed",
         stripe_payment_intent_id=payment_intent["id"],
     )
@@ -168,7 +177,9 @@ def checkout(
 
     return {
         "order_id": order.id,
+        "order_number": order.order_number,
         "total": float(order.total),
+        "delivery_fee": float(order.delivery_fee or 0),
         "client_secret": payment_intent["client_secret"],
         "payment_intent_id": payment_intent["id"],
     }

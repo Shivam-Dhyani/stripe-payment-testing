@@ -183,8 +183,17 @@ const Navbar = () => {
               </>
             ) : (
               <div className="flex items-center gap-2">
+                {/* Guests can build a cart before signing in */}
+                <Link to="/cart" className="relative flex items-center justify-center h-11 w-11 rounded-xl bg-ink-900 text-white hover:bg-ink-800 transition-colors" aria-label="Cart">
+                  <ShoppingCart className="w-5 h-5" />
+                  {cartItemCount > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 bg-accent-400 text-ink-900 text-[10px] font-bold min-w-[18px] h-[18px] flex items-center justify-center rounded-full px-1">
+                      {cartItemCount}
+                    </span>
+                  )}
+                </Link>
                 <Link to="/login" className="px-4 py-2.5 bg-brand-500 text-white rounded-xl hover:bg-brand-600 transition-colors text-sm font-semibold shadow-qc-card">Sign in</Link>
-                <Link to="/register" className="px-4 py-2.5 bg-ink-900 text-white rounded-xl hover:bg-ink-800 transition-colors text-sm font-semibold">Get Started</Link>
+                <Link to="/register" className="hidden sm:block px-4 py-2.5 bg-white text-ink-900 border border-ink-900/10 rounded-xl hover:bg-gray-50 transition-colors text-sm font-semibold shadow-qc-card">Get Started</Link>
               </div>
             )}
           </div>

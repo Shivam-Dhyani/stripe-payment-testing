@@ -12,16 +12,19 @@ const ProductCard = ({ product }: { product: Product }) => {
 
   const cartItem = items.find((i) => i.product_id === product.id);
   const qty = cartItem?.quantity || 0;
-  const isCustomer = user?.role === 'customer';
+  // Shoppers = guests (local cart) + customers. Staff don't shop.
+  const canShop = !user || user.role === 'customer';
   const outOfStock = product.stock <= 0;
+  const lowStock = !outOfStock && product.stock <= 5;
+  const atMax = qty >= product.stock;
 
   const add = (e: React.MouseEvent) => {
     e.preventDefault();
-    dispatch(addToCart({ productId: product.id, quantity: 1 }));
+    dispatch(addToCart({ product, quantity: 1 }));
   };
   const inc = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (cartItem) dispatch(updateCartItem({ itemId: cartItem.id, quantity: Math.min(qty + 1, product.stock) }));
+    if (cartItem && !atMax) dispatch(updateCartItem({ itemId: cartItem.id, quantity: qty + 1 }));
   };
   const dec = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -54,30 +57,33 @@ const ProductCard = ({ product }: { product: Product }) => {
         <h3 className="text-sm font-semibold text-gray-800 leading-snug line-clamp-2 min-h-[2.5rem]">
           {product.name}
         </h3>
-        {product.unit && (
-          <span className="mt-0.5 inline-block rounded-md bg-gray-100 px-1.5 py-0.5 text-[11px] font-medium text-gray-500">
-            {product.unit}
-          </span>
-        )}
+        <div className="flex items-center gap-1.5 mt-0.5">
+          {product.unit && (
+            <span className="inline-block rounded-md bg-gray-100 px-1.5 py-0.5 text-[11px] font-medium text-gray-500">
+              {product.unit}
+            </span>
+          )}
+          {lowStock && <span className="text-[11px] font-semibold text-amber-600">Only {product.stock} left</span>}
+        </div>
       </Link>
 
       <div className="flex items-center justify-between mt-2 gap-2">
         <span className="text-sm font-bold text-gray-900">₹{Number(product.price).toFixed(2)}</span>
         {outOfStock ? (
           <span className="text-[11px] font-medium text-gray-400">Sold out</span>
-        ) : isCustomer ? (
+        ) : canShop ? (
           qty === 0 ? (
             <button onClick={add} className="qc-add-btn">ADD</button>
           ) : (
             <div className="qc-stepper">
-              <button onClick={dec} aria-label="decrease"><Minus className="w-3.5 h-3.5" /></button>
+              <button onClick={dec} aria-label="Decrease quantity"><Minus className="w-3.5 h-3.5" /></button>
               <span className="w-7 text-center text-sm font-bold">{qty}</span>
-              <button onClick={inc} aria-label="increase"><Plus className="w-3.5 h-3.5" /></button>
+              <button onClick={inc} aria-label="Increase quantity" disabled={atMax} className={atMax ? 'opacity-40 cursor-not-allowed' : ''}>
+                <Plus className="w-3.5 h-3.5" />
+              </button>
             </div>
           )
-        ) : (
-          <Link to="/login" className="qc-add-btn" onClick={(e) => e.stopPropagation()}>ADD</Link>
-        )}
+        ) : null}
       </div>
     </div>
   );

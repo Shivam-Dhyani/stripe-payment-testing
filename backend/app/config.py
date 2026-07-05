@@ -14,6 +14,13 @@ class Settings(BaseSettings):
     # "usd" in .env if your Stripe test account can't charge INR.
     STRIPE_CURRENCY: str = "inr"
 
+    # Delivery / handling fees (quick-commerce). Free delivery above the
+    # threshold; a small-cart handling fee below the small-cart threshold.
+    DELIVERY_FEE: float = 25.0
+    FREE_DELIVERY_THRESHOLD: float = 199.0
+    SMALL_CART_FEE: float = 15.0
+    SMALL_CART_THRESHOLD: float = 99.0
+
     # Web Push (VAPID). Generate a keypair locally and set these in .env:
     #   pip install pywebpush && vapid --gen   (or: npx web-push generate-vapid-keys)
     # Leave blank to disable push notifications — the app no-ops gracefully.

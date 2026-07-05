@@ -50,10 +50,14 @@ class Order(Base):
     __tablename__ = "orders"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    # Short human-friendly order number (e.g. ZP-1042), assigned at creation.
+    order_number = Column(Integer, nullable=True)
     user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
     warehouse_id = Column(String(36), ForeignKey("warehouses.id"), nullable=True)
     delivery_partner_id = Column(String(36), ForeignKey("users.id"), nullable=True)
     address_snapshot = Column(JSON, nullable=True)
+    # Item subtotal + delivery/handling fee = total.
+    delivery_fee = Column(Numeric(10, 2), default=0, nullable=False)
     total = Column(Numeric(10, 2), nullable=False)
     status = Column(String(20), default="placed", nullable=False)
     # Payment lifecycle, tracked independently of fulfillment status.

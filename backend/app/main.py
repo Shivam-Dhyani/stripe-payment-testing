@@ -128,6 +128,25 @@ def run_migrations(db):
             db.commit()
             print("Added unit column to products table")
 
+    # Step 12: Add order_number + delivery_fee to orders; backfill numbers.
+    if "orders" in inspector.get_table_names():
+        order_cols = [c["name"] for c in inspector.get_columns("orders")]
+        if "delivery_fee" not in order_cols:
+            db.execute(text("ALTER TABLE orders ADD COLUMN delivery_fee NUMERIC(10, 2) DEFAULT 0 NOT NULL"))
+            db.commit()
+            print("Added delivery_fee column to orders table")
+        if "order_number" not in order_cols:
+            db.execute(text("ALTER TABLE orders ADD COLUMN order_number INTEGER"))
+            db.commit()
+            # Backfill sequential numbers starting at 1001, oldest first.
+            db.execute(text(
+                "UPDATE orders o SET order_number = r.rn FROM ("
+                "SELECT id, (ROW_NUMBER() OVER (ORDER BY created_at)) + 1000 AS rn FROM orders"
+                ") r WHERE o.id = r.id"
+            ))
+            db.commit()
+            print("Added + backfilled order_number column on orders table")
+
     print("Database migrations completed.")
 
 
