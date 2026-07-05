@@ -103,3 +103,16 @@ class OrderStatusHistory(Base):
 
     order = relationship("Order", back_populates="status_history")
     user = relationship("User", foreign_keys=[changed_by])
+
+    @property
+    def changed_by_name(self):
+        """Name of the person who made this transition (for timelines)."""
+        if not self.user:
+            return None
+        name = f"{self.user.first_name or ''} {self.user.last_name or ''}".strip()
+        return name or self.user.email
+
+    @property
+    def changed_by_role(self):
+        """Role of the person who made this transition (admin/warehouse/rider)."""
+        return self.user.role if self.user else None

@@ -44,7 +44,7 @@ def _order_query(db: Session):
         .subqueryload(OrderItem.return_items)
         .joinedload(ReturnRequestItem.return_request),
         joinedload(Order.payment_events),
-        joinedload(Order.status_history),
+        joinedload(Order.status_history).joinedload(OrderStatusHistory.user),
     )
 
 

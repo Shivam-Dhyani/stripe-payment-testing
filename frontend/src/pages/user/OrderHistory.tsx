@@ -12,6 +12,7 @@ import ButtonSpinner from '../../components/common/ButtonSpinner';
 import { useConfirm } from '../../components/common/ConfirmDialog';
 import { Order, OrderItem, OrderStatusHistory, CancellationRequest, ReturnRequest } from '../../types';
 import { formatDate, formatShortDateTime, formatDateTime } from '../../utils/date';
+import { etaText } from '../../utils/eta';
 
 const statusColors: Record<string, string> = {
   placed: 'bg-blue-100 text-blue-700',
@@ -180,6 +181,7 @@ const OrderHistory = () => {
   const { requests: cancelRequests, submitting: cancelSubmitting } = useAppSelector((state) => state.cancellations);
   const { requests: returnRequests, submitting: returnSubmitting } = useAppSelector((state) => state.returns);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+  const [now, setNow] = useState(Date.now());
 
   // Cancel modal state
   const [cancelModal, setCancelModal] = useState<{ orderId: string } | null>(null);
@@ -213,6 +215,12 @@ const OrderHistory = () => {
     }, 15000);
     return () => clearInterval(id);
   }, [dispatch, expandedOrderId]);
+
+  // Refresh the approximate minutes-remaining shown on live orders.
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(t);
+  }, []);
 
   const toggleOrder = (orderId: string) => {
     if (expandedOrderId === orderId) {
@@ -380,21 +388,24 @@ const OrderHistory = () => {
 
               {expandedOrderId === order.id && selectedOrder?.id === order.id && (
                 <div className="border-t border-gray-200 p-6 bg-gray-50">
-                  {/* Live tracking CTA for in-progress orders */}
+                  {/* Live status banner (approximate minutes remaining) for in-progress orders */}
                   {!['delivered', 'cancelled', 'refunded'].includes(selectedOrder.status) && (
                     <Link
                       to={`/orders/${order.id}/track`}
                       className="mb-5 flex items-center justify-between gap-3 rounded-2xl bg-ink-900 px-4 py-3 text-white hover:bg-ink-800 transition-colors"
                     >
-                      <span className="flex items-center gap-2 text-sm font-semibold">
-                        <span className="relative flex h-2 w-2">
+                      <span className="flex items-center gap-2.5 min-w-0">
+                        <span className="relative flex h-2 w-2 shrink-0">
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent-400 opacity-75" />
                           <span className="relative inline-flex rounded-full h-2 w-2 bg-accent-400" />
                         </span>
-                        Track this order live
+                        <span className="flex flex-col leading-tight min-w-0">
+                          <span className="text-sm font-bold truncate">{etaText(selectedOrder, now) || 'On the way'}</span>
+                          <span className="text-[11px] text-white/60">Live order status</span>
+                        </span>
                       </span>
-                      <span className="inline-flex items-center gap-1 text-xs font-bold text-accent-400">
-                        <Zap className="w-3.5 h-3.5" fill="currentColor" strokeWidth={0} /> View
+                      <span className="inline-flex items-center gap-1 text-xs font-bold text-accent-400 shrink-0">
+                        <Zap className="w-3.5 h-3.5" fill="currentColor" strokeWidth={0} /> Track
                       </span>
                     </Link>
                   )}

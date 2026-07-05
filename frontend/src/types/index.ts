@@ -76,6 +76,7 @@ export interface OrderStatusHistory {
   to_status: string;
   changed_by: string | null;
   changed_by_name: string | null;
+  changed_by_role: string | null;
   notes: string | null;
   created_at: string;
 }

@@ -55,6 +55,14 @@ const cancelStatusColors: Record<string, string> = {
 
 // Shared lucide icons keep every timeline on the one design language used
 // across the customer + admin apps.
+// Who performed a status change — shown in the fulfillment timeline.
+const ACTOR_ROLE_LABELS: Record<string, string> = {
+  admin: 'Admin',
+  warehouse_operator: 'Warehouse',
+  delivery_partner: 'Rider',
+  customer: 'Customer',
+};
+
 const FULFILLMENT_ICONS: Record<string, ComponentType<{ className?: string }>> = {
   placed: ShoppingBag,
   accepted: CheckCircle2,
@@ -795,10 +803,11 @@ const Orders = () => {
                   steps={detailOrder.status_history.map((entry: OrderStatusHistory, index: number) => {
                     const isLast = index === detailOrder.status_history!.length - 1;
                     const label = formatStatus(entry.to_status);
-                    const sub = [
-                      entry.changed_by_name ? `by ${entry.changed_by_name}` : null,
-                      entry.notes || null,
-                    ].filter(Boolean).join(' · ') || undefined;
+                    const roleLabel = entry.changed_by_role ? (ACTOR_ROLE_LABELS[entry.changed_by_role] || entry.changed_by_role) : null;
+                    const actor = entry.changed_by_name
+                      ? `by ${entry.changed_by_name}${roleLabel ? ` · ${roleLabel}` : ''}`
+                      : null;
+                    const sub = [actor, entry.notes || null].filter(Boolean).join(' · ') || undefined;
                     return {
                       key: entry.id,
                       label: label.charAt(0).toUpperCase() + label.slice(1),

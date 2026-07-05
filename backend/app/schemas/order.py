@@ -50,6 +50,7 @@ class OrderStatusHistoryResponse(BaseModel):
     to_status: str
     changed_by: Optional[str] = None
     changed_by_name: Optional[str] = None
+    changed_by_role: Optional[str] = None
     notes: Optional[str] = None
     created_at: datetime
 

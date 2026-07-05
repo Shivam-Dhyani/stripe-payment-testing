@@ -7,10 +7,10 @@ import {
 import { orderService } from '../../services/orderService';
 import { Order, OrderStatusHistory } from '../../types';
 import { parseUTC } from '../../utils/date';
+import { remainingMinutes } from '../../utils/eta';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import StatusTimeline, { TimelineStep } from '../../components/common/StatusTimeline';
 
-const PROMISE_MINUTES = 10;
 const POLL_MS = 12000;
 
 const STEPS = [
@@ -23,13 +23,6 @@ const STEPS = [
 ];
 const ORDER = STEPS.map((s) => s.key);
 const TERMINAL = ['delivered', 'cancelled', 'refunded'];
-
-const fmtCountdown = (ms: number) => {
-  const total = Math.max(0, Math.floor(ms / 1000));
-  const m = Math.floor(total / 60);
-  const s = total % 60;
-  return `${m}:${String(s).padStart(2, '0')}`;
-};
 
 const OrderTracking = () => {
   const { id } = useParams<{ id: string }>();
@@ -65,9 +58,9 @@ const OrderTracking = () => {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [order, load]);
 
-  // 1s tick to drive the ETA countdown.
+  // Tick every 30s to refresh the approximate minutes-remaining (no exact clock).
   useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 1000);
+    const t = setInterval(() => setNow(Date.now()), 30000);
     return () => clearInterval(t);
   }, []);
 
@@ -94,8 +87,7 @@ const OrderTracking = () => {
   const currentIdx = ORDER.indexOf(order.status);
 
   const placedAt = parseUTC(order.created_at);
-  const promisedAt = new Date(placedAt.getTime() + PROMISE_MINUTES * 60000);
-  const remainingMs = promisedAt.getTime() - now;
+  const remMin = remainingMinutes(order.created_at, now);
 
   // Delivered duration (minutes) if we have the delivered timestamp.
   let deliveredMins: number | null = null;
@@ -151,13 +143,13 @@ const OrderTracking = () => {
           <div className="mt-3">
             <p className="text-sm font-medium opacity-90 flex items-center gap-1.5">
               <Zap className="w-4 h-4" fill="currentColor" strokeWidth={0} />
-              {order.status === 'out_for_delivery' ? 'Arriving in' : 'Estimated arrival'}
+              {order.status === 'out_for_delivery' ? 'Almost there' : 'Estimated arrival'}
             </p>
-            <h1 className="text-5xl font-extrabold tabular-nums mt-1">
-              {remainingMs > 0 ? fmtCountdown(remainingMs) : 'Any moment'}
-              {remainingMs > 0 && <span className="text-xl font-bold ml-1">min</span>}
+            <h1 className="text-4xl sm:text-5xl font-extrabold mt-1">
+              {remMin > 0 ? `About ${remMin} min` : 'Any moment now'}
             </h1>
             <p className="text-sm opacity-90 mt-1">
+              {remMin > 0 ? 'remaining · ' : ''}
               {order.status === 'out_for_delivery'
                 ? 'Your rider is on the way to your door.'
                 : 'Your order is being prepared at the store.'}
