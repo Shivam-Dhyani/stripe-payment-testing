@@ -17,6 +17,7 @@ from app.schemas.return_request import (
 from app.middleware.auth import get_current_user, get_admin_user
 from app.services.stripe_service import create_refund
 from app.services.push_service import notify_user_safe
+from app.realtime import notify_return_change
 from app.config import settings
 import stripe
 
@@ -269,6 +270,7 @@ def create_return_request(
 
     db.commit()
     db.refresh(return_request)
+    notify_return_change(return_request)
 
     return _build_response(return_request, db, hide_actors=True)
 
@@ -386,6 +388,7 @@ def resolve_return_request(
 
     db.commit()
     db.refresh(req)
+    notify_return_change(req)
 
     return _build_response(req, db)
 
@@ -429,6 +432,7 @@ def schedule_pickup(
 
     db.commit()
     db.refresh(req)
+    notify_return_change(req)
     return _build_response(req, db, hide_actors=True)
 
 
@@ -451,6 +455,7 @@ def withdraw_return(
     _record_history(db, req, "withdrawn", current_user.id)
     db.commit()
     db.refresh(req)
+    notify_return_change(req)
     return _build_response(req, db, hide_actors=True)
 
 
@@ -490,6 +495,7 @@ def assign_return_rider(
     req.delivery_partner_id = data.delivery_partner_id
     db.commit()
     db.refresh(req)
+    notify_return_change(req)
 
     if data.delivery_partner_id != previous_rider:
         notify_user_safe(
@@ -523,6 +529,7 @@ def mark_picked_up(
     _record_history(db, req, "handed_over", current_user.id)
     db.commit()
     db.refresh(req)
+    notify_return_change(req)
     return _build_response(req, db, hide_actors=current_user.role != UserRole.admin)
 
 
@@ -545,4 +552,5 @@ def mark_received(
     _record_history(db, req, "received", current_user.id)
     db.commit()
     db.refresh(req)
+    notify_return_change(req)
     return _build_response(req, db, hide_actors=current_user.role != UserRole.admin)

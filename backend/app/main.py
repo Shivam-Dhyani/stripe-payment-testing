@@ -13,7 +13,7 @@ from app.models import (
 from app.seed import seed_database, ensure_operational_data
 from app.routers import (
     auth, categories, subcategories, products, addresses, cart, orders, dashboard, webhooks,
-    cancellation_requests, return_requests, warehouses, push
+    cancellation_requests, return_requests, warehouses, push, ws
 )
 
 
@@ -210,6 +210,7 @@ app.include_router(cancellation_requests.router, prefix="/api")
 app.include_router(return_requests.router, prefix="/api")
 app.include_router(warehouses.router, prefix="/api")
 app.include_router(push.router, prefix="/api")
+app.include_router(ws.router, prefix="/api")
 
 
 @app.get("/")

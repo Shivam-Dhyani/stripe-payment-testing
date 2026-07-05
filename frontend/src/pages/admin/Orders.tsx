@@ -12,6 +12,7 @@ import { warehouseService, staffService } from '../../services/warehouseService'
 import { Order, PaymentEvent, OrderStatusHistory, CancellationRequest, ReturnRequest, Warehouse, User } from '../../types';
 import ButtonSpinner from '../../components/common/ButtonSpinner';
 import StatusTimeline, { TimelineStep } from '../../components/common/StatusTimeline';
+import { useRealtime } from '../../realtime/RealtimeProvider';
 import { formatDate, formatDateTime } from '../../utils/date';
 import toast from 'react-hot-toast';
 
@@ -181,17 +182,12 @@ const Orders = () => {
     staffService.getByRole('delivery_partner').then(setDeliveryPartners).catch(() => {});
   }, [dispatch]);
 
-  // Auto-refresh so admins see order/cancellation/return updates without
-  // clicking Refresh. Only polls while the tab is visible.
-  useEffect(() => {
-    const id = setInterval(() => {
-      if (document.visibilityState !== 'visible') return;
-      dispatch(fetchAllOrders());
-      dispatch(fetchReturnRequests());
-      dispatch(fetchCancellationRequests());
-    }, 15000);
-    return () => clearInterval(id);
-  }, [dispatch]);
+  // Real-time: refetch when any order/return/cancellation changes.
+  useRealtime(() => {
+    dispatch(fetchAllOrders());
+    dispatch(fetchReturnRequests());
+    dispatch(fetchCancellationRequests());
+  });
 
   const riderName = (id?: string | null) => {
     if (!id) return null;

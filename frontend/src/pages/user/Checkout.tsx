@@ -7,6 +7,7 @@ import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { checkout, confirmPayment, clearCheckoutData } from '../../store/slices/orderSlice';
 import { fetchCart, clearCart } from '../../store/slices/cartSlice';
+import { setSelectedAddress } from '../../store/slices/addressSlice';
 import { authService } from '../../services/authService';
 import { orderService } from '../../services/orderService';
 import { Address } from '../../types';
@@ -100,6 +101,7 @@ const Checkout = () => {
   const navigate = useNavigate();
   const { items } = useAppSelector((state) => state.cart);
   const { checkoutData, loading } = useAppSelector((state) => state.orders);
+  const { selectedId: headerAddressId } = useAppSelector((state) => state.address);
   const [currentStep, setCurrentStep] = useState(0);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
@@ -116,9 +118,12 @@ const Checkout = () => {
     try {
       const data = await authService.getAddresses();
       setAddresses(data);
-      const defaultAddr = data.find(a => a.is_default);
-      if (defaultAddr) setSelectedAddressId(defaultAddr.id);
-      else if (data.length > 0) setSelectedAddressId(data[0].id);
+      // Honour the address chosen in the header; else default; else first.
+      const preferred =
+        (headerAddressId && data.find(a => a.id === headerAddressId)) ||
+        data.find(a => a.is_default) ||
+        data[0];
+      if (preferred) setSelectedAddressId(preferred.id);
     } catch {
       // handled by interceptor
     }
@@ -200,7 +205,7 @@ const Checkout = () => {
                 {addresses.map((addr) => (
                   <button
                     key={addr.id}
-                    onClick={() => setSelectedAddressId(addr.id)}
+                    onClick={() => { setSelectedAddressId(addr.id); dispatch(setSelectedAddress(addr.id)); }}
                     className={`text-left p-4 rounded-lg border-2 transition ${
                       selectedAddressId === addr.id ? 'border-brand-500 bg-brand-50' : 'border-gray-200 hover:border-brand-300'
                     }`}

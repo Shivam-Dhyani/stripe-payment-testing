@@ -13,6 +13,7 @@ from app.schemas.cancellation_request import (
     CancellationRequestCreate, CancellationRequestResolve, CancellationRequestResponse
 )
 from app.middleware.auth import get_current_user, get_admin_user
+from app.realtime import notify_order_change
 from app.config import settings
 import stripe
 
@@ -90,6 +91,11 @@ def create_cancellation_request(
     db.add(cancellation_request)
     db.commit()
     db.refresh(cancellation_request)
+
+    # New cancellation request -> refresh admin views in real time.
+    order = db.query(Order).filter(Order.id == data.order_id).first()
+    if order:
+        notify_order_change(order)
 
     return _build_response(cancellation_request, db)
 
@@ -201,5 +207,9 @@ def resolve_cancellation_request(
 
     db.commit()
     db.refresh(req)
+
+    resolved_order = db.query(Order).filter(Order.id == req.order_id).first()
+    if resolved_order:
+        notify_order_change(resolved_order)
 
     return _build_response(req, db)

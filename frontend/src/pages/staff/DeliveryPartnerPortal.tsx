@@ -11,6 +11,7 @@ import ButtonSpinner from '../../components/common/ButtonSpinner';
 import { useConfirm } from '../../components/common/ConfirmDialog';
 import { formatDateTime } from '../../utils/date';
 import { DELIVERY_PROMISE } from '../../config/brand';
+import { useRealtime } from '../../realtime/RealtimeProvider';
 import toast from 'react-hot-toast';
 
 const statusColors: Record<string, string> = {
@@ -68,14 +69,8 @@ const DeliveryPartnerPortal = () => {
     load();
   }, [load]);
 
-  // Auto-refresh so newly assigned deliveries and return pickups appear without a manual refresh.
-  useEffect(() => {
-    const id = setInterval(() => {
-      if (document.visibilityState !== 'visible') return;
-      load();
-    }, 15000);
-    return () => clearInterval(id);
-  }, [load]);
+  // Real-time: refresh deliveries & return pickups when they change.
+  useRealtime(() => { load(); });
 
   const advance = async (order: Order, to: string) => {
     if (to === 'delivered') {

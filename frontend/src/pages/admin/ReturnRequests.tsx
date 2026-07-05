@@ -9,6 +9,7 @@ import StatusTimeline, { TimelineStep } from '../../components/common/StatusTime
 import ButtonSpinner from '../../components/common/ButtonSpinner';
 import { formatDateTime } from '../../utils/date';
 import { useConfirm } from '../../components/common/ConfirmDialog';
+import { useRealtime } from '../../realtime/RealtimeProvider';
 
 const statusColors: Record<string, string> = {
   requested: 'bg-amber-100 text-amber-700',
@@ -123,14 +124,10 @@ const ReturnRequests = () => {
     staffService.getByRole('delivery_partner').then(setDeliveryPartners).catch(() => {});
   }, [dispatch]);
 
-  // Auto-refresh so incoming return requests and status changes appear without a manual refresh.
-  useEffect(() => {
-    const id = setInterval(() => {
-      if (document.visibilityState !== 'visible') return;
-      dispatch(fetchReturnRequests());
-    }, 15000);
-    return () => clearInterval(id);
-  }, [dispatch]);
+  // Real-time: refetch when any return/order changes.
+  useRealtime(() => {
+    dispatch(fetchReturnRequests());
+  });
 
   const handleAssignRider = async () => {
     if (!selectedRequest || !selectedRider) return;

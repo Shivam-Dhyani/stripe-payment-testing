@@ -7,6 +7,7 @@ import orderReducer from './slices/orderSlice';
 import adminCartReducer from './slices/adminCartSlice';
 import cancellationReducer from './slices/cancellationSlice';
 import returnReducer from './slices/returnSlice';
+import addressReducer from './slices/addressSlice';
 
 export const store = configureStore({
   reducer: {
@@ -18,6 +19,7 @@ export const store = configureStore({
     adminCart: adminCartReducer,
     cancellations: cancellationReducer,
     returns: returnReducer,
+    address: addressReducer,
   },
 });
 

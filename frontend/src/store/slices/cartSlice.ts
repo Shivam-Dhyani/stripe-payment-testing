@@ -1,7 +1,8 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { cartService } from '../../services/cartService';
 import { CartItem } from '../../types';
-import toast from 'react-hot-toast';
+// No success toasts for cart actions — the cart badge is the feedback.
+// Errors surface globally via the axios response interceptor.
 
 interface CartState {
   items: CartItem[];
@@ -26,7 +27,6 @@ export const addToCart = createAsyncThunk(
   async ({ productId, quantity }: { productId: string; quantity: number }, { rejectWithValue }) => {
     try {
       const item = await cartService.addItem(productId, quantity);
-      toast.success('Added to cart');
       return item;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.detail || 'Failed to add to cart');
@@ -45,7 +45,6 @@ export const removeFromCart = createAsyncThunk(
   'cart/remove',
   async (itemId: string) => {
     await cartService.removeItem(itemId);
-    toast.success('Removed from cart');
     return itemId;
   }
 );

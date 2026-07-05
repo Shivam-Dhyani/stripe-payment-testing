@@ -13,6 +13,7 @@ import { useConfirm } from '../../components/common/ConfirmDialog';
 import { Order, OrderItem, OrderStatusHistory, CancellationRequest, ReturnRequest } from '../../types';
 import { formatDate, formatShortDateTime, formatDateTime } from '../../utils/date';
 import { etaText } from '../../utils/eta';
+import { useRealtime } from '../../realtime/RealtimeProvider';
 
 const statusColors: Record<string, string> = {
   placed: 'bg-blue-100 text-blue-700',
@@ -204,17 +205,13 @@ const OrderHistory = () => {
     dispatch(fetchReturnRequests());
   }, [dispatch]);
 
-  // Auto-refresh so order status updates appear without a manual reload.
-  useEffect(() => {
-    const id = setInterval(() => {
-      if (document.visibilityState !== 'visible') return;
-      dispatch(fetchOrders());
-      dispatch(fetchCancellationRequests());
-      dispatch(fetchReturnRequests());
-      if (expandedOrderId) dispatch(fetchOrderById(expandedOrderId));
-    }, 15000);
-    return () => clearInterval(id);
-  }, [dispatch, expandedOrderId]);
+  // Real-time: refetch when this customer's orders/returns change.
+  useRealtime(() => {
+    dispatch(fetchOrders());
+    dispatch(fetchCancellationRequests());
+    dispatch(fetchReturnRequests());
+    if (expandedOrderId) dispatch(fetchOrderById(expandedOrderId));
+  });
 
   // Refresh the approximate minutes-remaining shown on live orders.
   useEffect(() => {

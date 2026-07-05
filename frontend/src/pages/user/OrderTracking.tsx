@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   CheckCircle2, Package, PackageCheck, ShoppingBag, Bike, MapPin,
@@ -10,8 +10,7 @@ import { parseUTC } from '../../utils/date';
 import { remainingMinutes } from '../../utils/eta';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import StatusTimeline, { TimelineStep } from '../../components/common/StatusTimeline';
-
-const POLL_MS = 12000;
+import { useRealtime } from '../../realtime/RealtimeProvider';
 
 const STEPS = [
   { key: 'placed', label: 'Order placed', sub: 'We’ve received your order', icon: ShoppingBag },
@@ -29,7 +28,6 @@ const OrderTracking = () => {
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [now, setNow] = useState(Date.now());
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -47,16 +45,10 @@ const OrderTracking = () => {
   // Initial load.
   useEffect(() => { load(); }, [load]);
 
-  // Poll while the order is still in progress; stop once terminal.
-  useEffect(() => {
-    if (!order) return;
-    if (TERMINAL.includes(order.status)) {
-      if (timerRef.current) clearInterval(timerRef.current);
-      return;
-    }
-    timerRef.current = setInterval(load, POLL_MS);
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [order, load]);
+  // Real-time: reload this order the moment it changes.
+  useRealtime((m) => {
+    if (!m.order_id || m.order_id === id) load();
+  });
 
   // Tick every 30s to refresh the approximate minutes-remaining (no exact clock).
   useEffect(() => {

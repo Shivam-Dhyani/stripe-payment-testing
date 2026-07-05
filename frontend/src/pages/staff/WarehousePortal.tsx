@@ -8,6 +8,7 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ButtonSpinner from '../../components/common/ButtonSpinner';
 import { formatDateTime } from '../../utils/date';
 import { DELIVERY_PROMISE } from '../../config/brand';
+import { useRealtime } from '../../realtime/RealtimeProvider';
 import toast from 'react-hot-toast';
 
 const statusColors: Record<string, string> = {
@@ -63,14 +64,8 @@ const WarehousePortal = () => {
     load();
   }, [load]);
 
-  // Auto-refresh the fulfillment queue so new orders and returns appear without a manual refresh.
-  useEffect(() => {
-    const id = setInterval(() => {
-      if (document.visibilityState !== 'visible') return;
-      load();
-    }, 15000);
-    return () => clearInterval(id);
-  }, [load]);
+  // Real-time: refresh the fulfillment queue when orders/returns change.
+  useRealtime(() => { load(); });
 
   const advance = async (order: Order, to: string) => {
     setUpdatingId(order.id);

@@ -1,19 +1,25 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, User, LogOut, Package, Search, MapPin, ChevronDown } from 'lucide-react';
+import { ShoppingCart, User, LogOut, Package, Search, MapPin, ChevronDown, Check, Plus } from 'lucide-react';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { logoutUser } from '../../store/slices/authSlice';
+import { setSelectedAddress } from '../../store/slices/addressSlice';
 import BrandMark from '../common/BrandMark';
 import { DELIVERY_PROMISE } from '../../config/brand';
 
 const Navbar = () => {
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [addressOpen, setAddressOpen] = useState(false);
   const [search, setSearch] = useState('');
   const { user } = useAppSelector((state) => state.auth);
   const { items } = useAppSelector((state) => state.cart);
+  const { addresses, selectedId } = useAppSelector((state) => state.address);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+
+  const selectedAddress = addresses.find((a) => a.id === selectedId) || null;
+  const isCustomer = user?.role === 'customer';
 
   const handleLogout = () => {
     dispatch(logoutUser());
@@ -50,13 +56,58 @@ const Navbar = () => {
             <BrandMark size="md" />
           </Link>
 
-          {/* Delivery / location chip */}
-          <div className="hidden lg:flex flex-col leading-tight pl-2 border-l border-ink-900/10">
-            <span className="text-[13px] font-bold text-ink-900">{DELIVERY_PROMISE}</span>
-            <span className="flex items-center gap-0.5 text-xs text-ink-900/60">
-              <MapPin className="w-3 h-3" /> Home · New York <ChevronDown className="w-3 h-3" />
-            </span>
-          </div>
+          {/* Delivery / address selector */}
+          {isCustomer && (
+            <div className="hidden lg:block relative pl-2 border-l border-ink-900/10">
+              <button
+                onClick={() => setAddressOpen((v) => !v)}
+                className="flex flex-col leading-tight text-left hover:opacity-80 transition-opacity"
+              >
+                <span className="text-[13px] font-bold text-ink-900">{DELIVERY_PROMISE}</span>
+                <span className="flex items-center gap-0.5 text-xs text-ink-900/60 max-w-[180px]">
+                  <MapPin className="w-3 h-3 shrink-0" />
+                  <span className="truncate">
+                    {selectedAddress ? `${selectedAddress.label} · ${selectedAddress.city}` : 'Select delivery address'}
+                  </span>
+                  <ChevronDown className="w-3 h-3 shrink-0" />
+                </span>
+              </button>
+              {addressOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setAddressOpen(false)} />
+                  <div className="absolute left-0 mt-2 w-72 bg-white rounded-xl shadow-theme-lg border border-gray-100 py-1 z-50">
+                    <p className="px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-gray-400">Deliver to</p>
+                    {addresses.length === 0 && (
+                      <p className="px-4 py-2 text-sm text-gray-500">No saved addresses yet.</p>
+                    )}
+                    <div className="max-h-64 overflow-y-auto">
+                      {addresses.map((addr) => (
+                        <button
+                          key={addr.id}
+                          onClick={() => { dispatch(setSelectedAddress(addr.id)); setAddressOpen(false); }}
+                          className="w-full flex items-start gap-2.5 px-4 py-2.5 text-left hover:bg-gray-50 transition-colors"
+                        >
+                          <MapPin className="w-4 h-4 text-brand-500 mt-0.5 shrink-0" />
+                          <span className="flex-1 min-w-0">
+                            <span className="block text-sm font-medium text-gray-800">{addr.label}</span>
+                            <span className="block text-xs text-gray-500 truncate">{addr.street}, {addr.city}, {addr.state} {addr.zip_code}</span>
+                          </span>
+                          {addr.id === selectedId && <Check className="w-4 h-4 text-brand-500 mt-0.5 shrink-0" />}
+                        </button>
+                      ))}
+                    </div>
+                    <Link
+                      to="/profile"
+                      onClick={() => setAddressOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2.5 mt-1 border-t border-gray-100 text-sm font-medium text-brand-600 hover:bg-brand-50 transition-colors"
+                    >
+                      <Plus className="w-4 h-4" /> Add / manage addresses
+                    </Link>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
 
           {/* Search (desktop) */}
           <div className="hidden md:block flex-1 max-w-xl">{SearchBar}</div>

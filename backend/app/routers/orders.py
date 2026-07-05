@@ -21,6 +21,7 @@ from app.schemas.order import (
 from app.middleware.auth import get_current_user, get_admin_user
 from app.services.stripe_service import create_payment_intent, create_refund
 from app.services.push_service import notify_user_safe
+from app.realtime import notify_order_change
 from app.config import settings
 import stripe
 
@@ -201,6 +202,7 @@ def confirm_payment(
     db.add(payment_event)
     db.commit()
     db.refresh(order)
+    notify_order_change(order)  # new paid order -> update admin/warehouse queues
     return order
 
 
@@ -233,6 +235,7 @@ def confirm_payment_by_order(
     db.add(payment_event)
     db.commit()
     db.refresh(order)
+    notify_order_change(order)  # new paid order -> update admin/warehouse queues
     return order
 
 
@@ -487,6 +490,7 @@ def update_order_status(
     if push:
         notify_user_safe(db, order.user_id, push[0], push[1], url=f"/orders/{order.id}/track")
 
+    notify_order_change(order)  # real-time push to connected clients
     return order
 
 
@@ -539,4 +543,5 @@ def assign_order(
             url="/rider",
         )
 
+    notify_order_change(order)  # real-time push to connected clients
     return order

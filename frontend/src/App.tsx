@@ -5,12 +5,14 @@ import { useAppDispatch } from './hooks/useAppDispatch';
 import { useAppSelector } from './hooks/useAppSelector';
 import { fetchCurrentUser } from './store/slices/authSlice';
 import { fetchCart } from './store/slices/cartSlice';
+import { fetchAddresses } from './store/slices/addressSlice';
 
 // Layouts
 import UserLayout from './components/layout/UserLayout';
 import AdminLayout from './components/layout/AdminLayout';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import { ConfirmProvider } from './components/common/ConfirmDialog';
+import { RealtimeProvider } from './realtime/RealtimeProvider';
 import InstallAppModal from './components/common/InstallAppModal';
 
 // Auth Pages
@@ -55,6 +57,7 @@ const AppContent = () => {
   useEffect(() => {
     if (user) {
       dispatch(fetchCart());
+      if (user.role === 'customer') dispatch(fetchAddresses());
     }
   }, [dispatch, user]);
 
@@ -158,10 +161,12 @@ const AppContent = () => {
 const App = () => {
   return (
     <BrowserRouter>
-      <ConfirmProvider>
-        <AppContent />
-        <InstallAppModal />
-      </ConfirmProvider>
+      <RealtimeProvider>
+        <ConfirmProvider>
+          <AppContent />
+          <InstallAppModal />
+        </ConfirmProvider>
+      </RealtimeProvider>
       <Toaster
         position="top-right"
         toastOptions={{
