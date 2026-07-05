@@ -13,6 +13,7 @@ import { useConfirm } from '../../components/common/ConfirmDialog';
 import { Order, OrderItem, OrderStatusHistory, CancellationRequest, ReturnRequest } from '../../types';
 import { formatDate, formatShortDateTime, formatDateTime } from '../../utils/date';
 import { etaText } from '../../utils/eta';
+import { formatOrderNo } from '../../utils/orderNumber';
 import { useRealtime } from '../../realtime/RealtimeProvider';
 
 const statusColors: Record<string, string> = {
@@ -329,10 +330,18 @@ const OrderHistory = () => {
       <h1 className="text-title-sm font-bold text-gray-800 mb-8">Order History</h1>
 
       {orders.length === 0 ? (
-        <div className="text-center py-16">
-          <Package className="w-20 h-20 text-gray-300 mx-auto mb-6" />
+        <div className="max-w-md mx-auto py-20 text-center">
+          <div className="w-24 h-24 rounded-full bg-brand-50 flex items-center justify-center mx-auto mb-6">
+            <Package className="w-11 h-11 text-brand-500" />
+          </div>
           <h2 className="text-2xl font-bold text-gray-800 mb-2">No orders yet</h2>
-          <p className="text-gray-500">Your order history will appear here.</p>
+          <p className="text-gray-500 mb-8">Your orders will show up here. Grab your daily essentials — delivered in minutes.</p>
+          <Link
+            to="/products"
+            className="inline-flex items-center px-6 py-3 bg-brand-500 text-white rounded-xl hover:bg-brand-600 transition font-semibold"
+          >
+            Start shopping <ShoppingBag className="ml-2 w-5 h-5" />
+          </Link>
         </div>
       ) : (
         <div className="space-y-4">
@@ -346,7 +355,7 @@ const OrderHistory = () => {
                   <div>
                     <div className="flex items-center space-x-2 text-sm text-gray-500">
                       <Hash className="w-4 h-4" />
-                      <span>Order #{String(order.id).substring(0, 8)}</span>
+                      <span>{formatOrderNo(order)}</span>
                     </div>
                     <div className="flex items-center space-x-2 text-sm text-gray-500 mt-1">
                       <Calendar className="w-4 h-4" />

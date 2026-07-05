@@ -39,7 +39,6 @@ export const createReturnRequest = createAsyncThunk(
   async (data: { order_id: string; reason: string; items: { order_item_id: string; quantity: number }[] }, { rejectWithValue }) => {
     try {
       const result = await returnService.create(data);
-      toast.success('Return request submitted');
       return result;
     } catch (error: any) {
       const detail = error.response?.data?.detail;
@@ -69,7 +68,6 @@ export const schedulePickup = createAsyncThunk(
   async ({ id, data }: { id: string; data: { pickup_date: string; pickup_address?: string } }, { rejectWithValue }) => {
     try {
       const result = await returnService.schedulePickup(id, data);
-      toast.success('Pickup scheduled');
       return result;
     } catch (error: any) {
       const detail = error.response?.data?.detail;
@@ -99,7 +97,6 @@ export const withdrawReturn = createAsyncThunk(
   async (id: string, { rejectWithValue }) => {
     try {
       const result = await returnService.withdraw(id);
-      toast.success('Return request withdrawn');
       return result;
     } catch (error: any) {
       const detail = error.response?.data?.detail;

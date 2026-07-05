@@ -39,7 +39,6 @@ export const createCancellationRequest = createAsyncThunk(
   async (data: { order_id: string; reason: string }, { rejectWithValue }) => {
     try {
       const result = await cancellationService.create(data);
-      toast.success('Cancellation request submitted');
       return result;
     } catch (error: any) {
       const detail = error.response?.data?.detail;

@@ -8,6 +8,7 @@ import { orderService } from '../../services/orderService';
 import { Order, OrderStatusHistory } from '../../types';
 import { parseUTC } from '../../utils/date';
 import { remainingMinutes } from '../../utils/eta';
+import { formatOrderNo } from '../../utils/orderNumber';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import StatusTimeline, { TimelineStep } from '../../components/common/StatusTimeline';
 import { useRealtime } from '../../realtime/RealtimeProvider';
@@ -104,7 +105,7 @@ const OrderTracking = () => {
       >
         <div className="flex items-center justify-between">
           <span className="text-xs font-bold uppercase tracking-wide opacity-90">
-            Order #{order.id.substring(0, 8)}
+            {formatOrderNo(order)}
           </span>
           {!TERMINAL.includes(order.status) && (
             <span className="inline-flex items-center gap-1.5 text-xs font-semibold">

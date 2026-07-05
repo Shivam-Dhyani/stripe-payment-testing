@@ -11,7 +11,6 @@ import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { fetchCurrentUser } from '../../store/slices/authSlice';
 import { authService } from '../../services/authService';
 import { Address } from '../../types';
-import toast from 'react-hot-toast';
 
 const profileSchema = z.object({
   first_name: z.string().min(1, 'First name is required'),
@@ -86,7 +85,6 @@ const Profile = () => {
     try {
       await authService.updateProfile(data);
       dispatch(fetchCurrentUser());
-      toast.success('Profile updated successfully');
     } catch {
       // handled by interceptor
     }
@@ -96,10 +94,8 @@ const Profile = () => {
     try {
       if (editingAddress) {
         await authService.updateAddress(editingAddress.id, data);
-        toast.success('Address updated');
       } else {
         await authService.addAddress(data);
-        toast.success('Address added');
       }
       loadAddresses();
       setShowAddressForm(false);
@@ -113,7 +109,6 @@ const Profile = () => {
   const handleDeleteAddress = async (id: string) => {
     try {
       await authService.deleteAddress(id);
-      toast.success('Address deleted');
       loadAddresses();
     } catch {
       // handled by interceptor

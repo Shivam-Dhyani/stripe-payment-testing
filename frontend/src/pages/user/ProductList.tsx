@@ -257,23 +257,45 @@ const ProductList = () => {
               {Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)}
             </div>
           ) : products.length === 0 ? (
-            <div className="text-center py-24">
-              <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-5">
-                <Package className="w-10 h-10 text-gray-300" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-1">No products found</h3>
-              <p className="text-sm text-gray-400 max-w-sm mx-auto">
-                We could not find any products matching your criteria. Try adjusting your filters or search terms.
-              </p>
-              {hasActiveFilters && (
+            searchParams.get('search') ? (
+              <div className="text-center py-24">
+                <div className="w-20 h-20 rounded-full bg-brand-50 flex items-center justify-center mx-auto mb-5">
+                  <Search className="w-10 h-10 text-brand-500" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-1">
+                  No results for &ldquo;{searchParams.get('search')}&rdquo;
+                </h3>
+                <p className="text-sm text-gray-400 max-w-sm mx-auto">
+                  We could not find any products matching your search. Try a different term or browse everything.
+                </p>
                 <button
                   onClick={clearAllFilters}
-                  className="mt-4 text-sm text-brand-500 hover:text-brand-600 font-medium"
+                  className="mt-5 inline-flex items-center px-6 py-3 bg-brand-500 text-white rounded-xl hover:bg-brand-600 transition font-semibold"
                 >
-                  Clear all filters
+                  Browse all products
                 </button>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div className="text-center py-24">
+                <div className="w-20 h-20 rounded-full bg-brand-50 flex items-center justify-center mx-auto mb-5">
+                  <Package className="w-10 h-10 text-brand-500" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-1">No products yet</h3>
+                <p className="text-sm text-gray-400 max-w-sm mx-auto">
+                  {hasActiveFilters
+                    ? 'No products match the selected filters. Try adjusting or clearing them.'
+                    : 'Fresh products are on their way. Please check back soon.'}
+                </p>
+                {hasActiveFilters && (
+                  <button
+                    onClick={clearAllFilters}
+                    className="mt-5 inline-flex items-center px-6 py-3 bg-brand-500 text-white rounded-xl hover:bg-brand-600 transition font-semibold"
+                  >
+                    Clear all filters
+                  </button>
+                )}
+              </div>
+            )
           ) : (
             <>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">

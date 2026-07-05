@@ -14,6 +14,7 @@ import ButtonSpinner from '../../components/common/ButtonSpinner';
 import StatusTimeline, { TimelineStep } from '../../components/common/StatusTimeline';
 import { useRealtime } from '../../realtime/RealtimeProvider';
 import { formatDate, formatDateTime } from '../../utils/date';
+import { formatOrderNo } from '../../utils/orderNumber';
 import toast from 'react-hot-toast';
 
 const statusColors: Record<string, string> = {
@@ -415,7 +416,7 @@ const Orders = () => {
                   return (
                     <tr key={order.id} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
                       <td className="px-5 py-4">
-                        <span className="font-mono text-xs text-gray-500">#{order.id.substring(0, 8)}</span>
+                        <span className="font-mono text-xs text-gray-500">{formatOrderNo(order)}</span>
                       </td>
                       <td className="px-5 py-4">
                         <span className="font-mono text-xs text-gray-500">{order.user_id.substring(0, 8)}</span>
@@ -649,7 +650,7 @@ const Orders = () => {
               </button>
             </div>
             <p className="text-sm text-gray-500 mb-4">
-              Order <span className="font-mono">#{assignModal.order.id.substring(0, 8)}</span> — assign a rider so it can be dispatched once packed.
+              Order <span className="font-mono">{formatOrderNo(assignModal.order)}</span> — assign a rider so it can be dispatched once packed.
             </p>
             <label className="block text-sm font-medium text-gray-700 mb-1">Delivery Partner</label>
             <select
@@ -692,7 +693,7 @@ const Orders = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-white rounded-2xl shadow-theme-lg w-full max-w-2xl mx-4 p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-gray-800">Order #{detailOrder.id.substring(0, 8)}</h2>
+              <h2 className="text-xl font-semibold text-gray-800">Order {formatOrderNo(detailOrder)}</h2>
               <button onClick={closeDetail} className="text-gray-400 hover:text-gray-600">
                 <X className="w-5 h-5" />
               </button>

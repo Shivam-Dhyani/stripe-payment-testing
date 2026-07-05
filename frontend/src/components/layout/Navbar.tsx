@@ -1,17 +1,17 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, User, LogOut, Package, Search, MapPin, ChevronDown, Check, Plus } from 'lucide-react';
+import { ShoppingCart, User, LogOut, Package, MapPin, ChevronDown, Check, Plus } from 'lucide-react';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { logoutUser } from '../../store/slices/authSlice';
 import { setSelectedAddress } from '../../store/slices/addressSlice';
 import BrandMark from '../common/BrandMark';
+import SearchBox from './SearchBox';
 import { DELIVERY_PROMISE } from '../../config/brand';
 
 const Navbar = () => {
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [addressOpen, setAddressOpen] = useState(false);
-  const [search, setSearch] = useState('');
   const { user } = useAppSelector((state) => state.auth);
   const { items } = useAppSelector((state) => state.cart);
   const { addresses, selectedId } = useAppSelector((state) => state.address);
@@ -27,24 +27,48 @@ const Navbar = () => {
     setUserDropdownOpen(false);
   };
 
-  const submitSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    navigate(search.trim() ? `/products?search=${encodeURIComponent(search.trim())}` : '/products');
-  };
+  // Escape closes any open menu.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { setUserDropdownOpen(false); setAddressOpen(false); }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
 
   const cartItemCount = items.reduce((sum, item) => sum + item.quantity, 0);
   const cartTotal = items.reduce((sum, item) => sum + item.quantity * Number(item.product?.price || 0), 0);
 
-  const SearchBar = (
-    <form onSubmit={submitSearch} className="relative w-full">
-      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-      <input
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder='Search "milk", "bread", "eggs"...'
-        className="w-full h-11 pl-10 pr-4 rounded-xl bg-white border border-black/5 shadow-qc-card text-sm text-ink-900 placeholder:text-gray-400 focus:outline-hidden focus:border-brand-300 focus:ring-3 focus:ring-brand-500/15 transition"
-      />
-    </form>
+  // Reusable address dropdown panel (shared by desktop + mobile triggers).
+  const addressPanel = (
+    <div className="w-72 bg-white rounded-xl shadow-theme-lg border border-gray-100 py-1" role="menu">
+      <p className="px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-gray-400">Deliver to</p>
+      {addresses.length === 0 && <p className="px-4 py-2 text-sm text-gray-500">No saved addresses yet.</p>}
+      <div className="max-h-64 overflow-y-auto">
+        {addresses.map((addr) => (
+          <button
+            key={addr.id}
+            onClick={() => { dispatch(setSelectedAddress(addr.id)); setAddressOpen(false); }}
+            className="w-full flex items-start gap-2.5 px-4 py-2.5 text-left hover:bg-gray-50 transition-colors"
+            role="menuitem"
+          >
+            <MapPin className="w-4 h-4 text-brand-500 mt-0.5 shrink-0" />
+            <span className="flex-1 min-w-0">
+              <span className="block text-sm font-medium text-gray-800">{addr.label}</span>
+              <span className="block text-xs text-gray-500 truncate">{addr.street}, {addr.city}, {addr.state} {addr.zip_code}</span>
+            </span>
+            {addr.id === selectedId && <Check className="w-4 h-4 text-brand-500 mt-0.5 shrink-0" />}
+          </button>
+        ))}
+      </div>
+      <Link
+        to="/profile"
+        onClick={() => setAddressOpen(false)}
+        className="flex items-center gap-2 px-4 py-2.5 mt-1 border-t border-gray-100 text-sm font-medium text-brand-600 hover:bg-brand-50 transition-colors"
+      >
+        <Plus className="w-4 h-4" /> Add / manage addresses
+      </Link>
+    </div>
   );
 
   return (
@@ -56,11 +80,13 @@ const Navbar = () => {
             <BrandMark size="md" />
           </Link>
 
-          {/* Delivery / address selector */}
+          {/* Delivery / address selector (desktop) */}
           {isCustomer && (
             <div className="hidden lg:block relative pl-2 border-l border-ink-900/10">
               <button
                 onClick={() => setAddressOpen((v) => !v)}
+                aria-haspopup="menu"
+                aria-expanded={addressOpen}
                 className="flex flex-col leading-tight text-left hover:opacity-80 transition-opacity"
               >
                 <span className="text-[13px] font-bold text-ink-900">{DELIVERY_PROMISE}</span>
@@ -75,42 +101,14 @@ const Navbar = () => {
               {addressOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setAddressOpen(false)} />
-                  <div className="absolute left-0 mt-2 w-72 bg-white rounded-xl shadow-theme-lg border border-gray-100 py-1 z-50">
-                    <p className="px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-gray-400">Deliver to</p>
-                    {addresses.length === 0 && (
-                      <p className="px-4 py-2 text-sm text-gray-500">No saved addresses yet.</p>
-                    )}
-                    <div className="max-h-64 overflow-y-auto">
-                      {addresses.map((addr) => (
-                        <button
-                          key={addr.id}
-                          onClick={() => { dispatch(setSelectedAddress(addr.id)); setAddressOpen(false); }}
-                          className="w-full flex items-start gap-2.5 px-4 py-2.5 text-left hover:bg-gray-50 transition-colors"
-                        >
-                          <MapPin className="w-4 h-4 text-brand-500 mt-0.5 shrink-0" />
-                          <span className="flex-1 min-w-0">
-                            <span className="block text-sm font-medium text-gray-800">{addr.label}</span>
-                            <span className="block text-xs text-gray-500 truncate">{addr.street}, {addr.city}, {addr.state} {addr.zip_code}</span>
-                          </span>
-                          {addr.id === selectedId && <Check className="w-4 h-4 text-brand-500 mt-0.5 shrink-0" />}
-                        </button>
-                      ))}
-                    </div>
-                    <Link
-                      to="/profile"
-                      onClick={() => setAddressOpen(false)}
-                      className="flex items-center gap-2 px-4 py-2.5 mt-1 border-t border-gray-100 text-sm font-medium text-brand-600 hover:bg-brand-50 transition-colors"
-                    >
-                      <Plus className="w-4 h-4" /> Add / manage addresses
-                    </Link>
-                  </div>
+                  <div className="absolute left-0 mt-2 z-50">{addressPanel}</div>
                 </>
               )}
             </div>
           )}
 
           {/* Search (desktop) */}
-          <div className="hidden md:block flex-1 max-w-xl">{SearchBar}</div>
+          <div className="hidden md:block flex-1 max-w-xl"><SearchBox /></div>
 
           <div className="flex items-center gap-3 ml-auto">
             {user ? (
@@ -199,8 +197,32 @@ const Navbar = () => {
           </div>
         </div>
 
+        {/* Address (mobile) */}
+        {isCustomer && (
+          <div className="lg:hidden relative pb-2">
+            <button
+              onClick={() => setAddressOpen((v) => !v)}
+              aria-haspopup="menu"
+              aria-expanded={addressOpen}
+              className="flex items-center gap-1 text-xs font-semibold text-ink-900 max-w-full"
+            >
+              <MapPin className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">
+                Deliver to: {selectedAddress ? `${selectedAddress.label} · ${selectedAddress.city}` : 'Select address'}
+              </span>
+              <ChevronDown className="w-3.5 h-3.5 shrink-0" />
+            </button>
+            {addressOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setAddressOpen(false)} />
+                <div className="absolute left-0 mt-2 z-50">{addressPanel}</div>
+              </>
+            )}
+          </div>
+        )}
+
         {/* Search (mobile) */}
-        <div className="md:hidden pb-3">{SearchBar}</div>
+        <div className="md:hidden pb-3"><SearchBox /></div>
       </div>
     </nav>
   );
