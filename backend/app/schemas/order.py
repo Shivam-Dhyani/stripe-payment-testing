@@ -65,6 +65,7 @@ class OrderResponse(BaseModel):
     delivery_partner_id: Optional[str] = None
     address_snapshot: Optional[Any] = None
     delivery_fee: float = 0
+    tax: float = 0
     total: float
     status: str
     payment_status: str = "pending"

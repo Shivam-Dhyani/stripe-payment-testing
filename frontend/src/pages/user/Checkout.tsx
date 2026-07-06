@@ -12,7 +12,7 @@ import { authService } from '../../services/authService';
 import { orderService } from '../../services/orderService';
 import { Address } from '../../types';
 import { DELIVERY_PROMISE } from '../../config/brand';
-import { computeDeliveryFee, amountToFreeDelivery, FREE_DELIVERY_THRESHOLD } from '../../config/fees';
+import { computeDeliveryFee, computeTax, amountToFreeDelivery } from '../../config/fees';
 import { formatOrderNo } from '../../utils/orderNumber';
 import toast from 'react-hot-toast';
 
@@ -104,6 +104,7 @@ const Checkout = () => {
   const { items, loading: cartLoading } = useAppSelector((state) => state.cart);
   const { checkoutData, loading } = useAppSelector((state) => state.orders);
   const { selectedId: headerAddressId } = useAppSelector((state) => state.address);
+  const { settings: storeSettings } = useAppSelector((state) => state.settings);
   const [currentStep, setCurrentStep] = useState(0);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
@@ -132,10 +133,11 @@ const Checkout = () => {
   };
 
   const subtotal = items.reduce((sum, item) => sum + Number(item.product?.price || 0) * item.quantity, 0);
-  const deliveryFee = computeDeliveryFee(subtotal);
-  const toPay = subtotal + deliveryFee;
-  const away = amountToFreeDelivery(subtotal);
-  const progress = Math.min(100, (subtotal / FREE_DELIVERY_THRESHOLD) * 100);
+  const deliveryFee = computeDeliveryFee(subtotal, storeSettings);
+  const tax = computeTax(subtotal, storeSettings);
+  const toPay = subtotal + deliveryFee + tax;
+  const away = amountToFreeDelivery(subtotal, storeSettings);
+  const progress = Math.min(100, (subtotal / storeSettings.free_delivery_threshold) * 100);
 
   // The checkout response carries a friendly order number (not in the base type).
   const orderNo = checkoutData
@@ -327,6 +329,12 @@ const Checkout = () => {
                     <span>₹{deliveryFee.toFixed(2)}</span>
                   )}
                 </div>
+                {tax > 0 && (
+                  <div className="flex justify-between text-sm text-gray-600">
+                    <span>Taxes ({Number(storeSettings.tax_percent)}%)</span>
+                    <span>₹{tax.toFixed(2)}</span>
+                  </div>
+                )}
                 <hr className="border-gray-100" />
                 <div className="flex justify-between font-bold text-lg text-gray-900">
                   <span>To pay</span>

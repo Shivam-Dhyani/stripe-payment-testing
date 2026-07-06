@@ -21,7 +21,7 @@ from app.schemas.order import (
 )
 from app.middleware.auth import get_current_user, get_admin_user
 from app.services.stripe_service import create_payment_intent, create_refund
-from app.services.fees import compute_delivery_fee
+from app.services.fees import get_settings, compute_delivery_fee, compute_tax
 from app.services.push_service import notify_user_safe
 from app.realtime import notify_order_change
 from app.config import settings
@@ -117,9 +117,11 @@ def checkout(
         "country": address.country,
     }
 
+    store = get_settings(db)
     subtotal = total
-    delivery_fee = compute_delivery_fee(subtotal)
-    grand_total = subtotal + delivery_fee
+    delivery_fee = compute_delivery_fee(subtotal, store)
+    tax = compute_tax(subtotal, store)
+    grand_total = subtotal + delivery_fee + tax
 
     try:
         amount_cents = int(grand_total * 100)
@@ -141,6 +143,7 @@ def checkout(
         warehouse_id=_default_warehouse_id(db),
         address_snapshot=address_snapshot,
         delivery_fee=delivery_fee,
+        tax=tax,
         total=grand_total,
         status="placed",
         stripe_payment_intent_id=payment_intent["id"],
@@ -180,6 +183,7 @@ def checkout(
         "order_number": order.order_number,
         "total": float(order.total),
         "delivery_fee": float(order.delivery_fee or 0),
+        "tax": float(order.tax or 0),
         "client_secret": payment_intent["client_secret"],
         "payment_intent_id": payment_intent["id"],
     }

@@ -56,8 +56,9 @@ class Order(Base):
     warehouse_id = Column(String(36), ForeignKey("warehouses.id"), nullable=True)
     delivery_partner_id = Column(String(36), ForeignKey("users.id"), nullable=True)
     address_snapshot = Column(JSON, nullable=True)
-    # Item subtotal + delivery/handling fee = total.
+    # Item subtotal + delivery/handling fee + tax = total.
     delivery_fee = Column(Numeric(10, 2), default=0, nullable=False)
+    tax = Column(Numeric(10, 2), default=0, nullable=False)
     total = Column(Numeric(10, 2), nullable=False)
     status = Column(String(20), default="placed", nullable=False)
     # Payment lifecycle, tracked independently of fulfillment status.

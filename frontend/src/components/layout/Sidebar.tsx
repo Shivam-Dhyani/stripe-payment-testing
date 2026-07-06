@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, FolderTree, Layers, ShoppingBag, ClipboardList, ShoppingCart,
-  Store, Ban, RotateCcw, Zap, ChevronsLeft, ChevronsRight,
+  Store, Ban, RotateCcw, Zap, ChevronsLeft, ChevronsRight, SlidersHorizontal,
 } from 'lucide-react';
 import BrandMark from '../common/BrandMark';
 import { useAppSelector } from '../../hooks/useAppSelector';
@@ -42,6 +42,7 @@ const Sidebar = ({ isOpen, onClose, collapsed, onToggleCollapse }: SidebarProps)
     { path: '/admin/cancellations', label: 'Cancellations', icon: Ban, badge: cancelPendingCount },
     { path: '/admin/returns', label: 'Returns', icon: RotateCcw, badge: returnPendingCount },
     { path: '/admin/carts', label: 'User Carts', icon: ShoppingCart, badge: 0 },
+    { path: '/admin/settings', label: 'Store Settings', icon: SlidersHorizontal, badge: 0 },
   ];
 
   // `collapsed` only applies at the lg breakpoint; the mobile off-canvas

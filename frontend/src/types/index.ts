@@ -108,10 +108,19 @@ export type OrderStatus =
   | 'cancelled'
   | 'refunded';
 
+export interface StoreSettings {
+  delivery_fee: number;
+  free_delivery_threshold: number;
+  small_cart_fee: number;
+  small_cart_threshold: number;
+  tax_percent: number;
+}
+
 export interface Order {
   id: string;
   order_number?: number | null;
   delivery_fee?: number;
+  tax?: number;
   user_id: string;
   warehouse_id?: string | null;
   delivery_partner_id?: string | null;

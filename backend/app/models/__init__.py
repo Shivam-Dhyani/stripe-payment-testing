@@ -11,6 +11,7 @@ from app.models.webhook_event import WebhookEvent
 from app.models.cancellation_request import CancellationRequest, VALID_CANCELLATION_STATUSES
 from app.models.return_request import ReturnRequest, ReturnRequestItem, ReturnStatusHistory, VALID_RETURN_STATUSES
 from app.models.push_subscription import PushSubscription
+from app.models.store_settings import StoreSettings
 
 __all__ = [
     "User",
@@ -37,4 +38,5 @@ __all__ = [
     "ReturnStatusHistory",
     "VALID_RETURN_STATUSES",
     "PushSubscription",
+    "StoreSettings",
 ]

@@ -13,7 +13,7 @@ from app.models import (
 from app.seed import seed_database, ensure_operational_data
 from app.routers import (
     auth, categories, subcategories, products, addresses, cart, orders, dashboard, webhooks,
-    cancellation_requests, return_requests, warehouses, push, ws
+    cancellation_requests, return_requests, warehouses, push, ws, settings as settings_router
 )
 
 
@@ -135,6 +135,10 @@ def run_migrations(db):
             db.execute(text("ALTER TABLE orders ADD COLUMN delivery_fee NUMERIC(10, 2) DEFAULT 0 NOT NULL"))
             db.commit()
             print("Added delivery_fee column to orders table")
+        if "tax" not in order_cols:
+            db.execute(text("ALTER TABLE orders ADD COLUMN tax NUMERIC(10, 2) DEFAULT 0 NOT NULL"))
+            db.commit()
+            print("Added tax column to orders table")
         if "order_number" not in order_cols:
             db.execute(text("ALTER TABLE orders ADD COLUMN order_number INTEGER"))
             db.commit()
@@ -230,6 +234,7 @@ app.include_router(return_requests.router, prefix="/api")
 app.include_router(warehouses.router, prefix="/api")
 app.include_router(push.router, prefix="/api")
 app.include_router(ws.router, prefix="/api")
+app.include_router(settings_router.router, prefix="/api")
 
 
 @app.get("/")

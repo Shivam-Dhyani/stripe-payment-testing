@@ -1,18 +1,28 @@
-// Delivery / handling fees — MUST match backend app/config.py + services/fees.py.
-export const DELIVERY_FEE = 25;
-export const FREE_DELIVERY_THRESHOLD = 199;
-export const SMALL_CART_FEE = 15;
-export const SMALL_CART_THRESHOLD = 99;
+import { StoreSettings } from '../types';
 
-/** Delivery + small-cart handling fee for an item subtotal. */
-export function computeDeliveryFee(subtotal: number): number {
+// Fallback used before the admin-configured settings load from the backend.
+export const DEFAULT_STORE_SETTINGS: StoreSettings = {
+  delivery_fee: 25,
+  free_delivery_threshold: 199,
+  small_cart_fee: 15,
+  small_cart_threshold: 99,
+  tax_percent: 5,
+};
+
+/** Delivery + small-cart handling fee for a subtotal, per store settings. */
+export function computeDeliveryFee(subtotal: number, s: StoreSettings): number {
   let fee = 0;
-  if (subtotal < FREE_DELIVERY_THRESHOLD) fee += DELIVERY_FEE;
-  if (subtotal < SMALL_CART_THRESHOLD) fee += SMALL_CART_FEE;
+  if (subtotal < s.free_delivery_threshold) fee += Number(s.delivery_fee);
+  if (subtotal < s.small_cart_threshold) fee += Number(s.small_cart_fee);
   return fee;
 }
 
-/** How much more the shopper must add to unlock free delivery (0 once reached). */
-export function amountToFreeDelivery(subtotal: number): number {
-  return Math.max(0, FREE_DELIVERY_THRESHOLD - subtotal);
+/** Tax on the item subtotal (2-decimal), per store settings. */
+export function computeTax(subtotal: number, s: StoreSettings): number {
+  return Math.round(subtotal * Number(s.tax_percent)) / 100;
+}
+
+/** How much more to add to unlock free delivery (0 once reached). */
+export function amountToFreeDelivery(subtotal: number, s: StoreSettings): number {
+  return Math.max(0, Number(s.free_delivery_threshold) - subtotal);
 }

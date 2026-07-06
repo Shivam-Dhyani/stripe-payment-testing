@@ -6,6 +6,7 @@ import { useAppSelector } from './hooks/useAppSelector';
 import { fetchCurrentUser } from './store/slices/authSlice';
 import { fetchCart, mergeGuestCart } from './store/slices/cartSlice';
 import { fetchAddresses } from './store/slices/addressSlice';
+import { fetchStoreSettings } from './store/slices/settingsSlice';
 
 // Layouts
 import UserLayout from './components/layout/UserLayout';
@@ -39,6 +40,7 @@ import Orders from './pages/admin/Orders';
 import Carts from './pages/admin/Carts';
 import CancellationRequests from './pages/admin/CancellationRequests';
 import ReturnRequests from './pages/admin/ReturnRequests';
+import Settings from './pages/admin/Settings';
 
 // Staff Portals
 import WarehousePortal from './pages/staff/WarehousePortal';
@@ -53,6 +55,11 @@ const AppContent = () => {
       dispatch(fetchCurrentUser());
     }
   }, [dispatch, token]);
+
+  // Store settings (fees/threshold/tax) are public — load once for cart/checkout.
+  useEffect(() => {
+    dispatch(fetchStoreSettings());
+  }, [dispatch]);
 
   useEffect(() => {
     if (user) {
@@ -151,6 +158,7 @@ const AppContent = () => {
         <Route path="/admin/cancellations" element={<CancellationRequests />} />
         <Route path="/admin/returns" element={<ReturnRequests />} />
         <Route path="/admin/carts" element={<Carts />} />
+        <Route path="/admin/settings" element={<Settings />} />
       </Route>
     </Routes>
   );

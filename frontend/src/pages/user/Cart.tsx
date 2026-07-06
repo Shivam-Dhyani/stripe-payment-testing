@@ -4,7 +4,7 @@ import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, Clock, BadgePercent } fro
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { fetchCart, updateCartItem, removeFromCart } from '../../store/slices/cartSlice';
-import { computeDeliveryFee, amountToFreeDelivery, FREE_DELIVERY_THRESHOLD } from '../../config/fees';
+import { computeDeliveryFee, computeTax, amountToFreeDelivery } from '../../config/fees';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ButtonSpinner from '../../components/common/ButtonSpinner';
 
@@ -13,16 +13,18 @@ const Cart = () => {
   const navigate = useNavigate();
   const { items, loading, submitting } = useAppSelector((state) => state.cart);
   const { user } = useAppSelector((state) => state.auth);
+  const { settings } = useAppSelector((state) => state.settings);
 
   useEffect(() => {
     dispatch(fetchCart());
   }, [dispatch]);
 
   const subtotal = items.reduce((sum, item) => sum + Number(item.product?.price || 0) * item.quantity, 0);
-  const deliveryFee = computeDeliveryFee(subtotal);
-  const toPay = subtotal + deliveryFee;
-  const away = amountToFreeDelivery(subtotal);
-  const progress = Math.min(100, (subtotal / FREE_DELIVERY_THRESHOLD) * 100);
+  const deliveryFee = computeDeliveryFee(subtotal, settings);
+  const tax = computeTax(subtotal, settings);
+  const toPay = subtotal + deliveryFee + tax;
+  const away = amountToFreeDelivery(subtotal, settings);
+  const progress = Math.min(100, (subtotal / settings.free_delivery_threshold) * 100);
 
   const handleUpdateQuantity = (itemId: string, newQuantity: number, stock: number) => {
     if (newQuantity < 1 || newQuantity > stock) return;
@@ -158,6 +160,12 @@ const Cart = () => {
                 <span>₹{deliveryFee.toFixed(2)}</span>
               )}
             </div>
+            {tax > 0 && (
+              <div className="flex justify-between text-sm text-gray-600">
+                <span>Taxes ({Number(settings.tax_percent)}%)</span>
+                <span>₹{tax.toFixed(2)}</span>
+              </div>
+            )}
             <hr className="border-gray-100" />
             <div className="flex justify-between font-bold text-lg text-gray-900">
               <span>To pay</span>
