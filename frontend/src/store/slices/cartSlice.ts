@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { cartService } from '../../services/cartService';
-import { CartItem, Product } from '../../types';
+import { CartItem, Product, ProductVariant } from '../../types';
 import { getGuestCart, guestAdd, guestUpdate, guestRemove, clearGuestCart } from '../../utils/guestCart';
 import type { RootState } from '../index';
 // No success toasts for cart actions — the cart badge is the feedback.
@@ -29,12 +29,16 @@ export const fetchCart = createAsyncThunk('cart/fetch', async (_, { getState }) 
 // Adds accept the full product so a guest cart can render offline.
 export const addToCart = createAsyncThunk(
   'cart/add',
-  async ({ product, quantity }: { product: Product; quantity: number }, { getState }) => {
+  async (
+    { product, quantity, variant }:
+      { product: Product; quantity: number; variant?: ProductVariant | null },
+    { getState }
+  ) => {
     if (isAuthed(getState)) {
-      await cartService.addItem(product.id, quantity);
+      await cartService.addItem(product.id, quantity, variant?.id ?? null);
       return await cartService.getCart();
     }
-    return guestAdd(product, quantity);
+    return guestAdd(product, quantity, variant);
   }
 );
 
@@ -71,7 +75,7 @@ export const mergeGuestCart = createAsyncThunk('cart/merge', async () => {
   const guest = getGuestCart();
   for (const it of guest) {
     try {
-      await cartService.addItem(it.product_id, it.quantity);
+      await cartService.addItem(it.product_id, it.quantity, it.variant_id ?? null);
     } catch {
       /* skip items that fail (e.g. out of stock) */
     }

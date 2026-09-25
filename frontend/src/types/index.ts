@@ -46,6 +46,21 @@ export interface Brand {
   product_count?: number;
 }
 
+export interface ProductVariant {
+  id: string;
+  product_id: string;
+  sku?: string | null;
+  option_values?: Record<string, string> | null;
+  price: number | string;
+  mrp?: number | string | null;
+  discount_percent?: number;
+  stock: number;
+  image_url?: string | null;
+  is_active: boolean;
+  sort_order?: number;
+  label?: string;
+}
+
 export interface SpecRow {
   label: string;
   value: string;
@@ -66,6 +81,9 @@ export interface Product {
   images?: string[] | null;
   gallery?: string[];
   specifications?: SpecRow[] | null;
+  variant_options?: string[] | null;
+  variants?: ProductVariant[];
+  has_variants?: boolean;
   brand?: Brand | null;
   is_active: boolean;
   is_returnable: boolean;
@@ -77,6 +95,13 @@ export interface CartItem {
   id: string;
   user_id: string;
   product_id: string;
+  variant_id?: string | null;
+  variant_label?: string | null;
+  /** Effective per-unit price for this line (variant-aware). */
+  unit_price?: number;
+  /** Effective stock available for this line (variant-aware). */
+  available_stock?: number;
+  image_url?: string | null;
   quantity: number;
   product?: Product;
 }

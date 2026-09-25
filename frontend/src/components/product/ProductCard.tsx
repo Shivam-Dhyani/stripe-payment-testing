@@ -18,6 +18,8 @@ const ProductCard = ({ product }: { product: Product }) => {
   const lowStock = !outOfStock && product.stock <= 5;
   const atMax = qty >= product.stock;
   const discount = product.discount_percent || 0;
+  // Products with options can't be quick-added — the shopper picks on the PDP.
+  const hasVariants = !!product.has_variants || (product.variants?.some((v) => v.is_active) ?? false);
   const mrp = product.mrp ? Number(product.mrp) : null;
   const showMrp = !!mrp && mrp > Number(product.price);
 
@@ -77,13 +79,20 @@ const ProductCard = ({ product }: { product: Product }) => {
 
       <div className="flex items-center justify-between mt-2 gap-2">
         <span className="flex flex-col leading-tight min-w-0">
-          <span className="text-sm font-bold text-gray-900">₹{Number(product.price).toFixed(2)}</span>
+          <span className="text-sm font-bold text-gray-900">
+            {hasVariants && <span className="text-[10px] font-semibold text-gray-400 mr-0.5">from</span>}
+            ₹{Number(product.price).toFixed(2)}
+          </span>
           {showMrp && (
             <span className="text-[11px] text-gray-400 line-through">₹{mrp!.toFixed(2)}</span>
           )}
         </span>
         {outOfStock ? (
           <span className="text-[11px] font-medium text-gray-400">Sold out</span>
+        ) : hasVariants ? (
+          <Link to={`/products/${product.id}`} className="qc-add-btn" onClick={(e) => e.stopPropagation()}>
+            OPTIONS
+          </Link>
         ) : canShop ? (
           qty === 0 ? (
             <button onClick={add} className="qc-add-btn">ADD</button>
