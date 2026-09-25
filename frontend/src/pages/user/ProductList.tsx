@@ -8,6 +8,8 @@ import { fetchCategories, fetchSubCategories } from '../../store/slices/category
 import { CardSkeleton } from '../../components/common/Skeleton';
 import ProductCard from '../../components/product/ProductCard';
 import { DELIVERY_PROMISE } from '../../config/brand';
+import { brandService } from '../../services/brandService';
+import { Brand } from '../../types';
 
 const ProductList = () => {
   const dispatch = useAppDispatch();
@@ -16,9 +18,11 @@ const ProductList = () => {
   const { categories = [], subcategories = [] } = useAppSelector((state) => state.categories);
   const [search, setSearch] = useState(searchParams.get('search') || '');
   const [showFilters, setShowFilters] = useState(false);
+  const [brands, setBrands] = useState<Brand[]>([]);
 
   const categoryId = searchParams.get('category') || undefined;
   const subCategoryId = searchParams.get('subcategory') || undefined;
+  const brandId = searchParams.get('brand_id') || undefined;
   const sortBy = searchParams.get('sort') || 'created_at';
   const sortOrder = (searchParams.get('order') || 'desc') as 'asc' | 'desc';
   const page = Number(searchParams.get('page') || '1');
@@ -26,6 +30,21 @@ const ProductList = () => {
   useEffect(() => {
     dispatch(fetchCategories());
   }, [dispatch]);
+
+  useEffect(() => {
+    let active = true;
+    brandService
+      .getAll()
+      .then((data) => {
+        if (active) setBrands(data);
+      })
+      .catch(() => {
+        if (active) setBrands([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (categoryId) {
@@ -39,11 +58,12 @@ const ProductList = () => {
       size: 12,
       category_id: categoryId,
       sub_category_id: subCategoryId,
+      brand_id: brandId,
       search: search || undefined,
       sort_by: sortBy,
       sort_order: sortOrder,
     }));
-  }, [dispatch, page, categoryId, subCategoryId, search, sortBy, sortOrder]);
+  }, [dispatch, page, categoryId, subCategoryId, brandId, search, sortBy, sortOrder]);
 
   const updateParams = (updates: Record<string, string | undefined>) => {
     const newParams = new URLSearchParams(searchParams);
@@ -54,7 +74,7 @@ const ProductList = () => {
         newParams.set(key, value);
       }
     });
-    if (updates.category || updates.subcategory || updates.search) {
+    if (updates.category || updates.subcategory || updates.search || 'brand_id' in updates) {
       newParams.delete('page');
     }
     setSearchParams(newParams);
@@ -65,7 +85,9 @@ const ProductList = () => {
     updateParams({ search: search || undefined });
   };
 
-  const hasActiveFilters = categoryId || subCategoryId || searchParams.get('search');
+  const hasActiveFilters = categoryId || subCategoryId || brandId || searchParams.get('search');
+
+  const activeBrands = brands.filter((b) => b.is_active || b.id === brandId);
 
   const clearAllFilters = () => {
     setSearch('');
@@ -241,6 +263,40 @@ const ProductList = () => {
                         }`}
                       >
                         {sc.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {activeBrands.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">Brands</h4>
+                  <div className="space-y-1">
+                    <button
+                      onClick={() => updateParams({ brand_id: undefined })}
+                      className={`block w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                        !brandId
+                          ? 'bg-brand-50 text-brand-600 font-medium border-l-2 border-brand-500'
+                          : 'text-gray-600 hover:bg-gray-50'
+                      }`}
+                    >
+                      All Brands
+                    </button>
+                    {activeBrands.map((brand) => (
+                      <button
+                        key={brand.id}
+                        onClick={() => updateParams({ brand_id: brand.id })}
+                        className={`flex w-full items-center justify-between gap-2 text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                          brandId === brand.id
+                            ? 'bg-brand-50 text-brand-600 font-medium border-l-2 border-brand-500'
+                            : 'text-gray-600 hover:bg-gray-50'
+                        }`}
+                      >
+                        <span className="truncate">{brand.name}</span>
+                        {typeof brand.product_count === 'number' && (
+                          <span className="shrink-0 text-xs text-gray-400">{brand.product_count}</span>
+                        )}
                       </button>
                     ))}
                   </div>
