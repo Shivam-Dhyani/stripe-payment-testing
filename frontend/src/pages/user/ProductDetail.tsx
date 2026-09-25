@@ -7,6 +7,31 @@ import { fetchProductById, clearSelectedProduct } from '../../store/slices/produ
 import { addToCart } from '../../store/slices/cartSlice';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ButtonSpinner from '../../components/common/ButtonSpinner';
+import { ProductVariant } from '../../types';
+
+/** Variants render in the order the catalogue admin gave them. */
+const sortVariants = (list?: ProductVariant[] | null): ProductVariant[] =>
+  [...(list || [])].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+
+/** Server sends a computed label ("500 g · Red"); rebuild one if it's missing. */
+const variantLabel = (v: ProductVariant): string =>
+  v.label ||
+  Object.values(v.option_values || {})
+    .filter(Boolean)
+    .join(' · ') ||
+  v.sku ||
+  'Option';
+
+const pctOff = (price: number, mrp: number | null): number =>
+  mrp && mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0;
+
+/** One selectable chip inside an option group. */
+interface ChipOption {
+  value: string;
+  variant: ProductVariant | null;
+  selected: boolean;
+  disabled: boolean;
+}
 
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -16,6 +41,9 @@ const ProductDetail = () => {
   const { submitting } = useAppSelector((state) => state.cart);
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
+  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
+  // Set once the shopper picks a thumbnail, which overrides the variant's own photo.
+  const [thumbPicked, setThumbPicked] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -26,15 +54,44 @@ const ProductDetail = () => {
     };
   }, [dispatch, id]);
 
-  // Reset the gallery selection whenever we land on a different product.
+  // Reset the gallery + option selection whenever we land on a different product.
   useEffect(() => {
     setActiveImage(0);
+    setSelectedVariantId(null);
+    setThumbPicked(false);
   }, [id]);
 
-  const handleAddToCart = () => {
-    if (product) {
-      dispatch(addToCart({ product, quantity }));
+  // A product with active variants must always have one chosen — the API rejects
+  // an add-to-cart with no variant. Default to the first in-stock option.
+  useEffect(() => {
+    const choices = sortVariants(product?.variants).filter((v) => v.is_active);
+    if (choices.length === 0) {
+      setSelectedVariantId(null);
+      return;
     }
+    setSelectedVariantId((prev) => {
+      if (prev && choices.some((v) => v.id === prev)) return prev;
+      return (choices.find((v) => v.stock > 0) || choices[0]).id;
+    });
+  }, [product]);
+
+  const variants = sortVariants(product?.variants);
+  const hasVariants = variants.some((v) => v.is_active);
+  const selectedVariant = variants.find((v) => v.id === selectedVariantId) || null;
+
+  // Everything price/stock related comes from the selected variant when there is one.
+  const effectiveStock = Number(selectedVariant ? selectedVariant.stock : product?.stock ?? 0);
+
+  // Keep the stepper inside the selected option's stock.
+  useEffect(() => {
+    setQuantity((q) => Math.min(Math.max(1, q), Math.max(1, effectiveStock)));
+  }, [effectiveStock]);
+
+  const handleAddToCart = () => {
+    if (!product) return;
+    if (hasVariants && !selectedVariant) return;
+    if (effectiveStock <= 0) return;
+    dispatch(addToCart({ product, quantity, variant: selectedVariant }));
   };
 
   if (loading || !product) {
@@ -43,18 +100,92 @@ const ProductDetail = () => {
 
   // Guests (local cart) and customers can shop; staff cannot.
   const isCustomer = !user || user.role === 'customer';
-  const totalPrice = (Number(product.price) * quantity).toFixed(2);
+
+  const effectivePrice = Number(selectedVariant ? selectedVariant.price : product.price);
+  const outOfStock = effectiveStock <= 0;
+  const totalPrice = (effectivePrice * quantity).toFixed(2);
 
   // Gallery: prefer the API-built gallery, otherwise fall back to the single image.
   const gallery = (
     product.gallery && product.gallery.length > 0 ? product.gallery : [product.image_url]
   ).filter((src): src is string => !!src);
-  const mainImage = gallery[activeImage] ?? gallery[0] ?? null;
+  const variantImage = selectedVariant?.image_url || null;
+  // A selected variant's own photo becomes the hero shot until a thumbnail is clicked.
+  const usingVariantImage = !thumbPicked && !!variantImage;
+  const mainImage = (usingVariantImage && variantImage) || gallery[activeImage] || gallery[0] || null;
 
-  // Price block — same rules as ProductCard.
-  const discount = product.discount_percent || 0;
-  const mrp = product.mrp ? Number(product.mrp) : null;
-  const showMrp = !!mrp && mrp > Number(product.price);
+  // Price block — same rules as ProductCard, but variant-aware.
+  const mrpSource = selectedVariant ? selectedVariant.mrp : product.mrp;
+  const mrp = mrpSource ? Number(mrpSource) : null;
+  const showMrp = !!mrp && mrp > effectivePrice;
+  const discount = selectedVariant
+    ? selectedVariant.discount_percent || pctOff(effectivePrice, mrp)
+    : product.discount_percent || 0;
+
+  // Option groups: names come from the product, or are derived from the variants.
+  const declaredNames = (product.variant_options || []).filter(
+    (n): n is string => typeof n === 'string' && n.trim() !== ''
+  );
+  const derivedNames: string[] = [];
+  variants.forEach((v) => {
+    Object.keys(v.option_values || {}).forEach((n) => {
+      if (n && !derivedNames.includes(n)) derivedNames.push(n);
+    });
+  });
+  const optionNames = declaredNames.length > 0 ? declaredNames : derivedNames;
+  const selectedValues = selectedVariant?.option_values || {};
+
+  // Picking a chip keeps the other options where they are when that combo exists,
+  // otherwise it falls back to a buyable variant carrying that value.
+  const resolveTarget = (name: string, value: string): ProductVariant | null => {
+    const others = optionNames.filter((n) => n !== name);
+    const matches = variants.filter((v) => (v.option_values?.[name] || '') === value);
+    const exact = matches.find((v) =>
+      others.every((n) => (v.option_values?.[n] || '') === (selectedValues[n] || ''))
+    );
+    return exact || matches.find((v) => v.is_active && v.stock > 0) || matches[0] || null;
+  };
+
+  const optionGroups: { name: string; options: ChipOption[] }[] =
+    optionNames.length > 0
+      ? optionNames
+          .map((name) => {
+            const values: string[] = [];
+            variants.forEach((v) => {
+              const val = v.option_values?.[name];
+              if (val && !values.includes(val)) values.push(val);
+            });
+            return {
+              name,
+              options: values.map((value) => {
+                const variant = resolveTarget(name, value);
+                return {
+                  value,
+                  variant,
+                  selected: (selectedValues[name] || '') === value,
+                  disabled: !variant || !variant.is_active || variant.stock <= 0,
+                };
+              }),
+            };
+          })
+          .filter((g) => g.options.length > 0)
+      : [
+          {
+            name: 'Option',
+            options: variants.map((v) => ({
+              value: variantLabel(v),
+              variant: v,
+              selected: v.id === selectedVariant?.id,
+              disabled: !v.is_active || v.stock <= 0,
+            })),
+          },
+        ];
+
+  const selectVariant = (variant: ProductVariant | null) => {
+    if (!variant) return;
+    setSelectedVariantId(variant.id);
+    setThumbPicked(false);
+  };
 
   const specs = product.specifications?.filter((s) => s && s.label) || [];
 
@@ -110,11 +241,14 @@ const ProductDetail = () => {
                 <button
                   key={`${src}-${i}`}
                   type="button"
-                  onClick={() => setActiveImage(i)}
+                  onClick={() => {
+                    setActiveImage(i);
+                    setThumbPicked(true);
+                  }}
                   aria-label={`View image ${i + 1} of ${gallery.length}`}
-                  aria-current={i === activeImage}
+                  aria-current={!usingVariantImage && i === activeImage}
                   className={`shrink-0 w-20 h-20 rounded-xl overflow-hidden bg-gray-100 border-2 transition-colors ${
-                    i === activeImage
+                    !usingVariantImage && i === activeImage
                       ? 'border-brand-500'
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
@@ -164,7 +298,7 @@ const ProductDetail = () => {
           {/* Price + delivery */}
           <div className="flex flex-wrap items-center gap-3 mb-4">
             <p className="text-3xl font-bold text-gray-900">
-              ₹{Number(product.price).toFixed(2)}
+              ₹{effectivePrice.toFixed(2)}
               {product.unit && (
                 <span className="ml-2 text-sm font-medium text-gray-400">/ {product.unit}</span>
               )}
@@ -182,18 +316,64 @@ const ProductDetail = () => {
             </span>
           </div>
 
-          {/* Stock */}
+          {/* Variant options — one chip group per option name */}
+          {hasVariants && (
+            <div className="mb-6 space-y-4">
+              {optionGroups.map((group) => (
+                <div key={group.name} role="group" aria-label={group.name}>
+                  <h3 className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">
+                    {group.name}
+                    {selectedVariant && (
+                      <span className="ml-2 normal-case tracking-normal font-semibold text-gray-700">
+                        {optionNames.length > 0
+                          ? selectedValues[group.name] || ''
+                          : variantLabel(selectedVariant)}
+                      </span>
+                    )}
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {group.options.map((opt) => (
+                      <button
+                        key={`${group.name}-${opt.value}`}
+                        type="button"
+                        onClick={() => selectVariant(opt.variant)}
+                        disabled={opt.disabled}
+                        aria-pressed={opt.selected}
+                        title={opt.disabled ? `${opt.value} — out of stock` : opt.value}
+                        className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
+                          opt.selected
+                            ? 'border-brand-500 bg-brand-50 text-brand-700'
+                            : opt.disabled
+                            ? 'border-gray-200 bg-gray-50 text-gray-300 cursor-not-allowed'
+                            : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                        }`}
+                      >
+                        <span className={opt.disabled ? 'line-through' : ''}>{opt.value}</span>
+                        {opt.disabled && (
+                          <span className="text-[10px] font-semibold uppercase tracking-wide">
+                            Out of stock
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Stock — of the selected variant when the product has options */}
           <p className={`text-sm mb-6 ${
-            product.stock > 10
+            effectiveStock > 10
               ? 'text-emerald-600'
-              : product.stock > 0
+              : effectiveStock > 0
               ? 'text-amber-600'
               : 'text-red-500'
           }`}>
-            {product.stock > 10
+            {effectiveStock > 10
               ? 'In Stock'
-              : product.stock > 0
-              ? `Only ${product.stock} left in stock`
+              : effectiveStock > 0
+              ? `Only ${effectiveStock} left in stock`
               : 'Out of Stock'}
           </p>
 
@@ -243,7 +423,7 @@ const ProductDetail = () => {
           )}
 
           {/* Add to Cart */}
-          {isCustomer && product.stock > 0 && (
+          {isCustomer && (hasVariants || product.stock > 0) && (
             <div className="mt-auto space-y-4">
               <div className="flex items-center gap-6">
                 <div className="flex items-center border border-gray-200 rounded-full overflow-hidden">
@@ -258,7 +438,7 @@ const ProductDetail = () => {
                     {quantity}
                   </span>
                   <button
-                    onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
+                    onClick={() => setQuantity(Math.min(Math.max(1, effectiveStock), quantity + 1))}
                     disabled={submitting}
                     className="p-2.5 hover:bg-gray-50 transition-colors disabled:opacity-50"
                   >
@@ -267,12 +447,14 @@ const ProductDetail = () => {
                 </div>
                 <button
                   onClick={handleAddToCart}
-                  disabled={submitting}
+                  disabled={submitting || outOfStock || (hasVariants && !selectedVariant)}
                   className="flex-1 sm:flex-none px-8 py-3 bg-brand-500 text-white rounded-full hover:bg-brand-600 transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {submitting ? <ButtonSpinner /> : <ShoppingCart className="w-4 h-4" />}
-                  <span>{submitting ? 'Adding...' : 'Add to Cart'}</span>
-                  <span className="text-white/70 ml-1">&middot; ₹{totalPrice}</span>
+                  <span>
+                    {submitting ? 'Adding...' : outOfStock ? 'Out of Stock' : 'Add to Cart'}
+                  </span>
+                  {!outOfStock && <span className="text-white/70 ml-1">&middot; ₹{totalPrice}</span>}
                 </button>
               </div>
             </div>
