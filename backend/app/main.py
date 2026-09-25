@@ -148,6 +148,31 @@ def run_migrations(db):
             db.commit()
             print("Added specifications column to products table")
 
+    # Step 13: Product variants — option names on products, variant refs on
+    # cart_items and order_items (product_variants table is created by create_all).
+    if "products" in inspector.get_table_names():
+        pcols2 = [c["name"] for c in inspector.get_columns("products")]
+        if "variant_options" not in pcols2:
+            db.execute(text("ALTER TABLE products ADD COLUMN variant_options JSON"))
+            db.commit()
+            print("Added variant_options column to products table")
+    if "cart_items" in inspector.get_table_names():
+        ccols = [c["name"] for c in inspector.get_columns("cart_items")]
+        if "variant_id" not in ccols:
+            db.execute(text("ALTER TABLE cart_items ADD COLUMN variant_id VARCHAR(36)"))
+            db.commit()
+            print("Added variant_id column to cart_items table")
+    if "order_items" in inspector.get_table_names():
+        ocols = [c["name"] for c in inspector.get_columns("order_items")]
+        if "variant_id" not in ocols:
+            db.execute(text("ALTER TABLE order_items ADD COLUMN variant_id VARCHAR(36)"))
+            db.commit()
+            print("Added variant_id column to order_items table")
+        if "variant_label" not in ocols:
+            db.execute(text("ALTER TABLE order_items ADD COLUMN variant_label VARCHAR(255)"))
+            db.commit()
+            print("Added variant_label column to order_items table")
+
     # Step 13: Add order_number + delivery_fee to orders; backfill numbers.
     if "orders" in inspector.get_table_names():
         order_cols = [c["name"] for c in inspector.get_columns("orders")]

@@ -11,6 +11,7 @@ from app.models.warehouse import Warehouse
 from app.models.category import Category
 from app.models.subcategory import SubCategory
 from app.models.brand import Brand
+from app.models.product_variant import ProductVariant
 from app.models.product import Product
 from app.models.order import Order, OrderItem
 
@@ -293,6 +294,48 @@ def _specs(name: str, unit: str, category: str, subcategory: str, brand: str | N
     return rows
 
 
+# A few products ship as multiple pack sizes so the variant flow is demoable.
+# rows = (option value, price, mrp, stock)
+VARIANT_PLAN = {
+    "Amul Butter": ("Pack Size", [("100 g", 56, 62, 130), ("500 g", 265, 292, 60)]),
+    "Aashirvaad Shudh Chakki Atta": ("Pack Size", [("5 kg", 265, 299, 80), ("10 kg", 515, 580, 35)]),
+    "Tata Salt": ("Pack Size", [("1 kg", 28, 32, 200), ("2 kg", 54, 62, 90)]),
+    "Amul Pure Ghee": ("Pack Size", [("500 ml", 319, 355, 70), ("1 L", 599, 665, 50)]),
+    "Dove Cream Beauty Bar": ("Pack Size", [("100 g", 55, 65, 140), ("Pack of 3", 155, 195, 70)]),
+    "Tata Sampann Toor Dal": ("Pack Size", [("500 g", 78, 89, 120), ("1 kg", 145, 165, 90)]),
+}
+
+
+def _apply_variants(db: Session, products_by_name: dict) -> None:
+    """Attach variants and make the product row a display aggregate.
+
+    The product's own price/stock are never charged once variants exist — they
+    just drive the "from ₹X" card price and the out-of-stock state.
+    """
+    for prod_name, (option_name, rows) in VARIANT_PLAN.items():
+        product = products_by_name.get(prod_name)
+        if not product:
+            continue
+        product.variant_options = [option_name]
+        for idx, (value, price, mrp, stock) in enumerate(rows):
+            db.add(ProductVariant(
+                id=str(uuid.uuid4()),
+                product_id=product.id,
+                sku=f"{prod_name[:12].upper().replace(' ', '-')}-{idx + 1}",
+                option_values={option_name: value},
+                price=Decimal(str(price)),
+                mrp=Decimal(str(mrp)),
+                stock=stock,
+                image_url=_product_image(f"{prod_name} {value}"),
+                is_active=True,
+                sort_order=idx,
+            ))
+        # Card shows the cheapest option; stock is the total across options.
+        product.price = Decimal(str(min(r[1] for r in rows)))
+        product.mrp = Decimal(str(min(r[2] for r in rows)))
+        product.stock = sum(r[3] for r in rows)
+
+
 def _seed_catalog(db: Session):
     """Create the quick-commerce catalog and return the flat list of products."""
     all_products = []
@@ -351,6 +394,9 @@ def _seed_catalog(db: Session):
                 )
                 db.add(product)
                 all_products.append(product)
+    db.flush()
+
+    _apply_variants(db, {p.name: p for p in all_products})
     db.flush()
     return all_products
 

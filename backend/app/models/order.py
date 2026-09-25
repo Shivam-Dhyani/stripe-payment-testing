@@ -86,6 +86,9 @@ class OrderItem(Base):
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     order_id = Column(String(36), ForeignKey("orders.id"), nullable=False)
     product_id = Column(String(36), ForeignKey("products.id"), nullable=True)
+    variant_id = Column(String(36), ForeignKey("product_variants.id"), nullable=True)
+    # Snapshot so historical orders read correctly even if the variant is gone.
+    variant_label = Column(String(255), nullable=True)
     product_name = Column(String(255), nullable=False)
     product_price = Column(Numeric(10, 2), nullable=False)
     quantity = Column(Integer, default=1, nullable=False)

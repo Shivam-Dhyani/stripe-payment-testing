@@ -22,6 +22,7 @@ from app.schemas.order import (
 from app.middleware.auth import get_current_user, get_admin_user
 from app.services.stripe_service import create_payment_intent, create_refund
 from app.services.fees import get_settings, compute_delivery_fee, compute_tax
+from app.services.purchasable import resolve_purchasable
 from app.services.push_service import notify_user_safe
 from app.realtime import notify_order_change
 from app.config import settings
@@ -87,6 +88,7 @@ def checkout(
 
     total = Decimal("0.00")
     order_items_data = []
+    purchasables = []  # (resolved line, qty) -> used to decrement the right record
     for item in cart_items:
         product = item.product
         if not product or not product.is_active:
@@ -94,19 +96,26 @@ def checkout(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Product '{item.product_id}' is no longer available",
             )
-        if product.stock < item.quantity:
+        # Variant-aware price + stock (falls back to the product when there
+        # are no variants). Single resolver keeps cart/checkout consistent.
+        line = resolve_purchasable(db, product, item.variant_id)
+        if line.stock < item.quantity:
+            label = f"{product.name} ({line.label})" if line.label else product.name
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Insufficient stock for '{product.name}'",
+                detail=f"Insufficient stock for '{label}'",
             )
-        item_total = product.price * item.quantity
+        item_total = line.price * item.quantity
         total += item_total
         order_items_data.append({
             "product_id": product.id,
+            "variant_id": line.variant_id,
+            "variant_label": line.label or None,
             "product_name": product.name,
-            "product_price": product.price,
+            "product_price": line.price,
             "quantity": item.quantity,
         })
+        purchasables.append((line, item.quantity))
 
     address_snapshot = {
         "label": address.label,
@@ -152,10 +161,10 @@ def checkout(
     db.flush()
 
     for item_data in order_items_data:
-        order_item = OrderItem(order_id=order.id, **item_data)
-        db.add(order_item)
-        product = db.query(Product).filter(Product.id == item_data["product_id"]).first()
-        product.stock -= item_data["quantity"]
+        db.add(OrderItem(order_id=order.id, **item_data))
+    # Inventory comes off the variant when one was chosen, else the product.
+    for line, qty in purchasables:
+        line.decrement_stock(qty)
 
     payment_event = PaymentEvent(
         order_id=order.id,

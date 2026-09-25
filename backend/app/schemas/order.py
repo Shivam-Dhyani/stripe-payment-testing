@@ -8,6 +8,8 @@ class OrderItemResponse(BaseModel):
     id: str
     order_id: str
     product_id: Optional[str] = None
+    variant_id: Optional[str] = None
+    variant_label: Optional[str] = None
     product_name: str
     product_price: float
     quantity: int

@@ -5,6 +5,7 @@ from app.models.category import Category
 from app.models.subcategory import SubCategory
 from app.models.brand import Brand
 from app.models.product import Product
+from app.models.product_variant import ProductVariant
 from app.models.cart import CartItem
 from app.models.order import Order, OrderItem, OrderStatusHistory, VALID_ORDER_STATUSES, VALID_TRANSITIONS
 from app.models.payment_event import PaymentEvent, PaymentEventType
@@ -24,6 +25,7 @@ __all__ = [
     "SubCategory",
     "Brand",
     "Product",
+    "ProductVariant",
     "CartItem",
     "Order",
     "OrderItem",

@@ -5,6 +5,7 @@ from typing import List
 from app.database import get_db
 from app.models.cart import CartItem
 from app.models.product import Product
+from app.services.purchasable import resolve_purchasable
 from app.models.user import User
 from app.schemas.cart import CartItemCreate, CartItemUpdate, CartItemResponse, AdminCartUserResponse, AdminCartItemResponse
 from app.middleware.auth import get_current_user, get_admin_user
@@ -65,7 +66,7 @@ def get_cart(
     """Get all items in the current user's cart."""
     return (
         db.query(CartItem)
-        .options(joinedload(CartItem.product))
+        .options(joinedload(CartItem.product), joinedload(CartItem.variant))
         .filter(CartItem.user_id == current_user.id)
         .all()
     )
@@ -81,16 +82,24 @@ def add_to_cart(
     product = db.query(Product).filter(Product.id == data.product_id, Product.is_active == True).first()
     if not product:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
-    if product.stock < data.quantity:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Insufficient stock")
 
+    # Resolves the variant (required when the product has options) and tells us
+    # which record actually holds the stock.
+    line = resolve_purchasable(db, product, data.variant_id)
+
+    # Same product+variant merges; different variants stay separate lines.
     existing = db.query(CartItem).filter(
         CartItem.user_id == current_user.id,
         CartItem.product_id == data.product_id,
+        CartItem.variant_id == line.variant_id,
     ).first()
 
+    wanted = (existing.quantity if existing else 0) + data.quantity
+    if line.stock < wanted:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Insufficient stock")
+
     if existing:
-        existing.quantity += data.quantity
+        existing.quantity = wanted
         db.commit()
         db.refresh(existing)
         return existing
@@ -98,6 +107,7 @@ def add_to_cart(
     cart_item = CartItem(
         user_id=current_user.id,
         product_id=data.product_id,
+        variant_id=line.variant_id,
         quantity=data.quantity,
     )
     db.add(cart_item)
@@ -126,8 +136,10 @@ def update_cart_item(
         db.commit()
         return cart_item
     product = db.query(Product).filter(Product.id == cart_item.product_id).first()
-    if product and product.stock < data.quantity:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Insufficient stock")
+    if product:
+        line = resolve_purchasable(db, product, cart_item.variant_id)
+        if line.stock < data.quantity:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Insufficient stock")
     cart_item.quantity = data.quantity
     db.commit()
     db.refresh(cart_item)

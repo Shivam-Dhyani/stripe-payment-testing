@@ -5,6 +5,7 @@ from datetime import datetime
 
 class CartItemCreate(BaseModel):
     product_id: str
+    variant_id: Optional[str] = None
     quantity: int = 1
 
 
@@ -26,6 +27,12 @@ class CartItemResponse(BaseModel):
     id: str
     user_id: str
     product_id: str
+    variant_id: Optional[str] = None
+    variant_label: Optional[str] = None
+    # Effective values for this line (variant-aware) — prefer these on the client.
+    unit_price: float = 0
+    available_stock: int = 0
+    image_url: Optional[str] = None
     quantity: int
     created_at: datetime
     product: Optional[CartProductInfo] = None

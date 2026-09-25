@@ -25,6 +25,8 @@ class Product(Base):
     images = Column(JSON, nullable=True)
     # List of {"label": str, "value": str} rows rendered as a spec table.
     specifications = Column(JSON, nullable=True)
+    # Ordered option names for variants, e.g. ["Size"] or ["Colour", "Size"].
+    variant_options = Column(JSON, nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
     is_returnable = Column(Boolean, default=False, nullable=False)
     return_window_days = Column(Integer, nullable=True)
@@ -33,8 +35,16 @@ class Product(Base):
 
     subcategory = relationship("SubCategory", back_populates="products")
     brand = relationship("Brand", back_populates="products")
+    variants = relationship(
+        "ProductVariant", back_populates="product",
+        cascade="all, delete-orphan", order_by="ProductVariant.sort_order",
+    )
     cart_items = relationship("CartItem", back_populates="product", cascade="all, delete-orphan")
     order_items = relationship("OrderItem", back_populates="product")
+
+    @property
+    def has_variants(self) -> bool:
+        return any(v.is_active for v in (self.variants or []))
 
     @property
     def gallery(self) -> list:

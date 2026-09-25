@@ -6,7 +6,9 @@ from typing import List, Optional
 from app.database import get_db
 from app.models.product import Product
 from app.models.subcategory import SubCategory
-from app.schemas.product import ProductCreate, ProductUpdate, ProductResponse, GenerateImageRequest
+from app.models.product_variant import ProductVariant
+from app.models.cart import CartItem
+from app.schemas.product import ProductCreate, ProductUpdate, ProductResponse, GenerateImageRequest, VariantCreate, VariantUpdate, VariantResponse
 from app.middleware.auth import get_admin_user
 from app.models.user import User
 
@@ -90,6 +92,7 @@ def list_products(
         base_query.options(
             joinedload(Product.subcategory).joinedload(SubCategory.category),
             joinedload(Product.brand),
+            joinedload(Product.variants),
         )
         .offset(offset)
         .limit(size)
@@ -114,6 +117,7 @@ def get_product(product_id: str, db: Session = Depends(get_db)):
         .options(
             joinedload(Product.subcategory).joinedload(SubCategory.category),
             joinedload(Product.brand),
+            joinedload(Product.variants),
         )
         .filter(Product.id == product_id)
         .first()
@@ -167,4 +171,77 @@ def delete_product(
     if not product:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
     product.is_active = False
+    db.commit()
+
+
+# ---------------------------------------------------------------------------
+# Product variants (admin-managed). Variants are optional: a product with none
+# is bought directly; a product with active variants requires choosing one.
+# ---------------------------------------------------------------------------
+
+@router.get("/{product_id}/variants", response_model=List[VariantResponse])
+def list_variants(product_id: str, db: Session = Depends(get_db)):
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
+    return sorted(product.variants or [], key=lambda v: (v.sort_order, v.label))
+
+
+@router.post("/{product_id}/variants", response_model=VariantResponse, status_code=status.HTTP_201_CREATED)
+def create_variant(
+    product_id: str,
+    data: VariantCreate,
+    admin: User = Depends(get_admin_user),
+    db: Session = Depends(get_db),
+):
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
+    variant = ProductVariant(product_id=product_id, **data.model_dump())
+    db.add(variant)
+    db.commit()
+    db.refresh(variant)
+    return variant
+
+
+@router.put("/{product_id}/variants/{variant_id}", response_model=VariantResponse)
+def update_variant(
+    product_id: str,
+    variant_id: str,
+    data: VariantUpdate,
+    admin: User = Depends(get_admin_user),
+    db: Session = Depends(get_db),
+):
+    variant = (
+        db.query(ProductVariant)
+        .filter(ProductVariant.id == variant_id, ProductVariant.product_id == product_id)
+        .first()
+    )
+    if not variant:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Variant not found")
+    for field, value in data.model_dump(exclude_unset=True).items():
+        setattr(variant, field, value)
+    db.commit()
+    db.refresh(variant)
+    return variant
+
+
+@router.delete("/{product_id}/variants/{variant_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_variant(
+    product_id: str,
+    variant_id: str,
+    admin: User = Depends(get_admin_user),
+    db: Session = Depends(get_db),
+):
+    """Delete a variant. Past orders keep their snapshot (variant_label)."""
+    variant = (
+        db.query(ProductVariant)
+        .filter(ProductVariant.id == variant_id, ProductVariant.product_id == product_id)
+        .first()
+    )
+    if not variant:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Variant not found")
+    # Drop it from live carts so nobody checks out a vanished option.
+    db.query(CartItem).filter(CartItem.variant_id == variant_id).delete(synchronize_session=False)
+    db.delete(variant)
     db.commit()
