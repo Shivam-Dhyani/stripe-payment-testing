@@ -14,6 +14,7 @@ import { Address } from '../../types';
 import { DELIVERY_PROMISE } from '../../config/brand';
 import { computeDeliveryFee, computeTax, amountToFreeDelivery } from '../../config/fees';
 import { formatOrderNo } from '../../utils/orderNumber';
+import { cartSubtotal, lineTotal } from '../../utils/cartLine';
 import toast from 'react-hot-toast';
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PK || 'pk_test_placeholder');
@@ -132,7 +133,7 @@ const Checkout = () => {
     }
   };
 
-  const subtotal = items.reduce((sum, item) => sum + Number(item.product?.price || 0) * item.quantity, 0);
+  const subtotal = cartSubtotal(items);
   const deliveryFee = computeDeliveryFee(subtotal, storeSettings);
   const tax = computeTax(subtotal, storeSettings);
   const toPay = subtotal + deliveryFee + tax;
@@ -288,11 +289,16 @@ const Checkout = () => {
                     <div>
                       <p className="font-medium text-gray-800">{item.product?.name}</p>
                       <p className="text-sm text-gray-500">
-                        {item.product?.unit ? `${item.product.unit} · ` : ''}Qty: {item.quantity}
+                        {/* The variant label supersedes the product's pack size. */}
+                        {item.variant_label
+                          ? `${item.variant_label} · `
+                          : item.product?.unit
+                            ? `${item.product.unit} · `
+                            : ''}Qty: {item.quantity}
                       </p>
                     </div>
                   </div>
-                  <p className="font-semibold">₹{(Number(item.product?.price || 0) * item.quantity).toFixed(2)}</p>
+                  <p className="font-semibold">₹{lineTotal(item).toFixed(2)}</p>
                 </div>
               ))}
             </div>

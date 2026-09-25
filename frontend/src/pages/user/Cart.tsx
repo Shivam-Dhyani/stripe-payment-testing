@@ -7,6 +7,7 @@ import { fetchCart, updateCartItem, removeFromCart } from '../../store/slices/ca
 import { computeDeliveryFee, computeTax, amountToFreeDelivery } from '../../config/fees';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ButtonSpinner from '../../components/common/ButtonSpinner';
+import { cartSubtotal, lineImage, lineStock, lineTotal, lineUnitPrice } from '../../utils/cartLine';
 
 const Cart = () => {
   const dispatch = useAppDispatch();
@@ -19,7 +20,7 @@ const Cart = () => {
     dispatch(fetchCart());
   }, [dispatch]);
 
-  const subtotal = items.reduce((sum, item) => sum + Number(item.product?.price || 0) * item.quantity, 0);
+  const subtotal = cartSubtotal(items);
   const deliveryFee = computeDeliveryFee(subtotal, settings);
   const tax = computeTax(subtotal, settings);
   const toPay = subtotal + deliveryFee + tax;
@@ -75,13 +76,17 @@ const Cart = () => {
         {/* Cart Items */}
         <div className="lg:col-span-2 space-y-4">
           {items.map((item) => {
-            const stock = item.product?.stock ?? 99;
+            // Variant-aware stock; keep the permissive cap for lines whose
+            // product/variant data hasn't loaded yet (old `?? 99` behaviour).
+            const hasStockInfo = item.available_stock != null || item.product != null;
+            const stock = hasStockInfo ? lineStock(item) : 99;
             const atMax = item.quantity >= stock;
+            const imageUrl = lineImage(item);
             return (
               <div key={item.id} className="bg-white rounded-2xl border border-gray-200 p-4 flex items-center gap-4">
                 <div className="w-20 h-20 bg-gray-50 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0">
-                  {item.product?.image_url ? (
-                    <img src={item.product.image_url} alt={item.product?.name || ''} className="w-full h-full object-cover" />
+                  {imageUrl ? (
+                    <img src={imageUrl} alt={item.product?.name || ''} className="w-full h-full object-cover" />
                   ) : (
                     <span className="text-gray-300 font-bold text-lg">{item.product?.name?.substring(0, 2).toUpperCase() || 'P'}</span>
                   )}
@@ -90,8 +95,13 @@ const Cart = () => {
                   <Link to={`/products/${item.product_id}`} className="font-semibold text-gray-800 hover:text-brand-500 truncate block">
                     {item.product?.name || 'Product'}
                   </Link>
-                  {item.product?.unit && <p className="text-xs text-gray-400 mt-0.5">{item.product.unit}</p>}
-                  <p className="text-gray-900 font-semibold mt-0.5">₹{Number(item.product?.price || 0).toFixed(2)}</p>
+                  {/* The variant label supersedes the product's pack size. */}
+                  {item.variant_label ? (
+                    <p className="text-xs text-gray-400 mt-0.5">{item.variant_label}</p>
+                  ) : item.product?.unit ? (
+                    <p className="text-xs text-gray-400 mt-0.5">{item.product.unit}</p>
+                  ) : null}
+                  <p className="text-gray-900 font-semibold mt-0.5">₹{lineUnitPrice(item).toFixed(2)}</p>
                   {atMax && <p className="text-[11px] font-medium text-amber-600 mt-0.5">Max available reached</p>}
                 </div>
                 <div className="qc-stepper">
@@ -109,7 +119,7 @@ const Cart = () => {
                   </button>
                 </div>
                 <div className="text-right min-w-[80px]">
-                  <p className="font-semibold text-gray-800">₹{(Number(item.product?.price || 0) * item.quantity).toFixed(2)}</p>
+                  <p className="font-semibold text-gray-800">₹{lineTotal(item).toFixed(2)}</p>
                 </div>
                 <button
                   onClick={() => dispatch(removeFromCart(item.id))}
