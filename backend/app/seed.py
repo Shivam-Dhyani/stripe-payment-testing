@@ -10,6 +10,7 @@ from app.models.address import Address
 from app.models.warehouse import Warehouse
 from app.models.category import Category
 from app.models.subcategory import SubCategory
+from app.models.brand import Brand
 from app.models.product import Product
 from app.models.order import Order, OrderItem
 
@@ -249,9 +250,67 @@ CATALOG = {
 }
 
 
+# Brands present in the catalog (longest first so "Tata Sampann" wins over "Tata").
+BRANDS = [
+    "Mother Dairy", "Brooke Bond Red Label", "Kwality Wall's", "Head & Shoulders",
+    "Tata Sampann", "Sunfeast Yippee", "Clinic Plus", "India Gate", "Harvest Gold",
+    "Aashirvaad", "Haldiram's", "Coca-Cola", "Nescafe", "Bournvita", "Sensodyne",
+    "Surf Excel", "Lifebuoy", "Cerelac", "Tropicana", "Thums Up", "Pampers",
+    "Britannia", "Cadbury", "Everest", "Fortune", "Horlicks", "Colgate", "Huggies",
+    "Bisleri", "Daawat", "McCain", "Saffola", "Taj Mahal", "Kurkure", "Nestle",
+    "Harpic", "Lizol", "Ariel", "Dettol", "Maggi", "Parle", "Sprite", "Amul",
+    "Lay's", "Real", "Dove", "Tata", "Vim", "Bru", "Gits", "MDH", "MTR", "Colin",
+    "KitKat", "Oreo", "Perk",
+]
+
+
+def _match_brand(product_name: str):
+    """Best-effort brand from the product name (longest match wins)."""
+    lowered = product_name.lower()
+    for brand in sorted(BRANDS, key=len, reverse=True):
+        if brand.lower() in lowered:
+            return brand
+    return None
+
+
+def _gallery_images(name: str) -> list:
+    """A couple of extra angles so the PDP has a real gallery."""
+    return [
+        _product_image(f"{name} packaging back label"),
+        _product_image(f"{name} on a kitchen counter, lifestyle shot"),
+    ]
+
+
+def _specs(name: str, unit: str, category: str, subcategory: str, brand: str | None) -> list:
+    rows = []
+    if brand:
+        rows.append({"label": "Brand", "value": brand})
+    if unit:
+        rows.append({"label": "Pack Size", "value": unit})
+    rows.append({"label": "Category", "value": f"{category} / {subcategory}"})
+    rows.append({"label": "Country of Origin", "value": "India"})
+    rows.append({"label": "Seller", "value": "Zippy Retail Pvt. Ltd."})
+    return rows
+
+
 def _seed_catalog(db: Session):
     """Create the quick-commerce catalog and return the flat list of products."""
     all_products = []
+
+    # Brands first so products can reference them.
+    brand_ids = {}
+    for brand_name in BRANDS:
+        brand = Brand(
+            id=str(uuid.uuid4()),
+            name=brand_name,
+            description=f"{brand_name} products on Zippy",
+            logo_url=_product_image(f"{brand_name} brand logo, flat vector, plain background"),
+            is_active=True,
+        )
+        db.add(brand)
+        brand_ids[brand_name] = brand.id
+    db.flush()
+
     for cat_name, cat_info in CATALOG.items():
         category = Category(
             id=str(uuid.uuid4()),
@@ -270,15 +329,23 @@ def _seed_catalog(db: Session):
             db.add(sub)
             returnable = sub_info["returnable"]
             for prod_name, unit, price, stock in sub_info["products"]:
+                brand_name = _match_brand(prod_name)
+                # List price a little above the selling price -> visible savings.
+                mrp = (Decimal(str(price)) * Decimal(str(random.choice([1.08, 1.12, 1.18, 1.25, 1.33])))
+                       ).quantize(Decimal("1"))
                 product = Product(
                     id=str(uuid.uuid4()),
                     sub_category_id=sub.id,
+                    brand_id=brand_ids.get(brand_name) if brand_name else None,
                     name=prod_name,
                     description=f"{prod_name} — {unit}. Delivered to your door in minutes.",
                     unit=unit,
                     price=Decimal(str(price)),
+                    mrp=mrp,
                     stock=stock,
                     image_url=_product_image(prod_name),
+                    images=_gallery_images(prod_name),
+                    specifications=_specs(prod_name, unit, cat_name, sub_name, brand_name),
                     is_returnable=returnable,
                     return_window_days=7 if returnable else None,
                 )

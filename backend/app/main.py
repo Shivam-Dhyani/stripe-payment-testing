@@ -12,7 +12,7 @@ from app.models import (
 )
 from app.seed import seed_database, ensure_operational_data
 from app.routers import (
-    auth, categories, subcategories, products, addresses, cart, orders, dashboard, webhooks,
+    auth, categories, subcategories, brands, products, addresses, cart, orders, dashboard, webhooks,
     cancellation_requests, return_requests, warehouses, push, ws, settings as settings_router
 )
 
@@ -128,7 +128,27 @@ def run_migrations(db):
             db.commit()
             print("Added unit column to products table")
 
-    # Step 12: Add order_number + delivery_fee to orders; backfill numbers.
+    # Step 12: Catalog depth — brand, MRP, gallery images, specifications.
+    if "products" in inspector.get_table_names():
+        pcols = [c["name"] for c in inspector.get_columns("products")]
+        if "brand_id" not in pcols:
+            db.execute(text("ALTER TABLE products ADD COLUMN brand_id VARCHAR(36)"))
+            db.commit()
+            print("Added brand_id column to products table")
+        if "mrp" not in pcols:
+            db.execute(text("ALTER TABLE products ADD COLUMN mrp NUMERIC(10, 2)"))
+            db.commit()
+            print("Added mrp column to products table")
+        if "images" not in pcols:
+            db.execute(text("ALTER TABLE products ADD COLUMN images JSON"))
+            db.commit()
+            print("Added images column to products table")
+        if "specifications" not in pcols:
+            db.execute(text("ALTER TABLE products ADD COLUMN specifications JSON"))
+            db.commit()
+            print("Added specifications column to products table")
+
+    # Step 13: Add order_number + delivery_fee to orders; backfill numbers.
     if "orders" in inspector.get_table_names():
         order_cols = [c["name"] for c in inspector.get_columns("orders")]
         if "delivery_fee" not in order_cols:
@@ -223,6 +243,7 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/api")
 app.include_router(categories.router, prefix="/api")
 app.include_router(subcategories.router, prefix="/api")
+app.include_router(brands.router, prefix="/api")
 app.include_router(products.router, prefix="/api")
 app.include_router(addresses.router, prefix="/api")
 app.include_router(cart.router, prefix="/api")

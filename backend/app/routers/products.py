@@ -46,6 +46,9 @@ def generate_product_image(
 def list_products(
     category_id: Optional[str] = Query(None, description="Filter by category ID"),
     sub_category_id: Optional[str] = Query(None, description="Filter by subcategory ID"),
+    brand_id: Optional[str] = Query(None, description="Filter by brand ID"),
+    min_price: Optional[float] = Query(None, ge=0, description="Minimum price"),
+    max_price: Optional[float] = Query(None, ge=0, description="Maximum price"),
     search: Optional[str] = Query(None, description="Search by product name"),
     sort_by: Optional[str] = Query("created_at", description="Sort field"),
     sort_order: Optional[str] = Query("desc", description="Sort order: asc or desc"),
@@ -67,6 +70,13 @@ def list_products(
         ]
         base_query = base_query.filter(Product.sub_category_id.in_(subcat_ids))
 
+    if brand_id:
+        base_query = base_query.filter(Product.brand_id == brand_id)
+    if min_price is not None:
+        base_query = base_query.filter(Product.price >= min_price)
+    if max_price is not None:
+        base_query = base_query.filter(Product.price <= max_price)
+
     if search:
         base_query = base_query.filter(Product.name.ilike(f"%{search}%"))
 
@@ -76,7 +86,15 @@ def list_products(
 
     total = base_query.count()
     offset = (page - 1) * size
-    products = base_query.options(joinedload(Product.subcategory).joinedload(SubCategory.category)).offset(offset).limit(size).all()
+    products = (
+        base_query.options(
+            joinedload(Product.subcategory).joinedload(SubCategory.category),
+            joinedload(Product.brand),
+        )
+        .offset(offset)
+        .limit(size)
+        .all()
+    )
     pages = (total + size - 1) // size
 
     return {
@@ -93,7 +111,10 @@ def get_product(product_id: str, db: Session = Depends(get_db)):
     """Get a single product by ID."""
     product = (
         db.query(Product)
-        .options(joinedload(Product.subcategory).joinedload(SubCategory.category))
+        .options(
+            joinedload(Product.subcategory).joinedload(SubCategory.category),
+            joinedload(Product.brand),
+        )
         .filter(Product.id == product_id)
         .first()
     )

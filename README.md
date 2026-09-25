@@ -127,6 +127,24 @@ This wipes catalog + order/return history and reseeds groceries and demo
 orders. Users, addresses, warehouses and staff accounts are preserved.
 (Destructive for order history — intended for demo/test data.)
 
+### Catalog depth (brands, MRP, gallery, specs)
+
+Products carry a richer catalogue model:
+
+| Field | Purpose |
+|---|---|
+| `brand_id` → **Brands** | First-class brand entity, filterable in the storefront and managed under **Admin → Brands** |
+| `mrp` | Compare-at / list price. When above `price`, the storefront shows a struck-through MRP and a `% OFF` badge (`discount_percent` is computed server-side) |
+| `image_url` + `images` | `image_url` is the primary image (cards, cart, search); `images` holds extra gallery shots. `gallery` in API responses is the combined, de-duplicated list |
+| `specifications` | List of `{label, value}` rows rendered as a spec table on the product page |
+
+Products can also be filtered by `brand_id`, `min_price` and `max_price` via
+`GET /api/products`.
+
+Existing databases pick up the new columns automatically on startup, but they
+are empty until you reseed — run `python -m app.reseed` to get brands, MRPs,
+galleries and specs on the demo catalog.
+
 ### 3. Frontend
 
 ```bash

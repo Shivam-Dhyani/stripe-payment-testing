@@ -17,6 +17,9 @@ const ProductCard = ({ product }: { product: Product }) => {
   const outOfStock = product.stock <= 0;
   const lowStock = !outOfStock && product.stock <= 5;
   const atMax = qty >= product.stock;
+  const discount = product.discount_percent || 0;
+  const mrp = product.mrp ? Number(product.mrp) : null;
+  const showMrp = !!mrp && mrp > Number(product.price);
 
   const add = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -47,6 +50,11 @@ const ProductCard = ({ product }: { product: Product }) => {
           <span className="absolute top-1.5 left-1.5 inline-flex items-center gap-0.5 rounded-md bg-white/90 px-1.5 py-0.5 text-[10px] font-semibold text-gray-600 shadow-sm">
             <Clock className="w-3 h-3 text-brand-500" /> 10 min
           </span>
+          {discount > 0 && (
+            <span className="absolute top-1.5 right-1.5 rounded-md bg-brand-500 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm">
+              {discount}% OFF
+            </span>
+          )}
           {outOfStock && (
             <span className="absolute inset-0 bg-white/70 flex items-center justify-center text-xs font-semibold text-gray-500">
               Out of stock
@@ -68,7 +76,12 @@ const ProductCard = ({ product }: { product: Product }) => {
       </Link>
 
       <div className="flex items-center justify-between mt-2 gap-2">
-        <span className="text-sm font-bold text-gray-900">₹{Number(product.price).toFixed(2)}</span>
+        <span className="flex flex-col leading-tight min-w-0">
+          <span className="text-sm font-bold text-gray-900">₹{Number(product.price).toFixed(2)}</span>
+          {showMrp && (
+            <span className="text-[11px] text-gray-400 line-through">₹{mrp!.toFixed(2)}</span>
+          )}
+        </span>
         {outOfStock ? (
           <span className="text-[11px] font-medium text-gray-400">Sold out</span>
         ) : canShop ? (

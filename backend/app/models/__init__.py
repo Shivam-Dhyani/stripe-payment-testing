@@ -3,6 +3,7 @@ from app.models.address import Address
 from app.models.warehouse import Warehouse
 from app.models.category import Category
 from app.models.subcategory import SubCategory
+from app.models.brand import Brand
 from app.models.product import Product
 from app.models.cart import CartItem
 from app.models.order import Order, OrderItem, OrderStatusHistory, VALID_ORDER_STATUSES, VALID_TRANSITIONS
@@ -21,6 +22,7 @@ __all__ = [
     "Warehouse",
     "Category",
     "SubCategory",
+    "Brand",
     "Product",
     "CartItem",
     "Order",

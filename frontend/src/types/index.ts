@@ -37,15 +37,36 @@ export interface SubCategory {
   is_active: boolean;
 }
 
+export interface Brand {
+  id: string;
+  name: string;
+  description?: string | null;
+  logo_url?: string | null;
+  is_active: boolean;
+  product_count?: number;
+}
+
+export interface SpecRow {
+  label: string;
+  value: string;
+}
+
 export interface Product {
   id: string;
   sub_category_id: string;
+  brand_id?: string | null;
   name: string;
   description: string;
   unit?: string | null;
   price: number | string;
+  mrp?: number | string | null;
+  discount_percent?: number;
   stock: number;
   image_url: string | null;
+  images?: string[] | null;
+  gallery?: string[];
+  specifications?: SpecRow[] | null;
+  brand?: Brand | null;
   is_active: boolean;
   is_returnable: boolean;
   return_window_days: number | null;
@@ -188,6 +209,7 @@ export interface ProductFilters {
   size?: number;
   category_id?: string;
   sub_category_id?: string;
+  brand_id?: string;
   search?: string;
   sort_by?: string;
   sort_order?: 'asc' | 'desc';
