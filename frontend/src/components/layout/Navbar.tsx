@@ -8,6 +8,7 @@ import { setSelectedAddress } from '../../store/slices/addressSlice';
 import BrandMark from '../common/BrandMark';
 import SearchBox from './SearchBox';
 import { DELIVERY_PROMISE } from '../../config/brand';
+import { cartSubtotal } from '../../utils/cartLine';
 
 const Navbar = () => {
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
@@ -37,7 +38,7 @@ const Navbar = () => {
   }, []);
 
   const cartItemCount = items.reduce((sum, item) => sum + item.quantity, 0);
-  const cartTotal = items.reduce((sum, item) => sum + item.quantity * Number(item.product?.price || 0), 0);
+  const cartTotal = cartSubtotal(items);
 
   // Reusable address dropdown panel (shared by desktop + mobile triggers).
   const addressPanel = (
