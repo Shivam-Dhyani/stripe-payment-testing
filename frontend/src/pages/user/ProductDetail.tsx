@@ -135,15 +135,18 @@ const ProductDetail = () => {
   const optionNames = declaredNames.length > 0 ? declaredNames : derivedNames;
   const selectedValues = selectedVariant?.option_values || {};
 
-  // Picking a chip keeps the other options where they are when that combo exists,
-  // otherwise it falls back to a buyable variant carrying that value.
+  // Picking a chip keeps the other options where they are when that combo is buyable,
+  // otherwise it falls back to a buyable variant carrying that value, so a shopper
+  // can never get stuck on a dead-end combination.
   const resolveTarget = (name: string, value: string): ProductVariant | null => {
     const others = optionNames.filter((n) => n !== name);
     const matches = variants.filter((v) => (v.option_values?.[name] || '') === value);
+    const buyable = (v: ProductVariant) => v.is_active && v.stock > 0;
     const exact = matches.find((v) =>
       others.every((n) => (v.option_values?.[n] || '') === (selectedValues[n] || ''))
     );
-    return exact || matches.find((v) => v.is_active && v.stock > 0) || matches[0] || null;
+    if (exact && buyable(exact)) return exact;
+    return matches.find(buyable) || exact || matches[0] || null;
   };
 
   const optionGroups: { name: string; options: ChipOption[] }[] =
