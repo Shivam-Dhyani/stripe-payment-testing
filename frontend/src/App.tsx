@@ -35,6 +35,7 @@ import { HelpCenter, ContactUs, PrivacyPolicy } from './pages/user/StaticPages';
 import Dashboard from './pages/admin/Dashboard';
 import Categories from './pages/admin/Categories';
 import SubCategories from './pages/admin/SubCategories';
+import Brands from './pages/admin/Brands';
 import Products from './pages/admin/Products';
 import Orders from './pages/admin/Orders';
 import Carts from './pages/admin/Carts';
@@ -153,6 +154,7 @@ const AppContent = () => {
         <Route path="/admin/dashboard" element={<Dashboard />} />
         <Route path="/admin/categories" element={<Categories />} />
         <Route path="/admin/subcategories" element={<SubCategories />} />
+        <Route path="/admin/brands" element={<Brands />} />
         <Route path="/admin/products" element={<Products />} />
         <Route path="/admin/orders" element={<Orders />} />
         <Route path="/admin/cancellations" element={<CancellationRequests />} />

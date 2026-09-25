@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Plus, Pencil, Trash2, X, ToggleLeft, ToggleRight, Search, Package, ChevronLeft, ChevronRight, Sparkles, Image as ImageIcon } from 'lucide-react';
@@ -8,25 +8,59 @@ import { useAppSelector } from '../../hooks/useAppSelector';
 import { fetchProducts, createProduct, updateProduct, deleteProduct } from '../../store/slices/productSlice';
 import { fetchCategories, fetchSubCategories } from '../../store/slices/categorySlice';
 import { productService } from '../../services/productService';
-import { Product } from '../../types';
+import { brandService } from '../../services/brandService';
+import { Brand, Product } from '../../types';
 import ButtonSpinner from '../../components/common/ButtonSpinner';
 import { useConfirm } from '../../components/common/ConfirmDialog';
 import toast from 'react-hot-toast';
 
-const productSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  description: z.string().min(1, 'Description is required'),
-  unit: z.string().optional(),
-  price: z.number().min(0.01, 'Price must be greater than 0'),
-  stock: z.number().min(0, 'Stock cannot be negative'),
-  sub_category_id: z.string().min(1, 'Sub-category is required'),
-  image_url: z.string().optional(),
-  is_active: z.boolean(),
-  is_returnable: z.boolean(),
-  return_window_days: z.number().nullable().optional(),
-});
+const productSchema = z
+  .object({
+    name: z.string().min(1, 'Name is required'),
+    description: z.string().min(1, 'Description is required'),
+    unit: z.string().optional(),
+    price: z.number().min(0.01, 'Price must be greater than 0'),
+    mrp: z.number().min(0, 'MRP cannot be negative').nullable(),
+    stock: z.number().min(0, 'Stock cannot be negative'),
+    sub_category_id: z.string().min(1, 'Sub-category is required'),
+    brand_id: z.string(),
+    image_url: z.string().optional(),
+    images: z.array(z.object({ url: z.string() })),
+    specifications: z.array(z.object({ label: z.string(), value: z.string() })),
+    is_active: z.boolean(),
+    is_returnable: z.boolean(),
+    return_window_days: z.number().nullable().optional(),
+  })
+  .refine((data) => data.mrp === null || data.mrp === 0 || data.mrp >= data.price, {
+    message: 'MRP should be greater than or equal to the price',
+    path: ['mrp'],
+  });
 
 type ProductFormData = z.infer<typeof productSchema>;
+
+/** Empty MRP inputs should clear the value rather than register as NaN. */
+const toOptionalNumber = (value: unknown): number | null => {
+  if (value === '' || value === null || value === undefined) return null;
+  const parsed = Number(value);
+  return Number.isNaN(parsed) ? null : parsed;
+};
+
+const emptyProductForm: ProductFormData = {
+  name: '',
+  description: '',
+  unit: '',
+  price: 0,
+  mrp: null,
+  stock: 0,
+  sub_category_id: '',
+  brand_id: '',
+  image_url: '',
+  images: [],
+  specifications: [],
+  is_active: true,
+  is_returnable: false,
+  return_window_days: null,
+};
 
 const Products = () => {
   const dispatch = useAppDispatch();
@@ -45,11 +79,15 @@ const Products = () => {
   const perPage = 10;
 
   const [generatingImage, setGeneratingImage] = useState(false);
+  const [brands, setBrands] = useState<Brand[]>([]);
 
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
-    defaultValues: { name: '', description: '', unit: '', price: 0, stock: 0, sub_category_id: '', image_url: '', is_active: true, is_returnable: false, return_window_days: null },
+    defaultValues: emptyProductForm,
   });
+
+  const imageRows = useFieldArray({ control: form.control, name: 'images' });
+  const specRows = useFieldArray({ control: form.control, name: 'specifications' });
 
   const handleGenerateImage = async () => {
     const name = form.getValues('name')?.trim();
@@ -81,6 +119,13 @@ const Products = () => {
     dispatch(fetchCategories(true));
     dispatch(fetchSubCategories({ includeInactive: true }));
   }, [dispatch]);
+
+  useEffect(() => {
+    brandService
+      .getAll(true)
+      .then(setBrands)
+      .catch(() => setBrands([]));
+  }, []);
 
   useEffect(() => {
     dispatch(fetchProducts({
@@ -116,7 +161,17 @@ const Products = () => {
     setTogglingId(null);
   };
 
-  const handleSubmit = async (data: ProductFormData) => {
+  const handleSubmit = async (formData: ProductFormData) => {
+    const { images, specifications, brand_id, mrp, ...rest } = formData;
+    const data: Partial<Product> = {
+      ...rest,
+      brand_id: brand_id || null,
+      mrp: mrp ?? null,
+      images: images.map((row) => row.url.trim()).filter((url) => url.length > 0),
+      specifications: specifications
+        .map((row) => ({ label: row.label.trim(), value: row.value.trim() }))
+        .filter((row) => row.label.length > 0 || row.value.length > 0),
+    };
     if (editingProduct) {
       await dispatch(updateProduct({ id: editingProduct.id, data }));
     } else {
@@ -136,9 +191,13 @@ const Products = () => {
       description: product.description,
       unit: product.unit || '',
       price: Number(product.price),
+      mrp: product.mrp === null || product.mrp === undefined ? null : Number(product.mrp),
       stock: product.stock,
       sub_category_id: product.sub_category_id,
+      brand_id: product.brand_id || '',
       image_url: product.image_url || '',
+      images: (product.images || []).map((url) => ({ url })),
+      specifications: (product.specifications || []).map((row) => ({ label: row.label, value: row.value })),
       is_active: product.is_active,
       is_returnable: product.is_returnable || false,
       return_window_days: product.return_window_days ?? null,
@@ -150,7 +209,7 @@ const Products = () => {
     setShowModal(false);
     setEditingProduct(null);
     setSelectedCategoryInForm(undefined);
-    form.reset({ name: '', description: '', unit: '', price: 0, stock: 0, sub_category_id: '', image_url: '', is_active: true, is_returnable: false, return_window_days: null });
+    form.reset(emptyProductForm);
   };
 
   const handleDelete = async (id: string) => {
@@ -195,7 +254,7 @@ const Products = () => {
           onClick={() => {
             setEditingProduct(null);
             setSelectedCategoryInForm(undefined);
-            form.reset({ name: '', description: '', unit: '', price: 0, stock: 0, sub_category_id: '', image_url: '', is_active: true, is_returnable: false, return_window_days: null });
+            form.reset(emptyProductForm);
             setShowModal(true);
           }}
           className="flex items-center space-x-2 px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition font-medium"
@@ -304,13 +363,26 @@ const Products = () => {
                         </div>
                         <div>
                           <p className="text-sm font-medium text-gray-800">{product.name}</p>
+                          {product.brand?.name && (
+                            <p className="text-xs text-gray-500">{product.brand.name}</p>
+                          )}
                           <p className="font-mono text-xs text-gray-500">{product.id.substring(0, 8)}</p>
                         </div>
                       </div>
                     </td>
                     <td className="px-5 py-4 text-sm text-gray-800">{product.sub_category?.category?.name || '-'}</td>
                     <td className="px-5 py-4 text-sm text-gray-800">{product.sub_category?.name || '-'}</td>
-                    <td className="px-5 py-4 text-sm font-medium text-gray-800">₹{Number(product.price).toFixed(2)}</td>
+                    <td className="px-5 py-4">
+                      <p className="text-sm font-medium text-gray-800">₹{Number(product.price).toFixed(2)}</p>
+                      {product.mrp != null && Number(product.mrp) > Number(product.price) && (
+                        <p className="text-xs text-gray-400">
+                          <span className="line-through">₹{Number(product.mrp).toFixed(2)}</span>
+                          {!!product.discount_percent && (
+                            <span className="ml-1 font-medium text-green-600">{product.discount_percent}% off</span>
+                          )}
+                        </p>
+                      )}
+                    </td>
                     <td className="px-5 py-4 text-sm text-gray-800">{product.stock}</td>
                     <td className="px-5 py-4">
                       <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${product.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
@@ -419,11 +491,24 @@ const Products = () => {
                 <textarea {...form.register('description')} rows={3} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-3 focus:ring-brand-500/20 focus:border-brand-300 focus:outline-hidden transition" />
                 {form.formState.errors.description && <p className="mt-1 text-sm text-red-600">{form.formState.errors.description.message}</p>}
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Price (₹)</label>
                   <input type="number" step="0.01" {...form.register('price', { valueAsNumber: true })} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-3 focus:ring-brand-500/20 focus:border-brand-300 focus:outline-hidden transition" />
                   {form.formState.errors.price && <p className="mt-1 text-sm text-red-600">{form.formState.errors.price.message}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    MRP (₹) <span className="text-gray-400 font-normal">(optional)</span>
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="e.g. 199"
+                    {...form.register('mrp', { setValueAs: toOptionalNumber })}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-3 focus:ring-brand-500/20 focus:border-brand-300 focus:outline-hidden transition"
+                  />
+                  {form.formState.errors.mrp && <p className="mt-1 text-sm text-red-600">{form.formState.errors.mrp.message}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Stock</label>
@@ -458,7 +543,22 @@ const Products = () => {
                 {form.formState.errors.sub_category_id && <p className="mt-1 text-sm text-red-600">{form.formState.errors.sub_category_id.message}</p>}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Product Image</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Brand <span className="text-gray-400 font-normal">(optional)</span>
+                </label>
+                <select
+                  {...form.register('brand_id')}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-3 focus:ring-brand-500/20 focus:outline-hidden bg-white"
+                >
+                  <option value="">No brand</option>
+                  {brands.map((brand) => (
+                    <option key={brand.id} value={brand.id}>{brand.name}{brand.is_active ? '' : ' (inactive)'}</option>
+                  ))}
+                </select>
+                {form.formState.errors.brand_id && <p className="mt-1 text-sm text-red-600">{form.formState.errors.brand_id.message}</p>}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Product Image <span className="text-gray-400 font-normal">(primary)</span></label>
                 <div className="flex gap-3">
                   <div className="w-20 h-20 rounded-xl border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden flex-shrink-0">
                     {form.watch('image_url') ? (
@@ -485,6 +585,87 @@ const Products = () => {
                   </div>
                 </div>
                 <p className="text-xs text-gray-400 mt-1.5">AI-generates a product photo from the name. Regenerate for a different result.</p>
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Gallery Images <span className="text-gray-400 font-normal">(extra photos)</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => imageRows.append({ url: '' })}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-brand-50 text-brand-700 border border-brand-200 hover:bg-brand-100 text-xs font-medium transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    Add image
+                  </button>
+                </div>
+                {imageRows.fields.length === 0 ? (
+                  <p className="text-xs text-gray-400">No gallery images yet. The primary image above is used on its own.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {imageRows.fields.map((field, index) => (
+                      <div key={field.id} className="flex items-center gap-2">
+                        <input
+                          {...form.register(`images.${index}.url`)}
+                          placeholder="https://…"
+                          className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-3 focus:ring-brand-500/20 focus:border-brand-300 focus:outline-hidden transition text-sm"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => imageRows.remove(index)}
+                          title="Remove image"
+                          className="p-2 text-red-600 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Specifications <span className="text-gray-400 font-normal">(label / value)</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => specRows.append({ label: '', value: '' })}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-brand-50 text-brand-700 border border-brand-200 hover:bg-brand-100 text-xs font-medium transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    Add spec
+                  </button>
+                </div>
+                {specRows.fields.length === 0 ? (
+                  <p className="text-xs text-gray-400">No specifications yet. Add rows like “Shelf life / 6 months”.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {specRows.fields.map((field, index) => (
+                      <div key={field.id} className="flex items-center gap-2">
+                        <input
+                          {...form.register(`specifications.${index}.label`)}
+                          placeholder="Label (e.g. Shelf life)"
+                          className="w-2/5 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-3 focus:ring-brand-500/20 focus:border-brand-300 focus:outline-hidden transition text-sm"
+                        />
+                        <input
+                          {...form.register(`specifications.${index}.value`)}
+                          placeholder="Value (e.g. 6 months)"
+                          className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-3 focus:ring-brand-500/20 focus:border-brand-300 focus:outline-hidden transition text-sm"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => specRows.remove(index)}
+                          title="Remove specification"
+                          className="p-2 text-red-600 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               <label className="flex items-center space-x-2">
                 <input type="checkbox" {...form.register('is_active')} className="rounded border-gray-300 text-brand-500 focus:ring-brand-500" />

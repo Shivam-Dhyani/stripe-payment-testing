@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
-  LayoutDashboard, FolderTree, Layers, ShoppingBag, ClipboardList, ShoppingCart,
+  LayoutDashboard, FolderTree, Layers, Tag, ShoppingBag, ClipboardList, ShoppingCart,
   Store, Ban, RotateCcw, Zap, ChevronsLeft, ChevronsRight, SlidersHorizontal,
 } from 'lucide-react';
 import BrandMark from '../common/BrandMark';
@@ -37,6 +37,7 @@ const Sidebar = ({ isOpen, onClose, collapsed, onToggleCollapse }: SidebarProps)
     { path: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard, badge: 0 },
     { path: '/admin/categories', label: 'Categories', icon: FolderTree, badge: 0 },
     { path: '/admin/subcategories', label: 'Sub Categories', icon: Layers, badge: 0 },
+    { path: '/admin/brands', label: 'Brands', icon: Tag, badge: 0 },
     { path: '/admin/products', label: 'Products', icon: ShoppingBag, badge: 0 },
     { path: '/admin/orders', label: 'Orders', icon: ClipboardList, badge: orderPendingCount },
     { path: '/admin/cancellations', label: 'Cancellations', icon: Ban, badge: cancelPendingCount },
