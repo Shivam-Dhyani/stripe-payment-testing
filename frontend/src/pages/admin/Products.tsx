@@ -99,6 +99,13 @@ const describeVariant = (variant: ProductVariant): string => {
   return variant.sku || 'Variant';
 };
 
+/** Table chip copy: how many choices a product offers, or nothing when it has none. */
+const variantChipLabel = (product: Product): string | null => {
+  const count = product.variants?.length ?? 0;
+  if (count > 0) return `${count} option${count === 1 ? '' : 's'}`;
+  return product.has_variants ? 'Has options' : null;
+};
+
 /** Explains which price/stock actually applies once a product has active variants. */
 const VARIANT_PRICING_HINT =
   'Variants are optional. With none, this product sells at its own price and stock. Once it has active variants, the shopper must pick one and the variant’s price and stock are what get charged and reduced — the product’s own price then only shows as “from ₹X” on the card, and its stock as the total.';
@@ -780,11 +787,9 @@ const Products = () => {
                         <div>
                           <div className="flex items-center gap-2">
                             <p className="text-sm font-medium text-gray-800">{product.name}</p>
-                            {(product.variants?.length || product.has_variants) && (
+                            {variantChipLabel(product) && (
                               <span className="px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 text-[11px] font-medium whitespace-nowrap">
-                                {product.variants?.length
-                                  ? `${product.variants.length} option${product.variants.length === 1 ? '' : 's'}`
-                                  : 'Has options'}
+                                {variantChipLabel(product)}
                               </span>
                             )}
                           </div>
@@ -823,6 +828,13 @@ const Products = () => {
                           title={product.is_active ? 'Deactivate' : 'Activate'}
                         >
                           {togglingId === product.id ? <ButtonSpinner /> : product.is_active ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
+                        </button>
+                        <button
+                          onClick={() => setVariantProduct(product)}
+                          title="Manage variants"
+                          className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
+                        >
+                          <Layers className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => openEditModal(product)}
@@ -1173,6 +1185,15 @@ const Products = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {variantProduct && (
+        <VariantManagerModal
+          key={variantProduct.id}
+          product={variantProduct}
+          onClose={() => setVariantProduct(null)}
+          onChanged={refetchProducts}
+        />
       )}
     </div>
   );
