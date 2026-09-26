@@ -38,7 +38,7 @@ const ProductDetail = () => {
   const dispatch = useAppDispatch();
   const { selectedProduct: product, loading } = useAppSelector((state) => state.products);
   const { user } = useAppSelector((state) => state.auth);
-  const { submitting } = useAppSelector((state) => state.cart);
+  const { items: cartItems, submitting } = useAppSelector((state) => state.cart);
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
@@ -80,18 +80,34 @@ const ProductDetail = () => {
   const selectedVariant = variants.find((v) => v.id === selectedVariantId) || null;
 
   // Everything price/stock related comes from the selected variant when there is one.
-  const effectiveStock = Number(selectedVariant ? selectedVariant.stock : product?.stock ?? 0);
+  const rawStock = Number(selectedVariant ? selectedVariant.stock : product?.stock ?? 0);
 
-  // Keep the stepper inside the selected option's stock.
+  // How much of this exact line (product + variant) is already sitting in the
+  // customer's own cart — "Add to Cart" doesn't reserve stock on the server,
+  // so we subtract it here or the stepper/"left in stock" numbers look stale
+  // right after adding (they'd still show the pre-cart total).
+  const qtyAlreadyInCart = product
+    ? cartItems
+        .filter((item) => item.product_id === product.id && (item.variant_id ?? null) === (selectedVariant?.id ?? null))
+        .reduce((sum, item) => sum + item.quantity, 0)
+    : 0;
+  const effectiveStock = Math.max(0, rawStock - qtyAlreadyInCart);
+
+  // Keep the stepper inside what's actually still available to add.
   useEffect(() => {
     setQuantity((q) => Math.min(Math.max(1, q), Math.max(1, effectiveStock)));
   }, [effectiveStock]);
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (!product) return;
     if (hasVariants && !selectedVariant) return;
     if (effectiveStock <= 0) return;
-    dispatch(addToCart({ product, quantity, variant: selectedVariant }));
+    const result = await dispatch(addToCart({ product, quantity, variant: selectedVariant }));
+    if (addToCart.fulfilled.match(result)) {
+      // Reset the stepper — quantity now reflects what's left to add, not what
+      // was just added, so leaving it at (e.g.) 3 would misread as available.
+      setQuantity(1);
+    }
   };
 
   if (loading || !product) {
